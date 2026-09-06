@@ -48,18 +48,24 @@ def round_half_away(v):
     return np.sign(v) * np.floor(np.abs(v) + 0.5)
 
 
-def test_requant_within_one_lsb_of_float():
+def test_requant_double_vs_single_rounding():
+    """gemmlowp's legacy path rounds twice; TFLITE_SINGLE_ROUNDING rounds once. Both stay within 1 LSB of the
+    exactly rounded product, but double rounding is off by one LSB far more often when the right shift is small."""
     rng = np.random.default_rng(1)
     acc = rng.integers(-3_000_000, 3_000_000, 100000)
-    for m in [0.00073, 0.3, 1.7, 0.31415926]:
+    for m, expect_double in [(0.00073, 0.002), (0.31415926, 0.30), (1.7320508, 0.30), (0.0012345, 0.005)]:
         q, s = quantize_multiplier(m)
-        y = multiply_by_quantized_multiplier(acc, q, s)
-        ref = round_half_away(acc * m)                 # TFLite rounds half away from zero
-        assert np.abs(y - ref).max() <= 1
-        assert (y != ref).mean() < 0.002               # only the q31 approximation of m can flip a rounding
+        ref = round_half_away(acc * m)
+        y_double = multiply_by_quantized_multiplier(acc, q, s, "tflite")
+        y_single = multiply_by_quantized_multiplier(acc, q, s, "single")
+        assert np.abs(y_double - ref).max() <= 1 and np.abs(y_single - ref).max() <= 1
+        assert (y_double != ref).mean() < expect_double
+        assert (y_single != ref).mean() < 0.005        # only the q31 approximation of m can flip a near-tie
+    q, s = quantize_multiplier(0.31415926)             # shift = -1: double rounding hurts most
+    assert (multiply_by_quantized_multiplier(acc, q, s, "tflite") != round_half_away(acc * 0.31415926)).mean() > 0.1
     # rational multipliers create exact ties where half-even (fake-quant, torch.round) legitimately differs
     q, s = quantize_multiplier(0.3)
-    y = multiply_by_quantized_multiplier(acc, q, s)
+    y = multiply_by_quantized_multiplier(acc, q, s, "single")
     assert 0.02 < (y != np.rint(acc * 0.3)).mean() < 0.3
 
 
@@ -103,7 +109,7 @@ def test_saturation_counter_and_narrow_accumulator(small_resnet, calib_batches, 
 def test_cpp_engine_bit_exact(small_resnet, small_silu_resnet, small_mobilenet, calib_batches, batch):
     load_library()
     for m in (small_resnet, small_silu_resnet, small_mobilenet):
-        for cfg in (RequantConfig(), RequantConfig(rounding="half_even", mult_bits=15, acc_bits=16)):
+        for cfg in (RequantConfig(), RequantConfig(rounding="single"), RequantConfig(rounding="half_even", mult_bits=15, acc_bits=16)):
             qm = prepare(m); calibrate(qm, calib_batches)
             ig = export_int_graph(qm, cfg)
             codes = quantize_input(batch.numpy(), ig.input_q)
@@ -122,6 +128,9 @@ def test_cpp_primitives_match_numpy():
         x, e = int(rng.integers(-2 ** 31, 2 ** 31)), int(rng.integers(0, 31))
         for name, code in [("tflite", 0), ("half_even", 1), ("truncate", 2), ("floor", 3)]:
             assert lib.test_rdbpot(x, e, code) == _rdbpot(np.array([x]), np.array([e]), name)[0], (x, e, name)
+        v, mult, sh = int(rng.integers(-2 ** 20, 2 ** 20)), int(rng.integers(2 ** 30, 2 ** 31)), int(rng.integers(-20, 3))
+        for name, code in [("tflite", 0), ("single", 4)]:
+            assert lib.test_mbqm(v, mult, sh, code) == multiply_by_quantized_multiplier(np.array([v]), mult, sh, name)[0], (v, mult, sh, name)
 
 
 def test_float32_chunked_mac_is_exact_at_worst_case():
@@ -130,7 +139,8 @@ def test_float32_chunked_mac_is_exact_at_worst_case():
     from npuloop.intengine.graph import IntNode, QParams
     torch.manual_seed(0)
     x = np.full((2, 64, 8, 8), 255, dtype=np.int64)
-    w = np.where(np.random.default_rng(0).random((32, 64, 3, 3)) < 0.5, 127, -127).astype(np.int64)
+    w = np.full((32, 64, 3, 3), 127, dtype=np.int64)          # no cancellation: sum = 576*255*127 = 18.65M > 2^24
+    w[1] = -127
     n = IntNode("c", "conv", ["x"], attrs=dict(stride=(1, 1), padding=(1, 1), groups=1))
     n.w_int = w
     class G:  # minimal stand-in for IntGraph

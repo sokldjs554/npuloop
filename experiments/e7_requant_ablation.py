@@ -6,7 +6,8 @@ from npuloop.quant import prepare, calibrate, evaluate, PRESET_SCHEMES
 from npuloop.intengine import export_int_graph, NumpyEngine, RequantConfig
 
 CONFIGS = [
-    RequantConfig(),                                   # reference: TFLite semantics
+    RequantConfig(),                                   # reference: legacy TFLite/gemmlowp double rounding
+    RequantConfig(rounding="single"),                  # TFLITE_SINGLE_ROUNDING
     RequantConfig(rounding="half_even"),
     RequantConfig(rounding="truncate"),
     RequantConfig(rounding="floor"),

@@ -7,7 +7,7 @@
 
 extern "C" {
 
-enum Rounding { R_TFLITE = 0, R_HALF_EVEN = 1, R_TRUNCATE = 2, R_FLOOR = 3 };
+enum Rounding { R_TFLITE = 0, R_HALF_EVEN = 1, R_TRUNCATE = 2, R_FLOOR = 3, R_SINGLE = 4 };
 
 static inline int32_t srdhm(int32_t a, int32_t b) {
     // SaturatingRoundingDoublingHighMul (gemmlowp)
@@ -35,7 +35,21 @@ static inline int32_t rdbpot(int32_t x, int exponent, int rounding) {
     return (x >> exponent) + (remainder > threshold ? 1 : 0);
 }
 
+static inline int64_t rdbpot64(int64_t x, int exponent) {
+    if (exponent <= 0) return x;
+    int64_t mask = (1LL << exponent) - 1;
+    int64_t remainder = x & mask;
+    int64_t threshold = (mask >> 1) + (x < 0 ? 1 : 0);
+    return (x >> exponent) + (remainder > threshold ? 1 : 0);
+}
+
 static inline int32_t mbqm(int32_t x, int32_t mult, int shift, int rounding) {
+    if (rounding == R_SINGLE) {   // TFLITE_SINGLE_ROUNDING: one 64-bit product, one rounding
+        int64_t v = rdbpot64((int64_t)x * (int64_t)mult, 31 - shift);
+        if (v > INT32_MAX) v = INT32_MAX;
+        if (v < INT32_MIN) v = INT32_MIN;
+        return (int32_t)v;
+    }
     int left = shift > 0 ? shift : 0;
     int right = shift > 0 ? 0 : -shift;
     int64_t xs = (int64_t)x * (1LL << left);

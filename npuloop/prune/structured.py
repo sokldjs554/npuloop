@@ -84,6 +84,7 @@ def apply_keep(model: nn.Module, g: Group, keep: torch.Tensor) -> None:
     new.weight.data = conv.weight.data[keep].clone()
     if conv.bias is not None:
         new.bias.data = conv.bias.data[keep].clone()
+    new.train(conv.training)
     _set(model, g.producer, new)
     _slice_bn(model, g.bn, keep)
     if g.dw:
@@ -92,6 +93,7 @@ def apply_keep(model: nn.Module, g: Group, keep: torch.Tensor) -> None:
         newdw.weight.data = dw.weight.data[keep].clone()
         if dw.bias is not None:
             newdw.bias.data = dw.bias.data[keep].clone()
+        newdw.train(dw.training)
         _set(model, g.dw, newdw)
         _slice_bn(model, g.dw_bn, keep)
     for c in g.consumers:
@@ -100,6 +102,7 @@ def apply_keep(model: nn.Module, g: Group, keep: torch.Tensor) -> None:
         new.weight.data = conv.weight.data[:, keep].clone()
         if conv.bias is not None:
             new.bias.data = conv.bias.data.clone()
+        new.train(conv.training)
         _set(model, c, new)
     g.channels = len(keep)
 
@@ -109,6 +112,7 @@ def _slice_bn(model, name, keep):
     new = nn.BatchNorm2d(len(keep), eps=bn.eps, momentum=bn.momentum)
     new.weight.data = bn.weight.data[keep].clone(); new.bias.data = bn.bias.data[keep].clone()
     new.running_mean = bn.running_mean[keep].clone(); new.running_var = bn.running_var[keep].clone()
+    new.train(bn.training)     # a fresh module defaults to training mode; inherit the replaced module's mode
     _set(model, name, new)
 
 

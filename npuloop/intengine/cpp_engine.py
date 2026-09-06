@@ -10,7 +10,7 @@ from .numpy_engine import NumpyEngine, quantize_input, dequantize
 
 _HERE = os.path.dirname(__file__)
 _SRC = os.path.join(_HERE, "cpp", "int8_engine.cpp")
-ROUNDING = {"tflite": 0, "half_even": 1, "truncate": 2, "floor": 3}
+ROUNDING = {"tflite": 0, "half_even": 1, "truncate": 2, "floor": 3, "single": 4}
 _lib = None
 
 

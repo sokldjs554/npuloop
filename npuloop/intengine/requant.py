@@ -19,7 +19,7 @@ INT32_MIN, INT32_MAX = -(2 ** 31), 2 ** 31 - 1
 
 @dataclass(frozen=True)
 class RequantConfig:
-    rounding: str = "tflite"      # tflite (round half away from zero) | half_even | truncate | floor
+    rounding: str = "tflite"      # tflite (gemmlowp double rounding) | single (TFLITE_SINGLE_ROUNDING) | half_even | truncate | floor
     mult_bits: int = 31           # bits of the fixed-point multiplier (31 = TFLite; 15/7 = cheap hardware)
     acc_bits: int = 32            # accumulator width; narrower accumulators saturate
     bias_bits: int = 32           # bias width (int32 default; 16 = cheap hardware, saturates)
@@ -82,8 +82,21 @@ def _rdbpot(x: np.ndarray, exponent: np.ndarray | int, rounding: str = "tflite")
 
 def multiply_by_quantized_multiplier(x: np.ndarray, q: np.ndarray | int, shift: np.ndarray | int,
                                      rounding: str = "tflite") -> np.ndarray:
-    """MultiplyByQuantizedMultiplier(x, q, shift) = round(x * q * 2^shift / 2^31), bit-exact with TFLite."""
+    """MultiplyByQuantizedMultiplier(x, q, shift) ~= round(x * q * 2^shift / 2^31).
+
+    rounding="tflite": the legacy gemmlowp path — SaturatingRoundingDoublingHighMul rounds at 2^31, then
+        RoundingDivideByPOT rounds again at 2^right. Two roundings can land 1 LSB off the exactly rounded
+        value (often for small right shifts). Bit-exact with TFLite reference kernels built without
+        TFLITE_SINGLE_ROUNDING.
+    rounding="single": TFLITE_SINGLE_ROUNDING — one int64 product, one rounding at 2^(31-shift).
+    half_even / truncate / floor: alternative second-stage roundings (ablations).
+    """
     q = np.asarray(q, dtype=np.int64); shift = np.asarray(shift, dtype=np.int64)
+    if rounding == "single":
+        total = 31 - shift                                        # >= 0 for shift <= 31
+        prod = x.astype(np.int64) * q
+        out = _rdbpot(prod, total, "tflite")
+        return np.clip(out, INT32_MIN, INT32_MAX)
     left = np.maximum(shift, 0); right = np.maximum(-shift, 0)
     xs = x.astype(np.int64) * (np.int64(1) << left)
     hi = _srdhm(xs, q)
