@@ -17,8 +17,12 @@ class CIFAR10NPZ:
         d = np.load(path)
         self.x_train = d["x_train"]  # (N,32,32,3) uint8
         self.y_train = d["y_train"]
-        self.x_test = d["x_test"]
-        self.y_test = d["y_test"]
+        # The npz may be stored class-sorted (e.g. built from per-class image folders); shuffle the test split with a
+        # fixed permutation so that any prefix (`limit=N` evaluations, agreement batches) is a class-mixed sample.
+        order = np.random.default_rng(1234).permutation(len(d["y_test"]))
+        self.x_test = d["x_test"][order]
+        self.y_test = d["y_test"][order]
+        self.test_order = order
         self.classes = [str(c) for c in d["classes"]]
 
     @staticmethod
