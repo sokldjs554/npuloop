@@ -5,7 +5,7 @@ DRAM bandwidth) of commercial edge NPUs. They are not a description of any vendo
 real microarchitecture. Provenance label for everything derived from them: `simulated`.
 """
 from __future__ import annotations
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, asdict
 
 
 @dataclass(frozen=True)

@@ -3,6 +3,7 @@
 # and a final full pass completes. Safe to re-run after an interruption.
 cd "$(dirname "$0")/.."
 export NPULOOP_THREADS=${NPULOOP_THREADS:-2}
+export OMP_WAIT_POLICY=PASSIVE
 export NPULOOP_INT_EVAL=${NPULOOP_INT_EVAL:-10000}
 mkdir -p results/logs
 pass() {

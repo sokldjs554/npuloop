@@ -1,11 +1,10 @@
-import math
 import numpy as np
 import torch
 import pytest
 from npuloop.quant import prepare, calibrate, QScheme
 from npuloop.intengine import export_int_graph, NumpyEngine, RequantConfig, quantize_multiplier, multiply_by_quantized_multiplier
 from npuloop.intengine.requant import _srdhm, _rdbpot
-from npuloop.intengine.numpy_engine import quantize_input, dequantize
+from npuloop.intengine.numpy_engine import quantize_input
 from npuloop.intengine.verify import compare
 from npuloop.intengine.cpp_engine import CppEngine, load_library
 

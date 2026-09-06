@@ -6,7 +6,6 @@ of B become equal: W_A[i] /= s_i, b_A[i] /= s_i, W_B[:, i] *= s_i (depthwise B: 
 ReLU is positively homogeneous so the function is unchanged (ReLU6 is not exactly: see `relu6_policy`).
 """
 from __future__ import annotations
-import operator
 import torch
 import torch.nn as nn
 import torch.fx as fx

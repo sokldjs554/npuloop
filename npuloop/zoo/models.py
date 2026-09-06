@@ -7,7 +7,6 @@ Design rules (they matter for the analyzer / quantizer later):
   * conv -> bn -> act ordering everywhere (so BN folding is mechanical)
 """
 from __future__ import annotations
-import torch
 import torch.nn as nn
 
 ACTS = {

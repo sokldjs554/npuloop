@@ -1,5 +1,5 @@
 """Generate the markdown result tables for README.md from results/*.json (run after the experiments)."""
-import json, os, sys
+import json, os
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 R = os.path.join(ROOT, "results")
 LABEL = {"resnet20_relu": "ResNet-20 ReLU", "resnet20_silu": "ResNet-20 SiLU", "resnet20_hswish": "ResNet-20 HardSwish",

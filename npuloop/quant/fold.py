@@ -1,7 +1,6 @@
 """BatchNorm folding as an fx graph transformation (conv -> bn becomes conv with bias)."""
 from __future__ import annotations
 import copy
-import torch
 import torch.nn as nn
 import torch.fx as fx
 from ..graph.ir import fold_bn_params

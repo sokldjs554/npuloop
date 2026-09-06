@@ -5,7 +5,7 @@
     on the LUT-capable and strict presets
 (c) QAT on every baseline with the default NPU scheme (3 epochs)
 """
-import copy, os, sys, time
+import os, sys, time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from common import *
 from npuloop.graph import trace

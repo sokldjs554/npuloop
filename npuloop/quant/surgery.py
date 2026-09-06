@@ -1,9 +1,8 @@
 """Model surgery passes that change the architecture *before* quantization, plus QAT helpers."""
 from __future__ import annotations
 import copy
-import torch
 import torch.nn as nn
-from ..zoo.models import make_act, ACTS
+from ..zoo.models import make_act
 from ..graph.ir import ACT_MODULE_KINDS
 
 

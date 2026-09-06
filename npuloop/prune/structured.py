@@ -17,11 +17,10 @@ Strategies for choosing how many channels to keep per group:
 """
 from __future__ import annotations
 import copy
-from dataclasses import dataclass, field
-import math
+from dataclasses import dataclass
 import torch
 import torch.nn as nn
-from ..zoo.models import ResNetCIFAR, MobileNetV2CIFAR, BasicBlock, InvertedResidual
+from ..zoo.models import BasicBlock, InvertedResidual
 from ..graph.ir import trace
 from ..npu.cost import estimate
 from ..npu.spec import get_spec

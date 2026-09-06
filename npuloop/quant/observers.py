@@ -6,7 +6,6 @@ Conventions (match TFLite / typical INT8 NPUs):
 Observers only track statistics; `qparams()` turns them into (scale, zero_point).
 """
 from __future__ import annotations
-import math
 import torch
 
 

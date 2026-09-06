@@ -6,7 +6,7 @@ import os
 import subprocess
 import numpy as np
 from .graph import IntGraph, IntNode
-from .numpy_engine import NumpyEngine, quantize_input, dequantize
+from .numpy_engine import NumpyEngine
 
 _HERE = os.path.dirname(__file__)
 _SRC = os.path.join(_HERE, "cpp", "int8_engine.cpp")

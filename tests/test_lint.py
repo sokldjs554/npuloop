@@ -1,4 +1,3 @@
-import numpy as np
 import torch
 from npuloop.graph import trace
 from npuloop.lint import lint

@@ -13,7 +13,7 @@ import torch.nn as nn
 import torch.fx as fx
 from ..graph.ir import ACT_MODULE_KINDS, RELU_FAMILY, apply_act
 from ..quant.fake import FakeQuantAct, QConv2d, QLinear
-from .requant import quantize_multiplier, RequantConfig, INT32_MIN, INT32_MAX
+from .requant import quantize_multiplier, RequantConfig
 
 
 @dataclass

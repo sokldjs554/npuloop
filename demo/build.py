@@ -7,7 +7,6 @@ from __future__ import annotations
 import json, os, sys, glob, time
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT); sys.path.insert(0, os.path.join(ROOT, "experiments"))
-import numpy as np
 from common import available_baselines, load_model, RESULTS
 from npuloop.graph import trace
 from npuloop.npu import PRESETS

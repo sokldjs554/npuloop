@@ -1,7 +1,6 @@
 """npuloop command line: lint / cost / quantize / verify a checkpoint against a virtual NPU."""
 from __future__ import annotations
-import argparse, json, os, sys
-import numpy as np
+import argparse, json
 import torch
 
 

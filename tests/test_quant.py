@@ -1,10 +1,9 @@
 import numpy as np
 import torch
-import pytest
-from npuloop.quant import (prepare, calibrate, QScheme, fold_bn, set_mode, quantizers, qlayers, equalize, find_pairs,
+from npuloop.quant import (prepare, calibrate, QScheme, fold_bn, set_mode, quantizers, equalize, find_pairs,
                            bias_correction, layer_sensitivity, swap_activations, MinMaxObserver, PercentileObserver, MSEObserver,
                            affine_qparams, weight_qparams, fake_quant)
-from npuloop.quant.fake import FakeQuantAct, QConv2d
+from npuloop.quant.fake import QConv2d
 
 
 def test_fold_bn_exact(small_resnet, small_mobilenet, batch):
