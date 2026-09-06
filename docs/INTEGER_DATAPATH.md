@@ -1,0 +1,94 @@
+# 정수 데이터패스 — npuloop 가상 NPU가 실제로 계산하는 것
+
+이 문서는 `npuloop/intengine/`이 구현한 INT8 추론의 **정확한** 산술을 적습니다. "fake-quant가 흉내 내는 것"이 아니라
+NPU(또는 TFLite 커널)가 실제로 하는 정수 연산입니다. 모든 수식은 `tests/test_intengine.py`가 참조 구현과 비교해 검증합니다.
+
+## 1. 텐서 표현
+
+| 텐서 | 형식 | 스케일 | zero-point |
+|---|---|---|---|
+| 활성값 `x` | uint8 (또는 대칭 int8) | per-tensor `s_x` | `z_x ∈ [0,255]` |
+| 가중치 `w` | int8 `[-127,127]` | per-output-channel `s_w[c]` | 0 |
+| 바이어스 `b` | int32 | `s_x · s_w[c]` | 0 |
+| 누산기 | int32 | `s_x · s_w[c]` | — |
+
+실수값 복원: `x_real = (q_x − z_x)·s_x`, `w_real = q_w·s_w[c]`.
+
+## 2. conv / linear
+
+```
+acc[c] = Σ (q_x − z_x) · q_w[c]            # int32 (float64/float32 청크로 계산해도 정확히 같은 정수)
+acc[c] += b_int[c],  b_int[c] = round(b[c] / (s_x·s_w[c]))
+q_y[c] = clamp( MBQM(acc[c], M0[c], shift[c]) + z_y , qmin, qmax )
+```
+
+`M[c] = s_x·s_w[c]/s_y` 는 실수이므로 하드웨어는 `M = M0 · 2^shift` (M0는 Q31 고정소수점, `[2^30, 2^31)`)로 근사합니다.
+`clamp`가 곧 ReLU/ReLU6입니다: ReLU 뒤에 오는 텐서는 관측 범위가 `[0, max]`라 `z_y = 0`이고, `qmin=0`으로 자르는 것이 ReLU와 동일합니다.
+그래서 **ReLU는 NPU에서 공짜**이고, SiLU/GELU는 그렇지 않습니다(§5).
+
+### MBQM — MultiplyByQuantizedMultiplier (gemmlowp / TFLite)
+
+```
+SRDHM(a, b)  = sat( (a·b + nudge) / 2^31 ),  nudge = 2^30 (a·b ≥ 0) 또는 1−2^30   # 반올림 ① (half away from zero)
+RDBPOT(x, e) = (x >> e) + [ (x & (2^e−1)) > (2^(e−1) − 1 + [x<0]) ]                 # 반올림 ② (half away from zero)
+MBQM(x, M0, shift) = RDBPOT( SRDHM(x << max(shift,0), M0), max(−shift,0) )
+```
+
+**이중 반올림.** 두 번 반올림하기 때문에 정확히 한 번 반올림한 값과 1 LSB 차이가 날 수 있습니다.
+`shift = −1`(M ≈ 0.3~0.5)이면 값의 약 25%가 어긋나고, `shift = −10`이면 0.05% 정도입니다.
+TFLite는 이 문제로 `TFLITE_SINGLE_ROUNDING` 빌드 옵션을 추가했습니다:
+
+```
+MBQM_single(x, M0, shift) = sat32( RDBPOT64( x·M0 , 31 − shift ) )    # 64비트 곱 한 번, 반올림 한 번
+```
+
+두 방식 모두 `RequantConfig(rounding="tflite" | "single")`로 선택할 수 있고 NumPy/C++ 두 엔진이 비트 동일합니다.
+E7 실험이 이 차이가 정확도에 얼마나 반영되는지 잽니다.
+
+### 워크드 예제
+
+`s_x = 0.0161, s_w = 0.00271, s_y = 0.0322` → `M = 0.0161·0.00271/0.0322 = 0.001355`
+`frexp(0.001355) = 0.6938 · 2^−9` → `M0 = round(0.6938·2^31) = 1,489,900,... , shift = −9`
+`acc = 123,456` → `SRDHM(123456, M0) = round(123456·M0/2^31) = 85,652`, `RDBPOT(85652, 9) = round(85652/512) = 167`
+확인: `123456 · 0.001355 = 167.28 → 167` ✔
+
+## 3. 잔차 add (TFLite 의미론)
+
+두 입력의 스케일이 다르므로 공통 도메인으로 먼저 옮깁니다. 정밀도를 잃지 않으려고 20비트 왼쪽 시프트를 씁니다.
+
+```
+twice_max = 2·max(s_1, s_2)
+m_1 = s_1/twice_max,  m_2 = s_2/twice_max,  m_o = twice_max / (2^20 · s_y)
+y = MBQM( MBQM((q_1−z_1)<<20, m_1) + MBQM((q_2−z_2)<<20, m_2), m_o ) + z_y  → clamp
+```
+
+E2의 레이어별 일치 그래프에서 add 노드의 **국소** 불일치가 0인 이유가 이것입니다: 20비트 여유가 있어 fake-quant의 float 덧셈과 같은 격자값으로 떨어집니다.
+
+## 4. global average pool
+
+```
+q_y = clamp( round_half_away( Σ q_x / (H·W) ) )     # 입력과 같은 s, z 를 유지
+```
+
+fake-quant는 평균을 float로 낸 뒤 `torch.round`(half-to-even)로 격자에 올리므로, 합이 정확히 `.5`에 떨어지는 경우(H·W=64이면 드물지 않음) 1 LSB가 어긋납니다. E2에서 pool의 국소 불일치가 0.7% 정도로 나오는 원인입니다.
+
+## 5. 비-ReLU 활성함수 = 256-entry LUT
+
+```
+LUT[q] = clamp( round_half_away( f((q − z_in)·s_in) / s_out ) + z_out )
+```
+
+즉 SiLU/GELU/HardSwish 앞의 텐서는 **int8로 한 번 더 양자화**되어야 합니다(pre-activation 양자화 지점). ReLU 모델보다 양자화 지점이 레이어당 하나 더 많고, 그래서 `quant.prepare`는 비-ReLU 활성함수 앞에 `FakeQuantAct`를 하나 더 넣습니다. 이것이 "ReLU 모델은 INT8에 더 강하다"는 통념의 정확한 기계적 이유입니다.
+
+## 6. 엔진이 일부러 틀리게 계산하는 방법 (E7 ablation)
+
+`RequantConfig`:
+
+| 필드 | 의미 | 값 |
+|---|---|---|
+| `rounding` | 2단계 반올림 방식 | `tflite`(이중) · `single` · `half_even` · `truncate` · `floor` |
+| `mult_bits` | M0의 유효 비트 | 31 (기준) · 15 · 7 · 3 |
+| `acc_bits` | 누산기 폭 (포화) | 32 · 24 · 20 · 16 |
+| `bias_bits` | 바이어스 폭 (포화) | 32 · 16 · 12 |
+
+같은 양자화 파라미터로 이 값만 바꾸면 "싸구려 정수 구현"이 정확도에 얼마를 물리는지 이미지 단위 짝지은 비교(top-1 일치율)로 잴 수 있습니다.

@@ -1,0 +1,366 @@
+<title>npuloop</title>
+<meta name="description" content="가상 NPU 비용 모델과 비트 정확 정수 엔진으로 검증한 양자화·프루닝 연구 결과">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+:root{
+  --bg:#F2F4F7; --surface:#FFFFFF; --surface-2:#E9EDF2; --ink:#16212C; --muted:#5C6B7A; --line:#D5DCE4;
+  --accent:#0E8F9C; --accent-ink:#FFFFFF; --accent-soft:#D7EFF1;
+  --good:#2F8F5B; --warn:#C9931A; --bad:#C74A3E; --info:#5C6B7A;
+  --c1:#0E8F9C; --c2:#D98C1F; --c3:#7D5BC4; --c4:#D9573F; --c5:#5C7A8F; --c6:#2F8F5B;
+  --grid:#E1E6EC; --shadow:0 1px 2px rgba(22,33,44,.06),0 8px 24px -12px rgba(22,33,44,.18);
+  --sans:'IBM Plex Sans','Noto Sans KR',system-ui,sans-serif; --cond:'IBM Plex Sans Condensed','IBM Plex Sans','Noto Sans KR',sans-serif; --mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E1319; --surface:#151C25; --surface-2:#1C2531; --ink:#E4EAF0; --muted:#95A3B3; --line:#2A3542;
+  --accent:#3CC2CF; --accent-ink:#06282C; --accent-soft:#12343A;
+  --good:#4CBB7C; --warn:#E0AE3A; --bad:#E2675C; --info:#95A3B3; --grid:#243040; --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+}}
+:root[data-theme="dark"]{
+  --bg:#0E1319; --surface:#151C25; --surface-2:#1C2531; --ink:#E4EAF0; --muted:#95A3B3; --line:#2A3542;
+  --accent:#3CC2CF; --accent-ink:#06282C; --accent-soft:#12343A;
+  --good:#4CBB7C; --warn:#E0AE3A; --bad:#E2675C; --info:#95A3B3; --grid:#243040; --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.6;margin:0;-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+.wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+header.top{border-bottom:1px solid var(--line);background:var(--surface);position:sticky;top:0;z-index:5}
+header.top .wrap{display:flex;align-items:center;gap:20px;height:56px}
+.brand{font-family:var(--mono);font-weight:500;font-size:16px;letter-spacing:.02em}
+.brand b{color:var(--accent)}
+nav{display:flex;gap:4px;overflow-x:auto;flex:1;scrollbar-width:none}
+nav a{font-family:var(--cond);font-weight:500;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);padding:6px 10px;border-radius:6px;white-space:nowrap}
+nav a:hover{background:var(--surface-2);text-decoration:none;color:var(--ink)}
+.hero{padding:44px 0 28px}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+h1{font-family:var(--cond);font-weight:600;font-size:clamp(28px,4vw,42px);line-height:1.15;margin:0 0 14px;text-wrap:balance;max-width:20ch}
+.lede{font-size:17px;max-width:64ch;color:var(--ink);margin:0 0 18px}
+.lede b{font-weight:600}
+.meta{display:flex;flex-wrap:wrap;gap:8px 18px;font-family:var(--mono);font-size:12px;color:var(--muted)}
+.meta span b{color:var(--ink);font-weight:500}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:26px 0 8px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;box-shadow:var(--shadow)}
+.kpi .v{font-family:var(--mono);font-size:26px;font-weight:500;line-height:1.1;color:var(--ink);font-variant-numeric:tabular-nums}
+.kpi .v small{font-size:14px;color:var(--muted)}
+.kpi .l{font-size:13px;color:var(--muted);margin-top:6px}
+.kpi .src{font-family:var(--mono);font-size:10.5px;color:var(--accent);margin-top:6px;letter-spacing:.04em}
+section{padding:36px 0 8px;border-top:1px solid var(--line)}
+section h2{font-family:var(--cond);font-weight:600;font-size:26px;margin:0 0 6px;text-wrap:balance}
+section h2 .num{font-family:var(--mono);font-size:13px;color:var(--accent);margin-right:10px;letter-spacing:.06em;vertical-align:middle}
+.sub{color:var(--muted);max-width:70ch;margin:0 0 18px}
+.sub b{color:var(--ink);font-weight:500}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:18px 18px 14px;margin:0 0 18px}
+.panel h3{font-family:var(--cond);font-size:17px;font-weight:600;margin:0 0 10px}
+.row{display:flex;flex-wrap:wrap;gap:14px 22px;align-items:flex-end}
+.ctrl{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--muted);font-family:var(--mono)}
+.ctrl select,.ctrl input[type=number]{font:inherit;font-family:var(--mono);font-size:13px;color:var(--ink);background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:6px 8px;min-width:120px}
+.ctrl input[type=range]{width:160px;accent-color:var(--accent)}
+.ctrl .val{color:var(--ink);font-weight:500}
+:is(select,input,button):focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.stats{display:flex;flex-wrap:wrap;gap:8px 20px;font-family:var(--mono);font-size:13px;margin:12px 0 6px;color:var(--muted);font-variant-numeric:tabular-nums}
+.stats b{color:var(--ink);font-weight:500}
+table{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums}
+th,td{padding:6px 10px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-family:var(--cond);font-weight:600;color:var(--muted);letter-spacing:.03em;text-transform:uppercase;font-size:12px}
+td:first-child,th:first-child{text-align:left;font-family:var(--mono);font-size:12.5px}
+.tblwrap{overflow-x:auto}
+.pill{display:inline-block;font-family:var(--mono);font-size:11px;padding:1px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+.pill.high{border-color:var(--bad);color:var(--bad)}.pill.medium{border-color:var(--warn);color:var(--warn)}.pill.low{border-color:var(--accent);color:var(--accent)}.pill.info{color:var(--muted)}
+.pill.good{border-color:var(--good);color:var(--good)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-family:var(--mono);font-size:12px;color:var(--muted);margin:8px 0 2px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+svg text{font-family:var(--mono);font-size:11px;fill:var(--muted)}
+svg .axis{stroke:var(--line)}svg .grid{stroke:var(--grid)}
+.chart{width:100%;height:auto;display:block}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media (max-width:820px){.two{grid-template-columns:1fr}}
+.note{font-size:13px;color:var(--muted);border-left:3px solid var(--accent);padding:4px 12px;margin:10px 0}
+.diagram{overflow-x:auto}
+.finding{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;align-items:start;font-size:13.5px;margin:6px 0}
+.finding .layer{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.score{display:flex;gap:18px;flex-wrap:wrap;margin:6px 0 12px}
+.score .s{font-family:var(--mono);font-size:13px}
+.score .s b{font-size:22px;font-weight:500;color:var(--ink)}
+footer{padding:30px 0 50px;color:var(--muted);font-size:13px;border-top:1px solid var(--line);margin-top:30px}
+.empty{color:var(--muted);font-style:italic;font-size:13px}
+.tag{font-family:var(--mono);font-size:11px;color:var(--accent);background:var(--accent-soft);padding:1px 6px;border-radius:4px}
+@media (prefers-reduced-motion:no-preference){.kpi,.panel{transition:border-color .15s}}
+</style>
+
+<header class="top"><div class="wrap">
+  <div class="brand">npu<b>loop</b></div>
+  <nav>
+    <a href="#loop">Loop</a><a href="#cost">Cost model</a><a href="#lint">Lint</a><a href="#ptq">PTQ &amp; bit-exact</a>
+    <a href="#requant">Requant</a><a href="#surgery">Surgery</a><a href="#calib">Calibration</a><a href="#prune">Pruning</a><a href="#lintvsdrop">Lint vs drop</a><a href="#method">Method</a>
+  </nav>
+</div></header>
+
+<main class="wrap">
+<div class="hero">
+  <p class="eyebrow">NPU-aware model compression · closed loop · CIFAR-10</p>
+  <h1>FLOPs와 fake-quant 대신, 가상 NPU와 정수 엔진에 대고 결정한다</h1>
+  <p class="lede">INT8 NPU에 올릴 모델의 양자화·프루닝·활성함수 선택을 <b>해석적 systolic-array 비용 모델</b>과 <b>비트 정확(bit-exact) 정수 추론 엔진</b>으로 검증한 실험 결과입니다. 아래 숫자는 모두 이 저장소의 실험 스크립트가 만든 JSON에서 그대로 읽어옵니다.</p>
+  <div class="meta" id="meta"></div>
+  <div class="kpis" id="kpis"></div>
+</div>
+
+<section id="loop">
+  <h2><span class="num">00</span>폐루프 한 장 요약</h2>
+  <p class="sub">모델 → fx 그래프(BN folding) → 비용 모델 &amp; lint → 압축 결정(프루닝 · 활성함수 교체 · PTQ/QAT/CLE) → 정수 그래프 export → NumPy/C++ 비트 정확 실행 → fake-quant와 비교. 화살표가 다시 위로 올라가는 것이 이 프로젝트의 요점입니다.</p>
+  <div class="panel diagram" id="diagram"></div>
+</section>
+
+<section id="cost">
+  <h2><span class="num">01</span>가상 NPU 비용 모델 탐색기</h2>
+  <p class="sub">weight-stationary systolic array 타일 모델입니다. 배열 크기·코어 수·DRAM 대역폭을 바꾸면 레이어별 사이클과 배열 활용률이 어떻게 변하는지 바로 계산됩니다(이 페이지 안의 JavaScript로 포팅한 같은 모델). <b>채널 수가 배열 폭의 배수가 아니면 활용률이 계단식으로 떨어지는 것</b>을 확인해 보세요.</p>
+  <div class="panel">
+    <div class="row">
+      <label class="ctrl">model<select id="cm-model"></select></label>
+      <label class="ctrl">preset<select id="cm-preset"></select></label>
+      <label class="ctrl">array rows × cols <span class="val" id="cm-arr-v"></span><input type="range" id="cm-arr" min="3" max="8" step="1" value="6"></label>
+      <label class="ctrl">cores <span class="val" id="cm-cores-v"></span><input type="range" id="cm-cores" min="1" max="8" step="1" value="2"></label>
+      <label class="ctrl">DRAM GB/s <span class="val" id="cm-dram-v"></span><input type="range" id="cm-dram" min="1" max="80" step="1" value="12.8"></label>
+      <label class="ctrl">depthwise engine<select id="cm-dw"><option value="1">yes</option><option value="0">no (on array)</option></select></label>
+      <label class="ctrl">non-ReLU activations<select id="cm-lut"><option value="lut">int8 LUT</option><option value="fallback">host fallback</option></select></label>
+    </div>
+    <div class="stats" id="cm-stats"></div>
+    <div id="cm-chart"></div>
+    <div class="legend"><span><i style="background:var(--c1)"></i>compute-bound</span><span><i style="background:var(--c2)"></i>memory-bound</span><span><i style="background:var(--c3)"></i>vector (add/pool/LUT)</span><span><i style="background:var(--c4)"></i>host fallback</span><span><i style="background:var(--c5)"></i>depthwise engine</span></div>
+    <div class="tblwrap" id="cm-table"></div>
+  </div>
+</section>
+
+<section id="lint">
+  <h2><span class="num">02</span>NPU 준비도 lint</h2>
+  <p class="sub">양자화를 하기 <b>전에</b> 가중치와 shape만 보고 예측한 문제들입니다. 효율성(배열 정렬·depthwise·활성함수 실행 방식)과 양자화 강건성(BN folding 후 채널별 가중치 범위 편차·outlier·비대칭 활성값·residual 스케일 불일치) 두 점수로 요약합니다.</p>
+  <div class="panel">
+    <div class="row"><label class="ctrl">model<select id="li-model"></select></label><label class="ctrl">preset<select id="li-preset"></select></label></div>
+    <div class="score" id="li-score"></div>
+    <div id="li-findings"></div>
+  </div>
+</section>
+
+<section id="ptq">
+  <h2><span class="num">03</span>PTQ 스킴 그리드와 fake-quant ↔ 정수 엔진 일치도</h2>
+  <p class="sub">같은 캘리브레이션 세트로 7가지 스킴을 적용하고, PyTorch fake-quant 정확도와 <b>비트 정확 정수 엔진</b> 정확도를 따로 잰 결과입니다. 레이어별 그래프는 정수 엔진 코드가 fake-quant 코드와 다른 비율을 두 가지 관점(전파 vs 국소 teacher-forced)으로 보여줍니다.</p>
+  <div class="panel"><div class="tblwrap" id="ptq-table"></div></div>
+  <div class="panel">
+    <div class="row"><label class="ctrl">model<select id="ag-model"></select></label><label class="ctrl">scheme<select id="ag-scheme"></select></label></div>
+    <div class="stats" id="ag-stats"></div>
+    <div id="ag-chart"></div>
+    <div class="legend"><span><i style="background:var(--c1)"></i>propagated mismatch % (end-to-end integer run)</span><span><i style="background:var(--c2)"></i>local mismatch % (each op fed fake-quant inputs)</span></div>
+  </div>
+  <div class="panel">
+    <h3>레이어별 민감도 (해당 텐서만 양자화했을 때 loss 증가)</h3>
+    <div class="row"><label class="ctrl">model<select id="se-model"></select></label><label class="ctrl">scheme<select id="se-scheme"></select></label></div>
+    <div id="se-chart"></div>
+  </div>
+</section>
+
+<section id="requant">
+  <h2><span class="num">04</span>정수 구현 선택의 정확도 비용 (requant ablation)</h2>
+  <p class="sub">같은 양자화 파라미터로 정수 엔진의 구현 세부만 바꿨습니다: 반올림(gemmlowp 이중 반올림 vs TFLite single rounding vs truncate), 곱셈기 비트 수, 바이어스/누산기 폭. 기준 구현과의 top-1 일치율은 이미지 단위 짝지은 비교라 잡음이 없습니다.</p>
+  <div class="panel"><div class="row"><label class="ctrl">model<select id="rq-model"></select></label></div><div id="rq-chart"></div><div class="tblwrap" id="rq-table"></div></div>
+</section>
+
+<section id="surgery">
+  <h2><span class="num">05</span>수술: CLE · 바이어스 보정 · 활성함수 교체 · QAT</h2>
+  <p class="sub">(a) per-tensor 가중치만 지원하는 NPU를 가정한 MobileNetV2 복구, (b) SiLU 모델을 ReLU/HardSwish로 바꾸고 짧게 재학습(healing)했을 때의 정확도와 NPU 사이클, (c) 모든 베이스라인에 3 epoch QAT.</p>
+  <div class="two">
+    <div class="panel"><h3>(a) MobileNetV2 · per-tensor 가중치</h3><div id="sg-a"></div></div>
+    <div class="panel"><h3>(b) ResNet-20-SiLU · 활성함수 교체</h3><div id="sg-b"></div></div>
+  </div>
+  <div class="panel"><h3>(c) PTQ → QAT</h3><div class="tblwrap" id="sg-c"></div></div>
+</section>
+
+<section id="calib">
+  <h2><span class="num">06</span>캘리브레이션 세트: 몇 장이면 되는가</h2>
+  <p class="sub">이미지 수(8 → 2048), 무작위 vs 클래스 균형, 시드 3개. 선은 시드 평균, 띠는 최소–최대입니다.</p>
+  <div class="panel"><div class="row"><label class="ctrl">model<select id="cb-model"></select></label></div><div id="cb-chart"></div>
+  <div class="legend"><span><i style="background:var(--c1)"></i>per-channel W · random</span><span><i style="background:var(--c3)"></i>per-channel W · class-balanced</span><span><i style="background:var(--c2)"></i>per-tensor W · random</span><span><i style="background:var(--c4)"></i>per-tensor W · class-balanced</span></div></div>
+</section>
+
+<section id="prune">
+  <h2><span class="num">07</span>PE-array 정렬 프루닝: MACs와 사이클은 다르게 움직인다</h2>
+  <p class="sub">uniform(FLOPs 기준) · aligned(16/32 배수) · cost-greedy(비용 모델을 루프 안에서 호출) 전략으로 프루닝 → 짧은 fine-tune → PTQ. 왼쪽은 MACs 기준, 오른쪽은 선택한 NPU의 사이클 기준 Pareto입니다. 같은 점들이 두 축에서 얼마나 다르게 보이는지가 요점입니다.</p>
+  <div class="panel"><div class="row"><label class="ctrl">model<select id="pr-model"></select></label><label class="ctrl">NPU<select id="pr-spec"></select></label><label class="ctrl">accuracy<select id="pr-acc"><option value="int8_acc">INT8 (PTQ)</option><option value="ft_acc">FP32 after fine-tune</option></select></label></div>
+  <div class="two"><div id="pr-macs"></div><div id="pr-cycles"></div></div>
+  <div class="legend"><span><i style="background:var(--c5)"></i>uniform</span><span><i style="background:var(--c2)"></i>aligned</span><span><i style="background:var(--c1)"></i>cost-greedy</span><span><i style="background:var(--ink)"></i>unpruned</span></div>
+  <div class="tblwrap" id="pr-table"></div></div>
+</section>
+
+<section id="lintvsdrop">
+  <h2><span class="num">08</span>정적 lint는 실제 손실을 예측하는가</h2>
+  <p class="sub">레이어 단위: BN folding 후 채널별 가중치 범위 비율(데이터 없이 계산) vs 그 레이어의 가중치만 per-tensor로 양자화했을 때의 loss 증가. Spearman 상관으로 요약합니다.</p>
+  <div class="panel"><div class="stats" id="lv-stats"></div><div id="lv-chart"></div></div>
+</section>
+
+<section id="method">
+  <h2><span class="num">09</span>방법과 출처 라벨</h2>
+  <div class="panel">
+    <div class="finding"><span class="tag">measured</span><span>CIFAR-10 test 10,000장에서 직접 잰 정확도·일치율. 정수 엔진 정확도는 스킴에 따라 10,000장(주 스킴) 또는 2,000장(보조 스킴)에서 측정했으며 표에 이미지 수를 함께 적습니다.</span></div>
+    <div class="finding"><span class="tag">simulated</span><span>사이클·활용률·DRAM 트래픽은 해석적 비용 모델의 값입니다. 프리셋은 공개된 헤드라인 수치(TOPS, 대역폭)에 맞춘 가정이지 특정 벤더의 실제 마이크로아키텍처가 아닙니다.</span></div>
+    <div class="finding"><span class="tag">bit-exact</span><span>NumPy 엔진과 C++ 커널은 모든 중간 텐서가 비트 단위로 같음을 테스트로 강제합니다. requant는 gemmlowp/TFLite 참조 구현과 동일한 고정소수점 연산입니다.</span></div>
+    <div class="finding"><span class="tag">seed</span><span>학습은 seed 0 한 번입니다. 캘리브레이션 실험만 시드 3개를 씁니다. 0.2%p 이하의 차이는 잡음으로 읽어야 합니다(10k 이미지 표준오차 ≈ 0.3%p).</span></div>
+  </div>
+</section>
+</main>
+<footer><div class="wrap">npuloop · 저장소의 <code>experiments/</code>가 만든 <code>results/*.json</code>을 <code>demo/build.py</code>가 이 페이지에 인라인했습니다. <span id="built"></span></div></footer>
+
+<script id="npuloop-data" type="application/json">{"built":"2026-09-06 23:30 UTC","presets":{"tiny-1tops":{"name":"tiny-1tops","pe_rows":32,"pe_cols":32,"cores":1,"freq_mhz":500,"sram_kb":512,"dram_gbps":3.2,"vector_lanes":64,"dw_lanes":64,"lut_acts":["gelu","hsigmoid","hswish","lrelu","sigmoid","silu","tanh"],"fused_acts":["relu","relu6"],"unsupported_ops":[],"fallback_cycles_per_elem":8.0,"fill_drain":true,"peak_tops":1.02},"edge-10tops":{"name":"edge-10tops","pe_rows":64,"pe_cols":64,"cores":2,"freq_mhz":600,"sram_kb":2048,"dram_gbps":12.8,"vector_lanes":256,"dw_lanes":256,"lut_acts":["gelu","hsigmoid","hswish","lrelu","sigmoid","silu","tanh"],"fused_acts":["relu","relu6"],"unsupported_ops":[],"fallback_cycles_per_elem":8.0,"fill_drain":true,"peak_tops":9.83},"pcie-80tops":{"name":"pcie-80tops","pe_rows":64,"pe_cols":64,"cores":8,"freq_mhz":1200,"sram_kb":8192,"dram_gbps":66.7,"vector_lanes":1024,"dw_lanes":1024,"lut_acts":["gelu","hsigmoid","hswish","lrelu","sigmoid","silu","tanh"],"fused_acts":["relu","relu6"],"unsupported_ops":[],"fallback_cycles_per_elem":8.0,"fill_drain":true,"peak_tops":78.64},"edge-10tops-strict":{"name":"edge-10tops-strict","pe_rows":64,"pe_cols":64,"cores":2,"freq_mhz":600,"sram_kb":2048,"dram_gbps":12.8,"vector_lanes":256,"dw_lanes":0,"lut_acts":[],"fused_acts":["relu","relu6"],"unsupported_ops":["gelu","hsigmoid","hswish","lrelu","sigmoid","silu","tanh"],"fallback_cycles_per_elem":8.0,"fill_drain":true,"peak_tops":9.83}},"models":{"resnet20_relu":{"config":{"arch":"resnet","depth":20,"width":16,"act":"relu","num_classes":10,"widths":[16,32,64]},"layers":[{"name":"x","op":"input","inputs":[],"elements":3072,"in_bytes":[]},{"name":"stem_conv","op":"conv","inputs":["x"],"elements":16384,"in_bytes":[3072],"m":1024,"k":27,"n":16,"macs":442368,"groups":1,"depthwise":false,"kh":3,"kw":3,"weight_bytes":496},{"name":"stem_act","op":"act","inputs":["stem_conv"],"elements":16384,"in_bytes":[16384],"kind":"relu"},{"name":"blocks_0_conv1","op":"conv","inputs":["stem_act"],"elements":16384,"in_bytes":[16384],"m":1024,"k":144,"n":16,"macs":2359296,"groups":1,"depthwise":false,"kh":3,"kw":3,"weight_bytes":2368},{"name":"blocks_0_act1","op":"act","inputs":["blocks_0_conv1"],"elements":16384,"in_bytes":[16384],"kind":"relu"},{"name":"blocks_0_conv2","op":"conv","inputs":["blocks_0_act1"],"elements":16384,"in_bytes":[16384],"m":1024,"k":144,"n":16,"macs":2359296,"groups":1,"depthwise":false,"kh":3,"kw":3,"weight_bytes":2368},{"name":"add","op":"add","inputs":["blocks_0_conv2","stem_act"],"elements":16384,"in_bytes":[16384,16384]},{"name":"blocks_0_act2","op":"act","inputs":["add"],"elements":16384,"in_bytes":[16384],"kind":"relu"},{"name":"blocks_1_conv1","op":"conv","inputs":["blocks_0_act2"],"elements":16384,"in_bytes":[16384],"m":1024,"k":144,"n":16,"macs":2359296,"groups":1,"depthwise":false,"kh":3,"kw":3,"weight_bytes":2368},{"name":"blocks_1_act1","op":"act","inputs":["blocks_1_conv1"],"elements":16384,"in_bytes":[16384],"kind":"relu"},{"name":"blocks_1_conv2","op":"conv","inputs":["blocks_1_act1"],"elements":16384,"in_bytes":[16384],"m":1024,"k":144,"n":16,"macs":2359296,"groups":1,"depthwise":false,"kh":3,"kw":3,"weight_bytes":2368},{"name":"add_1","op":"add","inputs":["blocks_1_conv2","blocks_0_act2"],"elements":16384,"in_bytes":[16384,16384]},{"name":"blocks_1_act2","op":"act","inputs":["add_1"],"elements":16384,"in_bytes":[16384],"kind":"relu"},{"name":"blocks_2_conv1","op":"conv","inputs":["blocks_1_act2"],"elements":16384,"in_bytes":[16384],"m":1024,"k":144,"n":16,"macs":2359296,"groups":1,"depthwise":false,"kh":3,"kw":3,"weight_bytes":2368},{"name":"blocks_2_act1","op":"act","inputs":["blocks_2_conv1"],"elements":16384,"in_bytes":[16384],"kind":"relu"},{"name":"blocks_2_conv2","op":"conv","inputs":["blocks_2_act1"],"elements":16384,"in_bytes":[16384],"m":1024,"k":144,"n":16,"macs":2359296,"groups":1,"depthwise":false,"kh":3,"kw":3,"weight_bytes":2368},{"name":"add_2","op":"add","inputs":["blocks_2_conv2","blocks_1_act2"],"elements":16384,"in_bytes":[16384,16384]},{"name":"blocks_2_act2","op":"act","inputs":["add_2"],"elements":16384,"in_bytes":[16384],"kind":"relu"},{"name":"blocks_3_conv1","op":"conv","inputs":["blocks_2_act2"],"elements":8192,"in_bytes":[16384],"m":256,"k":144,"n":32,"macs":1179648,"groups":1,"depthwise":false,"kh":3,"kw":3,"weight_bytes":4736},{"name":"blocks_3_act1","op":"act","inputs":["blocks_3_conv1"],"elements":8192,"in_bytes":[8192],"kind":"relu"},{"name":"blocks_3_conv2","op":"conv","inputs":["blocks_3_act1"],"elements":8192,"in_bytes":[8192],"m":256,"k":288,"n":32,"macs":2359296,"groups":1,"depthwise":false,"kh":3,"kw":3,"weight_bytes":9344},{"name":"blocks_3_sc_conv","op":"conv","inputs":["blocks_2_act2"],"elements":8192,"in_bytes":[16384],"m":256,"k":16,"n":32,"macs":131072,"groups":1,"depthwise":false,"kh":1,"kw":1,"weight_bytes":640},{"name":"add_3","op":"add","inputs":["blocks_3_conv2","blocks_3_sc_conv"],"elements":8192,"in_bytes":[8192,8192]},{"name":"blocks_3_act2","op":"act","inputs":["add_3"],"elements":8192,"in_bytes":[8192],"kind":"relu"},{"name":"blocks_4_conv1","op":"conv","inputs":["blocks_3_act2"],"elements":8192,"in_bytes":[8192],"m":256,"k":288,"n":32,"macs":2359296,"groups":1,"depthwise":false,"kh":3,"kw":3,"weight_bytes":9344},{"name":"blocks_4_act1","op":"act","inputs":["blocks_4_conv1"],"elements":8192,"in_bytes":[8192],"kind":"relu"},{"name":"blocks_4_conv2","op":"conv","inputs":["blocks_4_act1"],"elements":8192,"in_bytes":[8192],"m":256,"k":288,"n":32,"macs":2359296,"groups":1,"depthwise":false,"kh":3,"kw":3,"weight_bytes":9344},{"name":"add_4","op":"add","inputs":["blocks_4_conv2","blocks_3_act2"],"elements":8192,"in_bytes":[8192,8192]},{"name":"blocks_4_act2","op":"act","inputs":["add_4"],"elements":8192,"in_bytes":[8192],"kind":"relu"},{"name":"blocks_5_conv1","op":"conv","inputs":["blocks_4_act2"],"elements":8192,"in_bytes":[8192],"m":256,"k":288,"n":32,"macs":2359296,"groups":1,"depthwise":false,"kh":3,"kw":3,"weight_bytes":9344},{"name":"blocks_5_act1","op":"act","inputs":["blocks_5_conv1"],"elements":8192,"in_bytes":[8192],"kind":"relu"},{"name":"blocks_5_conv2","op":"conv","inputs":["blocks_5_act1"],"elements":8192,"in_bytes":[8192],"m":256,"k":288,"n":32,"macs":2359296,"groups":1,"depthwise":false,"kh":3,"kw":3,"weight_bytes":9344},{"name":"add_5","op":"add","inputs":["blocks_5_conv2","blocks_4_act2"],"elements":8192,"in_bytes":[8192,8192]},{"name":"blocks_5_act2","op":"act","inputs":["add_5"],"elements":8192,"in_bytes":[8192],"kind":"relu"},{"name":"blocks_6_conv1","op":"conv","inputs":["blocks_5_act2"],"elements":4096,"in_bytes":[8192],"m":64,"k":288,"n":64,"macs":1179648,"groups":1,"depthwise":false,"kh":3,"kw":3,"weight_bytes":18688},{"name":"blocks_6_act1","op":"act","inputs":["blocks_6_conv1"],"elements":4096,"in_bytes":[4096],"kind":"relu"},{"name":"blocks_6_conv2","op":"conv","inputs":["blocks_6_act1"],"elements":4096,"in_bytes":[4096],"m":64,"k":576,"n":64,"macs":2359296,"groups":1,"depthwise":false,"kh":3,"kw":3,"weight_bytes":37120},{"name":"blocks_6_sc_conv","op":"conv","inputs":["blocks_5_act2"],"elements":4096,"in_bytes":[8192],"m":64,"k":32,"n":64,"macs":131072,"groups":1,"depthwise":false,"kh":1,"kw":1,"weight_bytes":2304},{"name":"add_6","op":"add","inputs":["blocks_6_conv2","blocks_6_sc_conv"],"elements":4096,"in_bytes":[4096,4096]},{"name":"blocks_6_act2","op":"act","inputs":["add_6"],"elements":4096,"in_bytes":[4096],"kind":"relu"},{"name":"blocks_7_conv1","op":"conv","inputs":["blocks_6_act2"],"elements":4096,"in_bytes":[4096],"m":64,"k":576,"n":64,"macs":2359296,"groups":1,"depthwise":false,"kh":3,"kw":3,"weight_bytes":37120},{"name":"blocks_7_act1","op":"act","inputs":["blocks_7_conv1"],"elements":4096,"in_bytes":[4096],"kind":"relu"},{"name":"blocks_7_conv2","op":"conv","inputs":["blocks_7_act1"],"elements":4096,"in_bytes":[4096],"m":64,"k":576,"n":64,"macs":2359296,"groups":1,"depthwise":false,"kh":3,"kw":3,"weight_bytes":37120},{"name":"add_7","op":"add","inputs":["blocks_7_conv2","blocks_6_act2"],"elements":4096,"in_bytes":[4096,4096]},{"name":"blocks_7_act2","op":"act","inputs":["add_7"],"elements":4096,"in_bytes":[4096],"kind":"relu"},{"name":"blocks_8_conv1","op":"conv","inputs":["blocks_7_act2"],"elements":4096,"in_bytes":[4096],"m":64,"k":576,"n":64,"macs":2359296,"groups":1,"depthwise":false,"kh":3,"kw":3,"weight_bytes":37120},{"name":"blocks_8_act1","op":"act","inputs":["blocks_8_conv1"],"elements":4096,"in_bytes":[4096],"kind":"relu"},{"name":"blocks_8_conv2","op":"conv","inputs":["blocks_8_act1"],"elements":4096,"in_bytes":[4096],"m":64,"k":576,"n":64,"macs":2359296,"groups":1,"depthwise":false,"kh":3,"kw":3,"weight_bytes":37120},{"name":"add_8","op":"add","inputs":["blocks_8_conv2","blocks_7_act2"],"elements":4096,"in_bytes":[4096,4096]},{"name":"blocks_8_act2","op":"act","inputs":["add_8"],"elements":4096,"in_bytes":[4096],"kind":"relu"},{"name":"pool","op":"pool","inputs":["blocks_8_act2"],"elements":64,"in_bytes":[4096]},{"name":"flatten","op":"flatten","inputs":["pool"],"elements":64,"in_bytes":[64]},{"name":"fc","op":"linear","inputs":["flatten"],"elements":10,"in_bytes":[64],"m":1,"k":64,"n":10,"macs":640,"groups":1,"depthwise":false,"kh":1,"kw":1,"weight_bytes":680},{"name":"output","op":"output","inputs":["fc"],"elements":10,"in_bytes":[10]}],"total_macs":40813184,"total_params":271690}},"results":{"e3_lint_vs_drop":{"meta":{"source":["e1_baselines","e2_ptq_grid"],"summary":{}},"records":[]}}}</script>
+<script>
+(function(){
+const D = JSON.parse(document.getElementById('npuloop-data').textContent);
+const R = D.results || {}; const M = D.models || {}; const P = D.presets || {};
+const fmt = {pct:(v,d=2)=>(v*100).toFixed(d)+'%', pp:(v,d=2)=>((v*100).toFixed(d)+'%p'), n:(v)=>Math.round(v).toLocaleString(), f:(v,d=1)=>Number(v).toFixed(d)};
+const modelLabel = {resnet20_relu:'ResNet-20 · ReLU', resnet20_silu:'ResNet-20 · SiLU', resnet20_hswish:'ResNet-20 · HardSwish', resnet20_gelu:'ResNet-20 · GELU', mnv2_050_relu6:'MobileNetV2-0.5 · ReLU6'};
+const ml = n => modelLabel[n] || n;
+const RELU = new Set(['relu','relu6']);
+const $ = id => document.getElementById(id);
+const el = (tag, attrs={}, html='') => { const e = document.createElement(tag); for (const [k,v] of Object.entries(attrs)) e.setAttribute(k,v); e.innerHTML = html; return e; };
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+function fillSelect(sel, items, labels) { sel.innerHTML=''; items.forEach((it,i)=>{ const o=el('option',{value:it}); o.textContent = labels? labels[i] : it; sel.appendChild(o);}); }
+const NS='http://www.w3.org/2000/svg';
+function svg(w,h){ const s=document.createElementNS(NS,'svg'); s.setAttribute('viewBox',`0 0 ${w} ${h}`); s.setAttribute('class','chart'); s.setAttribute('width','100%'); return s; }
+function sv(s,tag,attrs,text){ const e=document.createElementNS(NS,tag); for(const [k,v] of Object.entries(attrs)) e.setAttribute(k,v); if(text!==undefined) e.textContent=text; s.appendChild(e); return e; }
+$('built').textContent = 'built ' + (D.built||'');
+
+// ---------- cost model (JS port of npuloop/npu/cost.py) ----------
+function gemmCycles(m,k,n,spec){ const R=spec.pe_rows,C=spec.pe_cols,fd=spec.fill_drain?(R+C):0; const kt=Math.ceil(k/R);
+  const nPer=Math.ceil(n/spec.cores), cycN=kt*Math.ceil(nPer/C)*(m+fd); const mPer=Math.ceil(m/spec.cores), cycM=kt*Math.ceil(n/C)*(mPer+fd);
+  if(spec.cores===1||cycN<=cycM) return [cycN, spec.cores>1?'N':'-']; return [cycM,'M']; }
+function estimate(model, spec){ const sram=spec.sram_kb*1024, bpc=spec.dram_gbps*1e9/(spec.freq_mhz*1e6); const resident={}; const outB={}; model.layers.forEach(l=>outB[l.name]=l.elements);
+  const inTraffic = l => l.inputs.reduce((b,s)=> b + (resident[s]?0:outB[s]), 0);
+  const place=(l,extra=0)=>{ const fits=(outB[l.name]+extra)<=sram; resident[l.name]=fits; return fits?0:outB[l.name]; };
+  const rows=[]; const macsPerCycle=spec.pe_rows*spec.pe_cols*spec.cores; let total=0, totalMacs=0, dram=0;
+  for(const l of model.layers){ const r={name:l.name,op:l.op,kind:l.op,macs:l.macs||0,cycles:0,compute:0,dramB:0,dramCyc:0,bound:'none',util:0,split:'',m:l.m||0,k:l.k||0,n:l.n||0};
+    if(l.op==='input'){resident[l.name]=false; rows.push(r); continue;}
+    if(l.op==='output'||l.op==='flatten'){resident[l.name]=resident[l.inputs[0]]||false; rows.push(r); continue;}
+    if(l.op==='conv'||l.op==='linear'){ const liveIn=l.in_bytes.reduce((a,b)=>a+b,0);
+      if(l.op==='conv'&&l.depthwise){ r.kind='dwconv'; if(spec.dw_lanes>0){ const chPer=Math.ceil(l.n/spec.cores); r.compute=Math.ceil(chPer/spec.dw_lanes)*l.kh*l.kw*l.m; r.util=l.macs/(r.compute*spec.dw_lanes*spec.cores); r.split='C'; }
+        else { const one={...spec,cores:1}; const [per]=gemmCycles(l.m,l.kh*l.kw,1,one); r.compute=Math.ceil(l.n/spec.cores)*per; r.util=l.macs/(r.compute*macsPerCycle); r.split='C'; } }
+      else if(l.groups>1){ r.kind='gconv'; const [per,sp]=gemmCycles(l.m,l.k,l.n/l.groups,spec); r.compute=per*l.groups; r.split=sp; r.util=l.macs/(r.compute*macsPerCycle); }
+      else { r.kind=l.op; const [c,sp]=gemmCycles(l.m,l.k,l.n,spec); r.compute=c; r.split=sp; r.util=l.macs/(r.compute*macsPerCycle); }
+      r.dramB=l.weight_bytes+inTraffic(l)+place(l,liveIn); r.dramCyc=r.dramB/bpc; r.cycles=Math.max(r.compute,r.dramCyc); r.bound=r.compute>=r.dramCyc?'compute':'memory'; }
+    else if(l.op==='act'){ if(spec.fused_acts.includes(l.kind)){ r.kind='act-fused'; r.cycles=0; resident[l.name]=resident[l.inputs[0]]||false; }
+      else if(spec.unsupported_ops.includes(l.kind)||!spec.lut_acts.includes(l.kind)){ r.kind='act-fallback'; r.dramB=2*l.elements; r.dramCyc=r.dramB/bpc; r.cycles=l.elements*spec.fallback_cycles_per_elem+r.dramCyc; r.bound='fallback'; resident[l.name]=false; }
+      else { r.kind='act-lut'; const v=Math.ceil(l.elements/(spec.vector_lanes*spec.cores)); r.dramB=inTraffic(l)+place(l); r.dramCyc=r.dramB/bpc; r.cycles=Math.max(v,r.dramCyc); r.bound=v>=r.dramCyc?'vector':'memory'; } }
+    else if(l.op==='add'||l.op==='pool'){ r.kind=l.op; const elems=l.op==='add'? l.in_bytes.reduce((a,b)=>a+b,0): l.in_bytes[0]; const v=Math.ceil(elems/(spec.vector_lanes*spec.cores)); r.dramB=inTraffic(l)+place(l); r.dramCyc=r.dramB/bpc; r.cycles=Math.max(v,r.dramCyc); r.bound=v>=r.dramCyc?'vector':'memory'; }
+    total+=r.cycles; totalMacs+=r.macs; dram+=r.dramB; rows.push(r); }
+  return {rows,total,totalMacs,dram,ideal:totalMacs/macsPerCycle,util:totalMacs/macsPerCycle/total,latency_ms:total/(spec.freq_mhz*1e3),peak_tops:2*macsPerCycle*spec.freq_mhz*1e6/1e12}; }
+
+// ---------- header meta + KPIs ----------
+(function(){ const e1=(R.e1_baselines||{}).records||[]; const e2=(R.e2_ptq_grid||{}).records||[]; const e6=(R.e6_pruning||{}).records||[]; const e4=(R.e4_surgery||{}).records||[];
+  const meta=$('meta'); meta.append(el('span',{},`models <b>${Object.keys(M).length}</b>`), el('span',{},`experiments <b>${Object.keys(R).length}</b>`), el('span',{},`float acc (ResNet-20 ReLU) <b>${e1.find(r=>r.model==='resnet20_relu')?fmt.pct(e1.find(r=>r.model==='resnet20_relu').float_acc):'—'}</b>`));
+  const k=$('kpis'); const add=(v,l,src)=>k.append(el('div',{class:'kpi'},`<div class="v">${v}</div><div class="l">${l}</div><div class="src">${src}</div>`));
+  const d=e2.find(r=>r.model==='resnet20_relu'&&r.scheme==='npu-default'); if(d){ add(`${fmt.pct(d.agreement.top1_agreement,1)}`, `fake-quant ↔ 비트 정확 정수 엔진 top-1 일치 (출력 코드는 ${fmt.pct(d.agreement.output_mismatch_frac,0)}가 다른데도)`, 'E2 · measured'); add(`${fmt.pp(d.drop_int)}`, `ResNet-20 ReLU: FP32 → INT8 정수 엔진 정확도 손실 (${d.int_eval_images.toLocaleString()}장)`, 'E2 · measured'); }
+  const pt=e2.find(r=>r.model==='mnv2_050_relu6'&&r.scheme==='per-tensor'); const cle=e4.find(r=>r.part==='a'&&r.scheme==='per-tensor'&&r.step==='cle+bc'); if(pt&&cle) add(`${fmt.pp(pt.drop_fake,1)} → ${fmt.pp(pt.float_acc-cle.fake_acc,1)}`, 'MobileNetV2 per-tensor 손실, CLE+바이어스 보정 후', 'E4 · measured');
+  const silu=M.resnet20_silu; if(silu){ const a=estimate(silu,P['edge-10tops']).total, b=estimate(silu,P['edge-10tops-strict']).total; add(`×${(b/a).toFixed(0)}`, 'SiLU 19개가 호스트 폴백이 될 때 사이클 배수 (LUT 지원 대비, edge-10tops)', 'cost model · simulated'); }
+  const g=e6.filter(r=>r.model==='resnet20_relu'&&r.strategy==='cost-greedy'); const base=e6.find(r=>r.model==='resnet20_relu'&&r.strategy==='none'); if(g.length&&base){ const b=g.reduce((p,c)=> (c.int8_acc>=base.int8_acc-0.01 && c['edge-10tops'].cycles < (p?p['edge-10tops'].cycles:1e18))?c:p, null); if(b) add(`−${fmt.pct(1-b['edge-10tops'].cycles/base['edge-10tops'].cycles,0)}`, `cost-greedy 프루닝 사이클 절감 (INT8 정확도 −${fmt.pp(base.int8_acc-b.int8_acc,1)} 이내, edge-10tops)`, 'E6 · measured+simulated'); }
+})();
+
+// ---------- diagram ----------
+(function(){ const w=1040,h=250; const s=svg(w,h); const box=(x,y,wd,ht,t1,t2,accent)=>{ sv(s,'rect',{x,y,width:wd,height:ht,rx:8,fill:accent?css('--accent-soft'):css('--surface-2'),stroke:accent?css('--accent'):css('--line')}); sv(s,'text',{x:x+wd/2,y:y+24,'text-anchor':'middle',style:`fill:${css('--ink')};font-size:13px;font-weight:500`},t1); if(t2) sv(s,'text',{x:x+wd/2,y:y+44,'text-anchor':'middle'},t2); };
+  const arrow=(x1,y1,x2,y2,label,dashed)=>{ sv(s,'line',{x1,y1,x2,y2,stroke:css('--muted'),'stroke-width':1.5,'marker-end':'url(#ah)','stroke-dasharray':dashed?'4 4':'none'}); if(label) sv(s,'text',{x:(x1+x2)/2,y:(y1+y2)/2-6,'text-anchor':'middle'},label); };
+  const defs=sv(s,'defs',{}); const mk=document.createElementNS(NS,'marker'); mk.setAttribute('id','ah'); mk.setAttribute('markerWidth','8'); mk.setAttribute('markerHeight','8'); mk.setAttribute('refX','7'); mk.setAttribute('refY','4'); mk.setAttribute('orient','auto'); const pth=document.createElementNS(NS,'path'); pth.setAttribute('d','M0,0 L8,4 L0,8 z'); pth.setAttribute('fill',css('--muted')); mk.appendChild(pth); defs.appendChild(mk);
+  box(20,40,150,60,'PyTorch model','ResNet / MobileNetV2'); box(220,40,170,60,'graph.trace','fx · BN folding · shapes'); box(440,40,170,60,'npu.estimate + lint','cycles · util · findings',true); box(660,40,170,60,'prune / surgery','array-aligned · act swap'); box(880,40,140,60,'quant.prepare','PTQ · QAT · CLE');
+  box(660,160,170,60,'intengine export','int8 W · int32 bias · M0,shift',true); box(440,160,170,60,'NumPy ⇄ C++ engines','bit-exact','true'); box(220,160,170,60,'verify','fake-quant vs integer');
+  arrow(170,70,220,70); arrow(390,70,440,70); arrow(610,70,660,70); arrow(830,70,880,70); arrow(950,100,950,160); arrow(950,190,830,190); arrow(660,190,610,190); arrow(440,190,390,190); arrow(305,160,305,100,'',true); arrow(745,160,745,100,'',true);
+  sv(s,'text',{x:305,y:130,'text-anchor':'middle'},'closes the loop'); sv(s,'text',{x:745,y:130,'text-anchor':'middle'},'cost in the loop');
+  $('diagram').appendChild(s); })();
+
+// ---------- cost explorer ----------
+(function(){ const models=Object.keys(M); if(!models.length){ $('cm-stats').innerHTML='<span class="empty">no models yet</span>'; return; }
+  fillSelect($('cm-model'),models,models.map(ml)); fillSelect($('cm-preset'),Object.keys(P));
+  const arrSizes=[8,16,32,64,128,256]; const state={preset:'edge-10tops'};
+  function loadPreset(name){ const p=P[name]; const idx=arrSizes.indexOf(p.pe_rows); $('cm-arr').value=idx>=0?idx+3:6; $('cm-cores').value=p.cores; $('cm-dram').value=Math.round(p.dram_gbps); $('cm-dw').value=p.dw_lanes>0?'1':'0'; $('cm-lut').value=p.unsupported_ops.length?'fallback':'lut'; }
+  $('cm-preset').value='edge-10tops'; loadPreset('edge-10tops');
+  function currentSpec(){ const p=P[$('cm-preset').value]; const a=arrSizes[$('cm-arr').value-3]; const spec={...p,pe_rows:a,pe_cols:a,cores:+$('cm-cores').value,dram_gbps:+$('cm-dram').value,dw_lanes:$('cm-dw').value==='1'?p.dw_lanes||256:0};
+    if($('cm-lut').value==='fallback'){ spec.lut_acts=[]; spec.unsupported_ops=['silu','gelu','hswish','hsigmoid','sigmoid','tanh','lrelu']; } else { spec.lut_acts=['silu','gelu','hswish','hsigmoid','sigmoid','tanh','lrelu']; spec.unsupported_ops=[]; } return spec; }
+  function render(){ const spec=currentSpec(); $('cm-arr-v').textContent=`${spec.pe_rows}×${spec.pe_cols}`; $('cm-cores-v').textContent=spec.cores; $('cm-dram-v').textContent=spec.dram_gbps;
+    const model=M[$('cm-model').value]; const r=estimate(model,spec); const ref=estimate(model,{...P[$('cm-preset').value]});
+    $('cm-stats').innerHTML=`<span>peak <b>${r.peak_tops.toFixed(1)} TOPS</b></span><span>cycles <b>${fmt.n(r.total)}</b></span><span>latency <b>${r.latency_ms.toFixed(3)} ms</b></span><span>array util <b>${fmt.pct(r.util,1)}</b></span><span>DRAM <b>${(r.dram/1024).toFixed(0)} KB</b></span><span>MACs <b>${(r.totalMacs/1e6).toFixed(1)} M</b></span><span>vs preset <b>${(r.total/ref.total*100).toFixed(0)}%</b> cycles</span>`;
+    const rows=r.rows.filter(x=>!['input','output','flatten','act-fused'].includes(x.kind)); const w=1040,barH=14,gap=3,left=190,top=10; const h=top+rows.length*(barH+gap)+30; const s=svg(w,h); const maxC=Math.max(...rows.map(x=>x.cycles),1); const xs=c=>left+c/maxC*(w-left-60);
+    const color={compute:'--c1',memory:'--c2',vector:'--c3',fallback:'--c4'};
+    [0,.25,.5,.75,1].forEach(t=>{ sv(s,'line',{x1:xs(maxC*t),x2:xs(maxC*t),y1:top,y2:h-25,class:'grid'}); sv(s,'text',{x:xs(maxC*t),y:h-8,'text-anchor':'middle'},fmt.n(maxC*t)); });
+    rows.forEach((x,i)=>{ const y=top+i*(barH+gap); sv(s,'text',{x:left-8,y:y+barH-3,'text-anchor':'end'},x.name.length>26?x.name.slice(0,25)+'…':x.name); const col=x.kind==='dwconv'?'--c5':(color[x.bound]||'--c3'); const g=sv(s,'g',{}); sv(g,'rect',{x:left,y,width:Math.max(1,xs(x.cycles)-left),height:barH,fill:css(col),rx:2}); if(x.util>0) sv(s,'text',{x:xs(x.cycles)+6,y:y+barH-3},fmt.pct(x.util,0)); sv(g,'title',{},`${x.name}: ${fmt.n(x.cycles)} cycles, ${x.bound}, util ${fmt.pct(x.util,1)}, M=${x.m} K=${x.k} N=${x.n} split ${x.split}`); });
+    $('cm-chart').innerHTML=''; $('cm-chart').appendChild(s);
+    const t=el('table'); t.innerHTML='<tr><th>layer</th><th>kind</th><th>MACs</th><th>M</th><th>K</th><th>N</th><th>cycles</th><th>bound</th><th>util</th><th>split</th><th>DRAM KB</th></tr>'+rows.map(x=>`<tr><td>${x.name}</td><td>${x.kind}</td><td>${fmt.n(x.macs)}</td><td>${x.m||''}</td><td>${x.k||''}</td><td>${x.n||''}</td><td>${fmt.n(x.cycles)}</td><td>${x.bound}</td><td>${x.util?fmt.pct(x.util,1):''}</td><td>${x.split}</td><td>${(x.dramB/1024).toFixed(1)}</td></tr>`).join(''); $('cm-table').innerHTML=''; $('cm-table').appendChild(t); }
+  ['cm-model','cm-arr','cm-cores','cm-dram','cm-dw','cm-lut'].forEach(id=>$(id).addEventListener('input',render)); $('cm-preset').addEventListener('change',()=>{loadPreset($('cm-preset').value); render();}); render(); })();
+
+// ---------- lint ----------
+(function(){ const e1=(R.e1_baselines||{}).records||[]; if(!e1.length){ $('li-score').innerHTML='<span class="empty">E1 not run yet</span>'; return; }
+  fillSelect($('li-model'),e1.map(r=>r.model),e1.map(r=>ml(r.model))); fillSelect($('li-preset'),Object.keys(e1[0].lint));
+  function render(){ const r=e1.find(x=>x.model===$('li-model').value); const L=r.lint[$('li-preset').value]; $('li-score').innerHTML=`<div class="s">efficiency <b>${L.scores.efficiency}</b>/100</div><div class="s">quant-robustness <b>${L.scores.quant_robustness}</b>/100</div><div class="s">alignment util bound <b>${fmt.pct(L.alignment_util_weighted,0)}</b></div>`+Object.entries(L.counts).map(([k,v])=>`<div class="s"><span class="pill ${k}">${k}</span> ${v}</div>`).join('');
+    const by={}; L.findings.forEach(f=>(by[f.check]=by[f.check]||[]).push(f)); const box=$('li-findings'); box.innerHTML=''; Object.entries(by).forEach(([check,fs])=>{ const h=el('h3',{},`${check} <span class="pill">${fs.length}</span>`); box.appendChild(h); fs.slice(0,6).forEach(f=>box.appendChild(el('div',{class:'finding'},`<span class="pill ${f.severity}">${f.severity}</span><span><span class="layer">${f.layer}</span> — ${f.message}<br><span style="color:var(--muted)">→ ${f.suggestion}</span></span>`))); if(fs.length>6) box.appendChild(el('div',{class:'empty'},`… ${fs.length-6} more`)); }); }
+  ['li-model','li-preset'].forEach(id=>$(id).addEventListener('change',render)); render(); })();
+
+// ---------- PTQ grid ----------
+(function(){ const e2=(R.e2_ptq_grid||{}).records||[]; if(!e2.length){ $('ptq-table').innerHTML='<span class="empty">E2 not run yet</span>'; return; }
+  const models=[...new Set(e2.map(r=>r.model))], schemes=[...new Set(e2.map(r=>r.scheme))];
+  const t=el('table'); t.innerHTML='<tr><th>model</th><th>FP32</th>'+schemes.map(s=>`<th>${s}<br><span style="font-weight:400;text-transform:none">fake / int</span></th>`).join('')+'</tr>'+models.map(m=>{ const rs=schemes.map(s=>e2.find(r=>r.model===m&&r.scheme===s)); return `<tr><td>${ml(m)}</td><td>${fmt.pct(rs.find(Boolean).float_acc)}</td>`+rs.map(r=>r?`<td title="int on ${r.int_eval_images} imgs; top-1 agreement ${fmt.pct(r.agreement.top1_agreement,1)}"><span style="color:${r.drop_fake>0.02?'var(--bad)':(r.drop_fake>0.005?'var(--warn)':'var(--ink)')}">${fmt.pct(r.fake_acc)}</span> / ${fmt.pct(r.int_acc)}</td>`:'<td>—</td>').join('')+'</tr>'; }).join(''); $('ptq-table').innerHTML=''; $('ptq-table').appendChild(t);
+  fillSelect($('ag-model'),models,models.map(ml)); fillSelect($('ag-scheme'),schemes);
+  function renderAg(){ const r=e2.find(x=>x.model===$('ag-model').value&&x.scheme===$('ag-scheme').value); if(!r){$('ag-chart').innerHTML='<span class="empty">not run</span>';return;} const rows=r.per_layer_agreement.filter(x=>!['input','output','flatten'].includes(x.op));
+    $('ag-stats').innerHTML=`<span>top-1 agreement <b>${fmt.pct(r.agreement.top1_agreement,1)}</b></span><span>max |logit diff| <b>${r.agreement.logit_max_abs_diff.toFixed(3)}</b></span><span>first divergence <b>${r.agreement.first_divergence}</b></span><span>output codes differing <b>${fmt.pct(r.agreement.output_mismatch_frac,1)}</b></span><span>fake ${fmt.pct(r.fake_acc)} · int ${fmt.pct(r.int_acc)}</span>`;
+    const w=1040,h=260,left=50,top=12,bottom=70; const s=svg(w,h); const n=rows.length; const bw=(w-left-20)/n; const maxv=Math.max(...rows.map(x=>x.mismatch_frac),0.01); const ys=v=>top+(h-top-bottom)*(1-v/maxv);
+    [0,.5,1].forEach(t=>{ sv(s,'line',{x1:left,x2:w-20,y1:ys(maxv*t),y2:ys(maxv*t),class:'grid'}); sv(s,'text',{x:left-6,y:ys(maxv*t)+4,'text-anchor':'end'},fmt.pct(maxv*t,0)); });
+    rows.forEach((x,i)=>{ const cx=left+i*bw; const g=sv(s,'g',{}); sv(g,'rect',{x:cx+1,y:ys(x.mismatch_frac),width:bw*0.45,height:Math.max(0,ys(0)-ys(x.mismatch_frac)),fill:css('--c1')}); sv(g,'rect',{x:cx+1+bw*0.47,y:ys(x.local_mismatch_frac),width:bw*0.45,height:Math.max(0,ys(0)-ys(x.local_mismatch_frac)),fill:css('--c2')}); sv(g,'title',{},`${x.name} (${x.op}): propagated ${fmt.pct(x.mismatch_frac,2)} max ${x.max_abs} LSB · local ${fmt.pct(x.local_mismatch_frac,3)} max ${x.local_max_abs} LSB`); const tx=sv(s,'text',{x:cx+bw/2,y:h-bottom+8,'text-anchor':'end',transform:`rotate(-55 ${cx+bw/2} ${h-bottom+8})`,style:'font-size:9.5px'},x.name.replace('blocks_','b')); });
+    $('ag-chart').innerHTML=''; $('ag-chart').appendChild(s); }
+  ['ag-model','ag-scheme'].forEach(id=>$(id).addEventListener('change',renderAg)); renderAg();
+  const withSens=e2.filter(r=>r.sensitivity); if(withSens.length){ const sm=[...new Set(withSens.map(r=>r.model))]; fillSelect($('se-model'),sm,sm.map(ml)); fillSelect($('se-scheme'),[...new Set(withSens.map(r=>r.scheme))]);
+    function renderSe(){ const r=withSens.find(x=>x.model===$('se-model').value&&x.scheme===$('se-scheme').value); if(!r){$('se-chart').innerHTML='<span class="empty">not run</span>';return;} const W=Object.entries(r.sensitivity.weights), A=Object.entries(r.sensitivity.activations); const items=[...W.map(([k,v])=>({name:k,kind:'W',d:v.dloss,sq:v.sqnr_db})),...A.map(([k,v])=>({name:k.replace('fq_',''),kind:'A',d:v.dloss,sq:v.sqnr_db}))];
+      const w=1040,h=250,left=50,top=12,bottom=70; const s=svg(w,h); const n=items.length; const bw=(w-left-20)/n; const maxv=Math.max(...items.map(x=>Math.abs(x.d)),1e-4); const ys=v=>top+(h-top-bottom)*(1-Math.max(0,v)/maxv);
+      [0,.5,1].forEach(t=>{ sv(s,'line',{x1:left,x2:w-20,y1:ys(maxv*t),y2:ys(maxv*t),class:'grid'}); sv(s,'text',{x:left-6,y:ys(maxv*t)+4,'text-anchor':'end'},(maxv*t).toFixed(3)); });
+      items.forEach((x,i)=>{ const cx=left+i*bw; const g=sv(s,'g',{}); sv(g,'rect',{x:cx+1,y:ys(x.d),width:Math.max(1,bw-2),height:Math.max(0,ys(0)-ys(x.d)),fill:css(x.kind==='W'?'--c1':'--c3')}); sv(g,'title',{},`${x.kind} ${x.name}: Δloss ${x.d.toFixed(4)}, SQNR ${x.sq.toFixed(1)} dB`); sv(s,'text',{x:cx+bw/2,y:h-bottom+8,'text-anchor':'end',transform:`rotate(-55 ${cx+bw/2} ${h-bottom+8})`,style:'font-size:9px'},x.name.replace('blocks.','b').replace('blocks_','b')); });
+      $('se-chart').innerHTML=''; $('se-chart').appendChild(s); const lg=el('div',{class:'legend'},'<span><i style="background:var(--c1)"></i>weights of one layer (per scheme)</span><span><i style="background:var(--c3)"></i>one activation tensor</span>'); $('se-chart').appendChild(lg); }
+    ['se-model','se-scheme'].forEach(id=>$(id).addEventListener('change',renderSe)); renderSe(); } else { $('se-chart').innerHTML='<span class="empty">sensitivity not run yet</span>'; } })();
+
+// ---------- requant ablation ----------
+(function(){ const e7=(R.e7_requant_ablation||{}).records||[]; if(!e7.length){ $('rq-chart').innerHTML='<span class="empty">E7 not run yet</span>'; return; } const models=[...new Set(e7.map(r=>r.model))]; fillSelect($('rq-model'),models,models.map(ml));
+  function render(){ const rs=e7.filter(r=>r.model===$('rq-model').value); const w=1040,barH=16,gap=5,left=250,top=10; const h=top+rs.length*(barH+gap)+30; const s=svg(w,h); const xs=v=>left+v*(w-left-70);
+    [0.9,0.95,1].forEach(t=>{ const x=left+(t-0.9)/0.1*(w-left-70); sv(s,'line',{x1:x,x2:x,y1:top,y2:h-25,class:'grid'}); sv(s,'text',{x,y:h-8,'text-anchor':'middle'},fmt.pct(t,0)); });
+    rs.forEach((r,i)=>{ const y=top+i*(barH+gap); const v=r.top1_agreement_vs_reference; const x=left+Math.max(0,(v-0.9)/0.1)*(w-left-70); sv(s,'text',{x:left-8,y:y+barH-4,'text-anchor':'end'},r.config); const g=sv(s,'g',{}); sv(g,'rect',{x:left,y,width:Math.max(1,x-left),height:barH,fill:css(v>0.995?'--c1':(v>0.97?'--c2':'--c4')),rx:2}); sv(s,'text',{x:x+6,y:y+barH-4},`${fmt.pct(v,2)} · acc ${fmt.pct(r.int_acc,2)}`); sv(g,'title',{},`${r.config}: agreement vs reference ${fmt.pct(v,3)}, int acc ${fmt.pct(r.int_acc)}, fake ${fmt.pct(r.fake_acc)}, saturations ${Object.values(r.saturations).reduce((a,b)=>a+b,0)}`); });
+    $('rq-chart').innerHTML=''; $('rq-chart').appendChild(s); const t=el('table'); t.innerHTML='<tr><th>config</th><th>int acc</th><th>Δ vs fake</th><th>top-1 agreement vs reference</th><th>top-1 agreement vs fake</th><th>mean |Δlogit| vs ref</th><th>saturations</th></tr>'+rs.map(r=>`<tr><td>${r.config}</td><td>${fmt.pct(r.int_acc)}</td><td>${fmt.pp(-r.drop_vs_fake)}</td><td>${fmt.pct(r.top1_agreement_vs_reference,2)}</td><td>${fmt.pct(r.top1_agreement_vs_fake,2)}</td><td>${r.mean_abs_logit_diff_vs_reference.toFixed(4)}</td><td>${Object.values(r.saturations).reduce((a,b)=>a+b,0)}</td></tr>`).join(''); $('rq-table').innerHTML=''; $('rq-table').appendChild(t); }
+  $('rq-model').addEventListener('change',render); render(); })();
+
+// ---------- surgery ----------
+(function(){ const e4=(R.e4_surgery||{}).records||[]; const bars=(host,items,base)=>{ if(!items.length){host.innerHTML='<span class="empty">not run yet</span>';return;} const w=500,barH=18,gap=8,left=170,top=8; const h=top+items.length*(barH+gap)+28; const s=svg(w,h); const lo=Math.max(0,Math.min(...items.map(i=>i.v),base)-0.05), hi=1; const xs=v=>left+(v-lo)/(hi-lo)*(w-left-70);
+    sv(s,'line',{x1:xs(base),x2:xs(base),y1:top,y2:h-22,stroke:css('--ink'),'stroke-dasharray':'3 3'}); sv(s,'text',{x:xs(base),y:h-6,'text-anchor':'middle'},`FP32 ${fmt.pct(base,1)}`);
+    items.forEach((it,i)=>{ const y=top+i*(barH+gap); sv(s,'text',{x:left-8,y:y+barH-5,'text-anchor':'end'},it.label); sv(s,'rect',{x:left,y,width:Math.max(1,xs(it.v)-left),height:barH,fill:css(it.color||'--c1'),rx:2}); sv(s,'text',{x:xs(it.v)+6,y:y+barH-5},fmt.pct(it.v,2)+(it.extra?` ${it.extra}`:'')); }); host.innerHTML=''; host.appendChild(s); };
+  const a=e4.filter(r=>r.part==='a'&&r.scheme==='per-tensor'); if(a.length){ const order=['ptq','bc','cle','cle+bc','cle+qat']; const items=order.map(st=>a.find(r=>r.step===st)).filter(Boolean).map(r=>({label:r.step.toUpperCase(),v:r.fake_acc,extra:`(int ${fmt.pct(r.int_acc,1)})`,color:r.step==='ptq'?'--c4':'--c1'})); bars($('sg-a'),items,a[0].float_acc); const pc=e4.filter(r=>r.part==='a'&&r.scheme==='npu-default'); if(pc.length) $('sg-a').appendChild(el('div',{class:'note'},`같은 모델에 per-channel 가중치(npu-default)를 쓰면 PTQ만으로 ${fmt.pct(pc.find(r=>r.step==='ptq').fake_acc,2)} — per-tensor 제약이 문제의 원인이고 CLE는 그 제약 아래에서의 처방입니다.`)); } else $('sg-a').innerHTML='<span class="empty">not run yet</span>';
+  const b=e4.filter(r=>r.part==='b'); if(b.length){ const items=b.map(r=>({label:r.variant,v:r.fake_acc,extra:`· ${fmt.n(r.cycles['edge-10tops-strict'])} cyc strict`,color:r.act==='silu'?'--c3':(r.act==='relu'?'--c1':'--c2')})); bars($('sg-b'),items,b[0].float_acc); const t=el('table'); t.innerHTML='<tr><th>variant</th><th>FP32 after swap</th><th>after heal</th><th>INT8 fake</th><th>INT8 int</th><th>edge-10tops cyc</th><th>strict cyc</th></tr>'+b.map(r=>`<tr><td>${r.variant}</td><td>${r.float_acc_after_swap!==undefined?fmt.pct(r.float_acc_after_swap):'—'}</td><td>${r.float_acc_after_heal!==undefined?fmt.pct(r.float_acc_after_heal):'—'}</td><td>${fmt.pct(r.fake_acc)}</td><td>${fmt.pct(r.int_acc)}</td><td>${fmt.n(r.cycles['edge-10tops'])}</td><td>${fmt.n(r.cycles['edge-10tops-strict'])}</td></tr>`).join(''); const wrap=el('div',{class:'tblwrap'}); wrap.appendChild(t); $('sg-b').appendChild(wrap); } else $('sg-b').innerHTML='<span class="empty">not run yet</span>';
+  const c=e4.filter(r=>r.part==='c'); if(c.length){ const t=el('table'); t.innerHTML='<tr><th>model</th><th>scheme</th><th>FP32</th><th>PTQ</th><th>QAT (fake)</th><th>QAT (int)</th><th>QAT gain</th><th>minutes</th></tr>'+c.map(r=>`<tr><td>${ml(r.model)}</td><td>${r.scheme}</td><td>${fmt.pct(r.float_acc)}</td><td>${fmt.pct(r.ptq_acc)}</td><td>${fmt.pct(r.qat_acc)}</td><td>${fmt.pct(r.int_acc)}</td><td style="color:${r.qat_acc-r.ptq_acc>0?'var(--good)':'var(--bad)'}">${fmt.pp(r.qat_acc-r.ptq_acc)}</td><td>${r.minutes.toFixed(1)}</td></tr>`).join(''); $('sg-c').innerHTML=''; $('sg-c').appendChild(t); } else $('sg-c').innerHTML='<span class="empty">not run yet</span>'; })();
+
+// ---------- calibration ----------
+(function(){ const e5=(R.e5_calibration||{}).records||[]; if(!e5.length){ $('cb-chart').innerHTML='<span class="empty">E5 not run yet</span>'; return; } const models=[...new Set(e5.map(r=>r.model))]; fillSelect($('cb-model'),models,models.map(ml));
+  function render(){ const rs=e5.filter(r=>r.model===$('cb-model').value); const sizes=[...new Set(rs.map(r=>r.n))].sort((a,b)=>a-b); const series=[['npu-default',false,'--c1'],['npu-default',true,'--c3'],['per-tensor',false,'--c2'],['per-tensor',true,'--c4']];
+    const w=1040,h=300,left=60,top=14,bottom=40,right=20; const s=svg(w,h); const xs=n=>left+(Math.log2(n)-Math.log2(sizes[0]))/(Math.log2(sizes[sizes.length-1])-Math.log2(sizes[0]))*(w-left-right); const allv=rs.map(r=>r.fake_acc); const lo=Math.min(...allv)-0.005, hi=Math.max(rs[0].float_acc,...allv)+0.005; const ys=v=>top+(h-top-bottom)*(1-(v-lo)/(hi-lo));
+    for(let v=Math.ceil(lo*100)/100; v<=hi; v+=0.01){ sv(s,'line',{x1:left,x2:w-right,y1:ys(v),y2:ys(v),class:'grid'}); sv(s,'text',{x:left-6,y:ys(v)+4,'text-anchor':'end'},fmt.pct(v,0)); }
+    sizes.forEach(n=>sv(s,'text',{x:xs(n),y:h-14,'text-anchor':'middle'},n)); sv(s,'text',{x:(left+w-right)/2,y:h-2,'text-anchor':'middle'},'calibration images (log scale)');
+    sv(s,'line',{x1:left,x2:w-right,y1:ys(rs[0].float_acc),y2:ys(rs[0].float_acc),stroke:css('--ink'),'stroke-dasharray':'3 3'}); sv(s,'text',{x:w-right,y:ys(rs[0].float_acc)-4,'text-anchor':'end'},'FP32');
+    series.forEach(([sch,bal,col])=>{ const pts=sizes.map(n=>{ const v=rs.filter(r=>r.scheme===sch&&r.balanced===bal&&r.n===n).map(r=>r.fake_acc); return v.length?{n,mean:v.reduce((a,b)=>a+b)/v.length,min:Math.min(...v),max:Math.max(...v)}:null; }).filter(Boolean); if(!pts.length) return;
+      sv(s,'path',{d:pts.map((p,i)=>`${i?'L':'M'}${xs(p.n)},${ys(p.max)}`).join(' ')+' '+[...pts].reverse().map(p=>`L${xs(p.n)},${ys(p.min)}`).join(' ')+' Z',fill:css(col),opacity:0.15}); sv(s,'path',{d:pts.map((p,i)=>`${i?'L':'M'}${xs(p.n)},${ys(p.mean)}`).join(' '),fill:'none',stroke:css(col),'stroke-width':2}); pts.forEach(p=>{ const c=sv(s,'circle',{cx:xs(p.n),cy:ys(p.mean),r:3.5,fill:css(col)}); sv(c,'title',{},`${sch} ${bal?'balanced':'random'} n=${p.n}: mean ${fmt.pct(p.mean)} [${fmt.pct(p.min)}, ${fmt.pct(p.max)}]`); }); });
+    $('cb-chart').innerHTML=''; $('cb-chart').appendChild(s); }
+  $('cb-model').addEventListener('change',render); render(); })();
+
+// ---------- pruning ----------
+(function(){ const e6=(R.e6_pruning||{}).records||[]; if(!e6.length){ $('pr-macs').innerHTML='<span class="empty">E6 not run yet</span>'; return; } const models=[...new Set(e6.map(r=>r.model))]; fillSelect($('pr-model'),models,models.map(ml)); const specs=(R.e6_pruning.meta||{}).specs||['edge-10tops']; fillSelect($('pr-spec'),specs); $('pr-spec').value='edge-10tops';
+  const colorOf=s=>({uniform:'--c5',aligned:'--c2','cost-greedy':'--c1',none:'--ink'})[s]||'--c3';
+  function scatter(host,rs,xkey,xlabel,acck){ const w=520,h=300,left=60,top=14,bottom=44,right=16; const s=svg(w,h); const xv=r=>xkey==='macs'?r.macs:r[xkey].cycles; const xmax=Math.max(...rs.map(xv)); const xs=v=>left+v/xmax*(w-left-right); const accs=rs.map(r=>r[acck]); const lo=Math.min(...accs)-0.01, hi=Math.max(...accs)+0.005; const ys=v=>top+(h-top-bottom)*(1-(v-lo)/(hi-lo));
+    for(let v=Math.ceil(lo*50)/50; v<=hi; v+=0.02){ sv(s,'line',{x1:left,x2:w-right,y1:ys(v),y2:ys(v),class:'grid'}); sv(s,'text',{x:left-6,y:ys(v)+4,'text-anchor':'end'},fmt.pct(v,0)); }
+    [0,.25,.5,.75,1].forEach(t=>{ sv(s,'line',{x1:xs(xmax*t),x2:xs(xmax*t),y1:top,y2:h-bottom,class:'grid'}); sv(s,'text',{x:xs(xmax*t),y:h-bottom+14,'text-anchor':'middle'},fmt.pct(t,0)); }); sv(s,'text',{x:(left+w-right)/2,y:h-4,'text-anchor':'middle'},xlabel);
+    rs.forEach(r=>{ const c=sv(s,'circle',{cx:xs(xv(r)),cy:ys(r[acck]),r:r.strategy==='none'?6:5,fill:css(colorOf(r.strategy)),stroke:css('--surface'),'stroke-width':1.5}); sv(c,'title',{},`${r.strategy} r=${r.ratio} align=${r.align}: ${acck} ${fmt.pct(r[acck])}, MACs ${(r.macs/1e6).toFixed(1)}M, cycles ${fmt.n(r[xkey==='macs'?'edge-10tops':xkey].cycles)}, keep ${r.keep.join('/')}`); }); host.innerHTML=''; host.appendChild(s); }
+  function render(){ const rs=e6.filter(r=>r.model===$('pr-model').value); const spec=$('pr-spec').value, acck=$('pr-acc').value; scatter($('pr-macs'),rs,'macs','MACs (% of unpruned)',acck); scatter($('pr-cycles'),rs,spec,`${spec} cycles (% of unpruned)`,acck);
+    const base=rs.find(r=>r.strategy==='none'); const t=el('table'); t.innerHTML=`<tr><th>strategy</th><th>ratio</th><th>align</th><th>kept channels</th><th>MACs</th><th>${spec} cycles</th><th>util</th><th>after prune</th><th>fine-tuned</th><th>INT8</th></tr>`+rs.map(r=>`<tr><td>${r.strategy}</td><td>${r.ratio}</td><td>${r.align||''}</td><td style="font-family:var(--mono);font-size:11px">${r.keep.join(' ')}</td><td>${fmt.pct(r.macs/base.macs,0)}</td><td>${fmt.pct(r[spec].cycles/base[spec].cycles,0)}</td><td>${fmt.pct(r[spec].util,0)}</td><td>${r.acc_after_prune!==undefined?fmt.pct(r.acc_after_prune):'—'}</td><td>${fmt.pct(r.ft_acc)}</td><td>${fmt.pct(r.int8_acc)}</td></tr>`).join(''); $('pr-table').innerHTML=''; $('pr-table').appendChild(t); }
+  ['pr-model','pr-spec','pr-acc'].forEach(id=>$(id).addEventListener('change',render)); render(); })();
+
+// ---------- lint vs drop ----------
+(function(){ const e3=R.e3_lint_vs_drop; if(!e3||!e3.records||!e3.records.length){ $('lv-chart').innerHTML='<span class="empty">E3 not run yet</span>'; return; } const pts=e3.records.filter(r=>r.kind==='layer'&&r.scheme==='per-tensor'); const sm=e3.meta.summary||{};
+  $('lv-stats').innerHTML=Object.entries(sm).map(([k,v])=>`<span>${k} <b>${typeof v==='number'?v.toFixed(3):v}</b></span>`).join('');
+  if(!pts.length) return; const w=1040,h=320,left=60,top=14,bottom=44,right=16; const s=svg(w,h); const xv=pts.map(p=>Math.log10(p.range_ratio)), yv=pts.map(p=>p.dloss); const xlo=Math.min(...xv),xhi=Math.max(...xv)+0.05, ylo=Math.min(0,...yv), yhi=Math.max(...yv)*1.05+1e-4; const xs=v=>left+(v-xlo)/(xhi-xlo)*(w-left-right), ys=v=>top+(h-top-bottom)*(1-(v-ylo)/(yhi-ylo));
+  for(let t=0;t<=1.0001;t+=0.25){ const yy=ylo+(yhi-ylo)*t; sv(s,'line',{x1:left,x2:w-right,y1:ys(yy),y2:ys(yy),class:'grid'}); sv(s,'text',{x:left-6,y:ys(yy)+4,'text-anchor':'end'},yy.toFixed(3)); } [1,2,5,10,20,50,100].forEach(v=>{ const lv=Math.log10(v); if(lv>=xlo&&lv<=xhi){ sv(s,'line',{x1:xs(lv),x2:xs(lv),y1:top,y2:h-bottom,class:'grid'}); sv(s,'text',{x:xs(lv),y:h-bottom+14,'text-anchor':'middle'},'×'+v); } }); sv(s,'text',{x:(left+w-right)/2,y:h-4,'text-anchor':'middle'},'per-channel weight range ratio max/median after BN folding (log)'); sv(s,'text',{x:14,y:top+8,transform:`rotate(-90 14 ${top+8})`,'text-anchor':'end'},'Δ loss (per-tensor W of this layer only)');
+  const cols={resnet20_relu:'--c1',resnet20_silu:'--c3',resnet20_hswish:'--c2',resnet20_gelu:'--c6',mnv2_050_relu6:'--c4'}; pts.forEach(p=>{ const c=sv(s,'circle',{cx:xs(Math.log10(p.range_ratio)),cy:ys(p.dloss),r:4.5,fill:css(cols[p.model]||'--c5'),opacity:0.85}); sv(c,'title',{},`${ml(p.model)} ${p.layer}: ratio ${p.range_ratio.toFixed(1)}, Δloss ${p.dloss.toFixed(4)}, SQNR ${p.sqnr_db.toFixed(1)} dB`); });
+  $('lv-chart').innerHTML=''; $('lv-chart').appendChild(s); const lg=el('div',{class:'legend'},Object.entries(cols).filter(([m])=>pts.some(p=>p.model===m)).map(([m,c])=>`<span><i style="background:var(${c})"></i>${ml(m)}</span>`).join('')); $('lv-chart').appendChild(lg); })();
+})();
+</script>

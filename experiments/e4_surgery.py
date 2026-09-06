@@ -15,7 +15,7 @@ from npuloop.quant import (prepare, calibrate, evaluate, PRESET_SCHEMES, QScheme
 from npuloop.zoo import fit
 from npuloop.intengine import export_int_graph, NumpyEngine
 
-HEAL_EPOCHS = int(os.environ.get("NPULOOP_HEAL_EPOCHS", "5"))
+HEAL_EPOCHS = int(os.environ.get("NPULOOP_HEAL_EPOCHS", "4"))
 QAT_EPOCHS = int(os.environ.get("NPULOOP_QAT_EPOCHS", "3"))
 INT_EVAL = int(os.environ.get("NPULOOP_INT_EVAL", "5000"))
 

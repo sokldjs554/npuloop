@@ -7,7 +7,9 @@ from npuloop.intengine import export_int_graph, NumpyEngine
 from npuloop.intengine.verify import compare
 
 SCHEMES = ["npu-default", "npu-percentile", "npu-mse", "per-tensor", "per-tensor-mse", "pow2", "sym-act"]
-INT_EVAL = int(os.environ.get("NPULOOP_INT_EVAL", "10000"))
+INT_EVAL = int(os.environ.get("NPULOOP_INT_EVAL", "10000"))          # primary schemes: full test set
+INT_EVAL_SECONDARY = int(os.environ.get("NPULOOP_INT_EVAL_SECONDARY", "2000"))
+PRIMARY = ("npu-default", "per-tensor")
 
 
 def main():
@@ -29,8 +31,11 @@ def main():
             fq_acc = evaluate(qm, ds)
             ig = export_int_graph(qm)
             rows, summ = compare(qm, ig, x_agree)
-            int_acc = NumpyEngine(ig).evaluate(ds, limit=INT_EVAL)
-            rec = dict(model=name, scheme=sname, float_acc=float_acc, fake_acc=fq_acc, int_acc=int_acc, int_eval_images=INT_EVAL,
+            n_int = INT_EVAL if sname in PRIMARY else INT_EVAL_SECONDARY
+            int_acc = NumpyEngine(ig).evaluate(ds, limit=n_int)
+            fake_acc_subset = evaluate(qm, ds, limit=n_int)
+            rec = dict(model=name, scheme=sname, float_acc=float_acc, fake_acc=fq_acc, int_acc=int_acc, int_eval_images=n_int,
+                       fake_acc_on_int_subset=fake_acc_subset,
                        drop_fake=float_acc - fq_acc, drop_int=float_acc - int_acc, agreement=summ,
                        per_layer_agreement=[r.to_dict() for r in rows], seconds=time.time() - t)
             if sname in ("npu-default", "per-tensor"):

@@ -12,7 +12,7 @@ from npuloop.prune import prune, prune_cost_greedy, find_groups
 from npuloop.quant import prepare, calibrate, evaluate, PRESET_SCHEMES
 from npuloop.zoo import fit
 
-FT_EPOCHS = int(os.environ.get("NPULOOP_FT_EPOCHS", "5"))
+FT_EPOCHS = int(os.environ.get("NPULOOP_FT_EPOCHS", "4"))
 SPECS = ["tiny-1tops", "edge-10tops", "pcie-80tops"]
 MODELS = os.environ.get("NPULOOP_MODELS", "resnet20_relu,mnv2_050_relu6").split(",")
 CONFIGS = [  # (strategy, ratio/target, align)
@@ -46,7 +46,8 @@ def main():
             qm = prepare(m, PRESET_SCHEMES["npu-default"]); calibrate(qm, calib)
             res.add(dict(model=name, strategy="none", ratio=1.0, align=0, keep=[g.channels for g in find_groups(m)],
                          float_acc=evaluate(m, ds), ft_acc=evaluate(m, ds), int8_acc=evaluate(qm, ds), **base_costs), provenance="measured+simulated")
-        for strategy, ratio, align in CONFIGS:
+        configs = CONFIGS if name.startswith("resnet") else [c for c in CONFIGS if c[1] in (0.5, 0.6) or c == ("uniform", 0.25, 0)]
+        for strategy, ratio, align in configs:
             if res.has(model=name, strategy=strategy, ratio=ratio, align=align):
                 continue
             t = time.time()
