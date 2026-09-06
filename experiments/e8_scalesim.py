@@ -39,9 +39,9 @@ def layers_of(model):
             _, hin, win = by[n.inputs[0]].out_shape
             _, ho, wo = n.out_shape
             s = n.attrs["stride"][0]
-            # SCALE-Sim has no padding parameter: give it the padded ifmap so the ofmap matches ours
-            ph, pw = n.attrs["padding"]
-            out.append(dict(name=n.name, ifh=hin + 2 * ph, ifw=win + 2 * pw, kh=kh, kw=kw, cin=cin, cout=cout, stride=s, m=ho * wo, k=cin * kh * kw, n=cout))
+            # SCALE-Sim has no padding parameter: give it the smallest ifmap that yields exactly our ofmap
+            # (a padded 34x34 input with stride 2 would make SCALE-Sim compute a 17x17 ofmap instead of 16x16)
+            out.append(dict(name=n.name, ifh=(ho - 1) * s + kh, ifw=(wo - 1) * s + kw, kh=kh, kw=kw, cin=cin, cout=cout, stride=s, m=ho * wo, k=cin * kh * kw, n=cout))
         else:
             cout, k = n.weight.shape
             out.append(dict(name=n.name, ifh=1, ifw=1, kh=1, kw=1, cin=k, cout=cout, stride=1, m=1, k=k, n=cout))
@@ -57,7 +57,12 @@ def run_scalesim(layers, rows, cols, workdir):
         f.write("Layer name, IFMAP Height, IFMAP Width, Filter Height, Filter Width, Channels, Num Filter, Strides,\n")
         for l in layers:
             f.write(f"{l['name']}, {l['ifh']}, {l['ifw']}, {l['kh']}, {l['kw']}, {l['cin']}, {l['cout']}, {l['stride']},\n")
-    sim = scalesim(save_disk_space=True, verbose=False, config=cfg, topology=topo, input_type_gemm=False)
+    layout = os.path.join(workdir, f"{run_name}_layout.csv")   # required by v3 even with custom layouts disabled
+    with open(layout, "w") as f:
+        f.write("Layer name, IFMAP Height Intraline Factor, IFMAP Width Intraline Factor, Filter Height Intraline Factor, Filter Width Intraline Factor, Channel Intraline Factor, Num Filter Intraline Factor, IFMAP Height Intraline Order, IFMAP Width Intraline Order, Channel Intraline Order, IFMAP Height Interline Order, IFMAP Width Interline Order, Channel Interline Order, Num Filter Intraline Order, Channel Intraline Order, Filter Height Intraline Order, Filter Width Intraline Order, Num Filter Interline Order, Channel Interline Order, Filter Height Interline Order, Filter Width Interline Order,\n")
+        for l in layers:
+            f.write(f"{l['name']}, 1, 1, 1, 1, 1, 1, 0, 1, 2, 0, 1, 2, 0, 1, 2, 3, 0, 1, 2, 3,\n")
+    sim = scalesim(save_disk_space=True, verbose=False, config=cfg, topology=topo, layout=layout, input_type_gemm=False)
     sim.run_scale(top_path=workdir)
     rep = os.path.join(workdir, run_name, "COMPUTE_REPORT.csv")
     rows_ = list(csv.DictReader(open(rep)))
@@ -65,7 +70,7 @@ def run_scalesim(layers, rows, cols, workdir):
 
 
 def main():
-    res = Results("e8_scalesim", meta=dict(scalesim_version="3.0.0", dataflow="ws", note="Total Cycles with CALC bandwidth (compute only) vs npuloop gemm_cycles single core"))
+    res = Results("e8_scalesim", meta=dict(scalesim_version="3.0.0 (numpy-2 scalar fix applied to double_buffered_scratchpad_mem.py)", dataflow="ws", note="Total Cycles with CALC bandwidth (compute only) vs npuloop gemm_cycles single core"))
     for name in MODELS:
         if name not in available_baselines():
             continue

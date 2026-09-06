@@ -4,8 +4,9 @@ Mapping assumptions (documented, deliberately simple, deterministic):
   * conv/linear are lowered to GEMMs (im2col): M = Hout*Wout, K = Cin/groups*kh*kw, N = Cout.
   * Weight-stationary systolic array of pe_rows x pe_cols: a weight tile of [rows x cols] is held in
     the array while all M input rows stream through. Tiles: Kt = ceil(K/rows), Nt = ceil(N/cols).
-    cycles_tile = M + (rows + cols) fill/drain  -> compute_cycles = Kt * Nt * cycles_tile.
-    This is the same first-order model SCALE-Sim uses for its WS dataflow.
+    cycles_tile = M + rows (loading the weight tile, one row per cycle) + (rows + cols - 2) (skew fill/drain)
+    -> compute_cycles = Kt * Nt * cycles_tile. This reproduces SCALE-Sim's WS compute cycles to within
+    one cycle per tile (validated in experiments/e8_scalesim.py).
   * Multi-core: the mapper tries splitting N (output channels) or M (spatial) across cores and keeps
     the faster one — exactly the decision a compiler makes for small-Cout layers.
   * Depthwise conv: on the depthwise engine (dw_lanes MACs/cycle/core) when present, else on the array
@@ -105,7 +106,7 @@ class CostReport:
 def gemm_cycles(m: int, k: int, n: int, spec: NPUSpec) -> tuple[float, str, int]:
     """Weight-stationary systolic cycles for a GEMM with multi-core split. Returns (cycles, split, tiles)."""
     R, C = spec.pe_rows, spec.pe_cols
-    fd = (R + C) if spec.fill_drain else 0
+    fd = (2 * R + C - 2) if spec.fill_drain else 0     # weight-tile load (R) + systolic skew (R + C - 2)
     kt = math.ceil(k / R)
     # split N across cores
     n_per = math.ceil(n / spec.cores)

@@ -227,7 +227,7 @@ function sv(s,tag,attrs,text){ const e=document.createElementNS(NS,tag); for(con
 $('built').textContent = 'built ' + (D.built||'');
 
 // ---------- cost model (JS port of npuloop/npu/cost.py) ----------
-function gemmCycles(m,k,n,spec){ const R=spec.pe_rows,C=spec.pe_cols,fd=spec.fill_drain?(R+C):0; const kt=Math.ceil(k/R);
+function gemmCycles(m,k,n,spec){ const R=spec.pe_rows,C=spec.pe_cols,fd=spec.fill_drain?(2*R+C-2):0; const kt=Math.ceil(k/R);
   const nPer=Math.ceil(n/spec.cores), cycN=kt*Math.ceil(nPer/C)*(m+fd); const mPer=Math.ceil(m/spec.cores), cycM=kt*Math.ceil(n/C)*(mPer+fd);
   if(spec.cores===1||cycN<=cycM) return [cycN, spec.cores>1?'N':'-']; return [cycM,'M']; }
 function estimate(model, spec){ const sram=spec.sram_kb*1024, bpc=spec.dram_gbps*1e9/(spec.freq_mhz*1e6); const resident={}; const outB={}; model.layers.forEach(l=>outB[l.name]=l.elements);

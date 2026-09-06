@@ -8,7 +8,7 @@ def test_gemm_cycles_single_core_formula():
     spec = NPUSpec("t", pe_rows=32, pe_cols=32, cores=1, fill_drain=True)
     cyc, split, tiles = gemm_cycles(m=100, k=64, n=48, spec=spec)
     assert tiles == 2 * 2
-    assert cyc == 4 * (100 + 64)
+    assert cyc == 4 * (100 + 2 * 32 + 32 - 2)      # M + weight load R + skew (R + C - 2), per tile
     spec2 = NPUSpec("t", pe_rows=32, pe_cols=32, cores=1, fill_drain=False)
     assert gemm_cycles(100, 64, 48, spec2)[0] == 4 * 100
 

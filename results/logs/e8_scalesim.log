@@ -1,19 +1,3 @@
-Traceback (most recent call last):
-  File "/home/user/npuloop/experiments/e8_scalesim.py", line 95, in <module>
-    main()
-  File "/home/user/npuloop/experiments/e8_scalesim.py", line 79, in main
-    rep = run_scalesim(layers, rows, cols, wd)
-          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/user/npuloop/experiments/e8_scalesim.py", line 60, in run_scalesim
-    sim = scalesim(save_disk_space=True, verbose=False, config=cfg, topology=topo, input_type_gemm=False)
-          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.11/dist-packages/scalesim/scale_sim.py", line 50, in __init__
-    self.set_params(config_filename=config, topology_filename=topology, layout_filename=layout)
-  File "/usr/local/lib/python3.11/dist-packages/scalesim/scale_sim.py", line 105, in set_params
-    self.layout.load_arrays(layoutfile=self.layout_file, mnk_inputs=self.read_gemm_inputs)
-  File "/usr/local/lib/python3.11/dist-packages/scalesim/layout_utils.py", line 40, in load_arrays
-    self.load_layout_conv(layoutfile)
-  File "/usr/local/lib/python3.11/dist-packages/scalesim/layout_utils.py", line 50, in load_layout_conv
-    f = open(layoutfile, 'r')
-        ^^^^^^^^^^^^^^^^^^^^^
-FileNotFoundError: [Errno 2] No such file or directory: ''
+[23:43:27] resnet20_relu 32x32: scalesim=84,276 ours=84,298 (ratio 1.000; no fill/drain 0.683) worst layer err 0.5% (6s)
+[23:43:31] resnet20_relu 64x64: scalesim=49,123 ours=49,145 (ratio 1.000; no fill/drain 0.614) worst layer err 0.5% (5s)
+[23:43:44] resnet20_relu 16x16: scalesim=208,486 ours=208,508 (ratio 1.000; no fill/drain 0.766) worst layer err 0.5% (13s)
