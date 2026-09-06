@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "npuloop"
+version = "0.1.0"
+description = "NPU-aware model compression, closed loop: virtual INT8 NPU cost model + readiness lint + PTQ/QAT/CLE + array-aligned pruning + bit-exact integer engine"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["torch>=2.1", "numpy>=1.24"]
+
+[project.optional-dependencies]
+dev = ["pytest>=7", "matplotlib"]
+
+[project.scripts]
+npuloop = "npuloop.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["npuloop*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

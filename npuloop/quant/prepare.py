@@ -73,9 +73,11 @@ def prepare(model: nn.Module, scheme: QScheme = QScheme()) -> fx.GraphModule:
         elif node.op == "call_module" and isinstance(modules[node.target], nn.AdaptiveAvgPool2d):
             src = node.args[0]
             q = insert_after(node, new_fq(node.name))
-            src_fq = modules.get(src.target) if src.op == "call_module" else None
+            src_fq = gm.get_submodule(src.target) if src.op == "call_module" else None
             if isinstance(src_fq, FakeQuantAct):
-                getattr(gm, q.target).tied_to = src_fq
+                gm.get_submodule(q.target).tied_to = src_fq
+            else:
+                raise ValueError(f"pool input {src.name} is not a quantizer; cannot tie pool scale")
     gm.graph.lint(); gm.recompile()
     return gm
 
@@ -146,14 +148,17 @@ def calibrate_sequential(gm: fx.GraphModule, batches: list[torch.Tensor]) -> fx.
 
 
 @torch.no_grad()
-def evaluate(gm: nn.Module, ds, batch_size: int = 500, channels_last: bool = False) -> float:
+def evaluate(gm: nn.Module, ds, batch_size: int = 500, channels_last: bool = False, limit: int | None = None) -> float:
+    """Top-1 accuracy on the test split (optionally only the first `limit` images)."""
     gm.eval()
-    correct = 0
+    correct = 0; total = 0
     for xb, yb in ds.test_batches(batch_size):
         if channels_last:
             xb = xb.to(memory_format=torch.channels_last)
-        correct += (gm(xb).argmax(1) == yb).sum().item()
-    return correct / len(ds.x_test)
+        correct += (gm(xb).argmax(1) == yb).sum().item(); total += len(yb)
+        if limit and total >= limit:
+            break
+    return correct / total
 
 
 def describe(gm: fx.GraphModule) -> str:

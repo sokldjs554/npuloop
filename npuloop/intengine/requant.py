@@ -75,7 +75,7 @@ def _rdbpot(x: np.ndarray, exponent: np.ndarray | int, rounding: str = "tflite")
         half = (mask + 1) >> 1
         q = x >> e
         up = (remainder > half) | ((remainder == half) & (q & 1 == 1))
-        return q + up.astype(np.int64)
+        return np.where(e == 0, x, q + up.astype(np.int64))
     threshold = (mask >> 1) + (x < 0).astype(np.int64)            # tflite: round half away from zero
     return (x >> e) + (remainder > threshold).astype(np.int64)
 

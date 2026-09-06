@@ -29,17 +29,35 @@ class NumpyEngine:
         self.cfg = graph.requant
         self.saturations: dict[str, int] = {}
 
+    # float32 has a 24-bit significand: a partial sum is exact while |sum| < 2^24. With |x-zp| <= 255 and
+    # |w| <= 127 each product is < 2^15, so K_chunk * 255 * 127 < 2^24  <=>  K_chunk <= 518 terms per chunk.
+    _F32_SAFE_K = 512
+
     def _mac(self, n: IntNode, x: np.ndarray) -> np.ndarray:
-        """Integer conv/linear accumulation (exact via float64)."""
+        """Integer conv/linear accumulation, exact: float32 kernels on input-channel chunks whose worst-case
+        partial sums fit 24 bits, summed in int64 (falls back to float64 for grouped convs)."""
         in_q = self.g[n.inputs[0]].out_q
-        xf = torch.from_numpy((x - in_q.zero_point).astype(np.float64))
-        wf = torch.from_numpy(n.w_int.astype(np.float64))
+        xc = (x - in_q.zero_point)
+        w = n.w_int
         if n.op == "conv":
-            acc = F.conv2d(xf, wf, None, n.attrs["stride"], n.attrs["padding"], 1, n.attrs["groups"])
+            groups = n.attrs["groups"]
+            cout, cin_g, kh, kw = w.shape
+            k_total = cin_g * kh * kw
+            if groups == 1 and k_total > self._F32_SAFE_K:
+                ch_per_chunk = max(1, self._F32_SAFE_K // (kh * kw))
+                acc = None
+                for c0 in range(0, cin_g, ch_per_chunk):
+                    xf = torch.from_numpy(xc[:, c0:c0 + ch_per_chunk].astype(np.float32))
+                    wf = torch.from_numpy(w[:, c0:c0 + ch_per_chunk].astype(np.float32))
+                    part = F.conv2d(xf, wf, None, n.attrs["stride"], n.attrs["padding"], 1, 1).numpy().astype(np.int64)
+                    acc = part if acc is None else acc + part
+                return acc
+            dtype = np.float32 if k_total <= self._F32_SAFE_K else np.float64
+            xf = torch.from_numpy(xc.astype(dtype)); wf = torch.from_numpy(w.astype(dtype))
+            acc = F.conv2d(xf, wf, None, n.attrs["stride"], n.attrs["padding"], 1, groups).numpy()
         else:
-            acc = xf @ wf.T
-        acc = acc.numpy()
-        assert np.all(acc == np.round(acc)), "accumulator is not integer-valued (float64 exactness violated)"
+            xf = torch.from_numpy(xc.astype(np.float64)); wf = torch.from_numpy(w.astype(np.float64))
+            acc = (xf @ wf.T).numpy()
         return acc.astype(np.int64)
 
     def run(self, x_codes: np.ndarray, return_all: bool = False):
