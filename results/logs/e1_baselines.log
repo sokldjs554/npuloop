@@ -1,1 +1,2 @@
 [23:33:24] resnet20_relu: acc=0.9047 MACs=40.8M tiny-1tops:85210cyc edge-10tops:29793cyc pcie-80tops:16591cyc edge-10tops-strict:29793cyc
+[23:46:14] resnet20_relu: acc=0.9047 MACs=40.8M tiny-1tops:87730cyc edge-10tops:34417cyc pcie-80tops:22791cyc edge-10tops-strict:34417cyc
