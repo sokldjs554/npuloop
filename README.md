@@ -148,7 +148,7 @@ _(아직 실행되지 않음)_
 배열 크기·코어 수·DRAM 대역폭·depthwise 엔진 유무·비-ReLU 활성함수 실행 방식을 바꾸면 레이어별 사이클과 활용률이 즉시 다시 계산됩니다.
 lint 리포트, PTQ 그리드와 레이어별 일치도, requant ablation, 수술, 캘리브레이션, 프루닝 Pareto, lint-vs-drop 산점도를 모두 담았습니다.
 
-<!-- DEMO_URL -->
+**라이브 데모:** https://claude.ai/code/artifact/8112e532-a441-4118-9cc1-fb939e3dab49 (같은 페이지가 저장소의 `docs/index.html`에도 들어 있어 GitHub Pages로 그대로 서비스할 수 있습니다.)
 
 
 ## 저장소 구조

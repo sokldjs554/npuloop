@@ -91,7 +91,7 @@ footer{padding:30px 0 50px;color:var(--muted);font-size:13px;border-top:1px soli
 <header class="top"><div class="wrap">
   <div class="brand">npu<b>loop</b></div>
   <nav>
-    <a href="#loop">Loop</a><a href="#cost">Cost model</a><a href="#lint">Lint</a><a href="#ptq">PTQ &amp; bit-exact</a>
+    <a href="#loop">Loop</a><a href="#baselines">Baselines</a><a href="#cost">Cost model</a><a href="#scalesim">vs SCALE-Sim</a><a href="#lint">Lint</a><a href="#ptq">PTQ &amp; bit-exact</a>
     <a href="#requant">Requant</a><a href="#surgery">Surgery</a><a href="#calib">Calibration</a><a href="#prune">Pruning</a><a href="#lintvsdrop">Lint vs drop</a><a href="#method">Method</a>
   </nav>
 </div></header>
@@ -109,6 +109,12 @@ footer{padding:30px 0 50px;color:var(--muted);font-size:13px;border-top:1px soli
   <h2><span class="num">00</span>폐루프 한 장 요약</h2>
   <p class="sub">모델 → fx 그래프(BN folding) → 비용 모델 &amp; lint → 압축 결정(프루닝 · 활성함수 교체 · PTQ/QAT/CLE) → 정수 그래프 export → NumPy/C++ 비트 정확 실행 → fake-quant와 비교. 화살표가 다시 위로 올라가는 것이 이 프로젝트의 요점입니다.</p>
   <div class="panel diagram" id="diagram"></div>
+</section>
+
+<section id="baselines">
+  <h2><span class="num">E1</span>베이스라인</h2>
+  <p class="sub">같은 레시피(30 epoch OneCycle SGD, seed 0)로 학습한 모델들과 4개 가상 NPU 프리셋에서의 사이클·배열 활용률, lint 점수입니다.</p>
+  <div class="panel"><div class="tblwrap" id="bl-table"></div></div>
 </section>
 
 <section id="cost">
@@ -129,6 +135,12 @@ footer{padding:30px 0 50px;color:var(--muted);font-size:13px;border-top:1px soli
     <div class="legend"><span><i style="background:var(--c1)"></i>compute-bound</span><span><i style="background:var(--c2)"></i>memory-bound</span><span><i style="background:var(--c3)"></i>vector (add/pool/LUT)</span><span><i style="background:var(--c4)"></i>host fallback</span><span><i style="background:var(--c5)"></i>depthwise engine</span></div>
     <div class="tblwrap" id="cm-table"></div>
   </div>
+</section>
+
+<section id="scalesim">
+  <h2><span class="num">E8</span>비용 모델 검증 — SCALE-Sim 대조</h2>
+  <p class="sub">해석적 모델의 연산 사이클을 SCALE-Sim v3(사이클 정확 systolic-array 시뮬레이터, weight-stationary, 대역폭 제한 없음)와 레이어별로 비교했습니다. 타일당 <code>M + 2R + C − 2</code> 모델은 세 배열 크기 모두에서 합계 0.03% 이내입니다. 오른쪽 열은 fill/drain 항을 빼면 얼마나 낙관적이 되는지 보여줍니다.</p>
+  <div class="panel"><div class="tblwrap" id="ss-table"></div><div id="ss-chart"></div></div>
 </section>
 
 <section id="lint">
@@ -288,6 +300,18 @@ function estimate(model, spec){ const sram=spec.sram_kb*1024, bpc=spec.dram_gbps
     $('cm-chart').innerHTML=''; $('cm-chart').appendChild(s);
     const t=el('table'); t.innerHTML='<tr><th>layer</th><th>kind</th><th>MACs</th><th>M</th><th>K</th><th>N</th><th>cycles</th><th>bound</th><th>util</th><th>split</th><th>DRAM KB</th></tr>'+rows.map(x=>`<tr><td>${x.name}</td><td>${x.kind}</td><td>${fmt.n(x.macs)}</td><td>${x.m||''}</td><td>${x.k||''}</td><td>${x.n||''}</td><td>${fmt.n(x.cycles)}</td><td>${x.bound}</td><td>${x.util?fmt.pct(x.util,1):''}</td><td>${x.split}</td><td>${(x.dramB/1024).toFixed(1)}</td></tr>`).join(''); $('cm-table').innerHTML=''; $('cm-table').appendChild(t); }
   ['cm-model','cm-arr','cm-cores','cm-dram','cm-dw','cm-lut'].forEach(id=>$(id).addEventListener('input',render)); $('cm-preset').addEventListener('change',()=>{loadPreset($('cm-preset').value); render();}); render(); })();
+
+// ---------- baselines (E1) ----------
+(function(){ const e1=(R.e1_baselines||{}).records||[]; if(!e1.length){ $('bl-table').innerHTML='<span class="empty">E1 not run yet</span>'; return; } const specs=['tiny-1tops','edge-10tops','pcie-80tops'];
+  const t=el('table'); t.innerHTML='<tr><th>model</th><th>params</th><th>MACs</th><th>FP32 acc</th>'+specs.map(s=>`<th>${s}<br><span style="font-weight:400;text-transform:none">cycles (util)</span></th>`).join('')+'<th>lint eff / q-rob</th></tr>'+e1.map(r=>`<tr><td>${ml(r.model)}</td><td>${r.params.toLocaleString()}</td><td>${(r.macs/1e6).toFixed(1)}M</td><td>${fmt.pct(r.float_acc)}</td>`+specs.map(s=>`<td>${fmt.n(r.cost[s].total_cycles)} (${fmt.pct(r.cost[s].array_utilization,0)})</td>`).join('')+`<td>${r.lint['edge-10tops'].scores.efficiency} / ${r.lint['edge-10tops'].scores.quant_robustness}</td></tr>`).join(''); $('bl-table').innerHTML=''; $('bl-table').appendChild(t); })();
+
+// ---------- SCALE-Sim validation (E8) ----------
+(function(){ const e8=(R.e8_scalesim||{}).records||[]; if(!e8.length){ $('ss-table').innerHTML='<span class="empty">E8 not run yet</span>'; return; }
+  const t=el('table'); t.innerHTML='<tr><th>model</th><th>array</th><th>SCALE-Sim cycles</th><th>npuloop cycles</th><th>ratio</th><th>worst layer</th><th>without fill/drain</th></tr>'+e8.map(r=>`<tr><td>${ml(r.model)}</td><td>${r.rows}×${r.cols}</td><td>${fmt.n(r.total_scalesim)}</td><td>${fmt.n(r.total_ours)}</td><td>${r.ratio.toFixed(4)}</td><td>${fmt.pct(r.max_layer_abs_err,1)}</td><td>${r.ratio_nofd.toFixed(3)}</td></tr>`).join(''); $('ss-table').innerHTML=''; $('ss-table').appendChild(t);
+  const r=e8.find(x=>x.rows===64)||e8[0]; const rows=r.layers; const w=1040,h=230,left=60,top=12,bottom=60,right=16; const s=svg(w,h); const n=rows.length; const bw=(w-left-right)/n; const maxv=Math.max(...rows.map(x=>Math.max(x.scalesim_cycles,x.ours_cycles))); const ys=v=>top+(h-top-bottom)*(1-v/maxv);
+  [0,.5,1].forEach(tt=>{ sv(s,'line',{x1:left,x2:w-right,y1:ys(maxv*tt),y2:ys(maxv*tt),class:'grid'}); sv(s,'text',{x:left-6,y:ys(maxv*tt)+4,'text-anchor':'end'},fmt.n(maxv*tt)); });
+  rows.forEach((x,i)=>{ const cx=left+i*bw; const g=sv(s,'g',{}); sv(g,'rect',{x:cx+1,y:ys(x.scalesim_cycles),width:bw*0.45,height:Math.max(0,ys(0)-ys(x.scalesim_cycles)),fill:css('--c5')}); sv(g,'rect',{x:cx+1+bw*0.47,y:ys(x.ours_cycles),width:bw*0.45,height:Math.max(0,ys(0)-ys(x.ours_cycles)),fill:css('--c1')}); sv(g,'title',{},`${x.layer}: SCALE-Sim ${fmt.n(x.scalesim_cycles)} · npuloop ${fmt.n(x.ours_cycles)} (ratio ${x.ratio.toFixed(3)}) M=${x.m} K=${x.k} N=${x.n}`); sv(s,'text',{x:cx+bw/2,y:h-bottom+8,'text-anchor':'end',transform:`rotate(-55 ${cx+bw/2} ${h-bottom+8})`,style:'font-size:9.5px'},x.layer.replace('blocks_','b')); });
+  $('ss-chart').innerHTML=''; $('ss-chart').appendChild(s); $('ss-chart').appendChild(el('div',{class:'legend'},`<span><i style="background:var(--c5)"></i>SCALE-Sim (${r.rows}×${r.cols})</span><span><i style="background:var(--c1)"></i>npuloop analytical</span>`)); })();
 
 // ---------- lint ----------
 (function(){ const e1=(R.e1_baselines||{}).records||[]; if(!e1.length){ $('li-score').innerHTML='<span class="empty">E1 not run yet</span>'; return; }
