@@ -14,7 +14,8 @@ from npuloop.zoo import fit
 
 FT_EPOCHS = int(os.environ.get("NPULOOP_FT_EPOCHS", "3"))
 SPECS = ["tiny-1tops", "edge-10tops", "pcie-80tops"]
-MODELS = os.environ.get("NPULOOP_MODELS", "resnet20_relu,mnv2_050_relu6").split(",")
+MODELS = os.environ.get("NPULOOP_MODELS", "resnet20_relu").split(",")
+RESULTS_NAME = os.environ.get("NPULOOP_E6_NAME", "e6_pruning")      # a parallel MobileNetV2 run writes to its own file (merged by tools/merge_results.py)
 CONFIGS = [  # (strategy, ratio/target, align)
     ("uniform", 0.75, 0), ("uniform", 0.5, 0), ("uniform", 0.25, 0),
     ("aligned", 0.5, 16), ("aligned", 0.5, 32),
@@ -34,7 +35,7 @@ def costs(model):
 def main():
     torch.set_num_threads(int(os.environ.get("NPULOOP_THREADS", "4")))
     ds = dataset()
-    res = Results("e6_pruning", meta=dict(ft_epochs=FT_EPOCHS, specs=SPECS, greedy_spec="edge-10tops"))
+    res = Results(RESULTS_NAME, meta=dict(ft_epochs=FT_EPOCHS, specs=SPECS, greedy_spec="edge-10tops"))
     calib = calib_batches(ds, 512, seed=0)
     for name in MODELS:
         if name not in available_baselines():
