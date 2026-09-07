@@ -26,3 +26,6 @@
 [04:30:33] resnet20_silu    tflite-m31-acc16-b32         fake=0.9070 int=0.6300 agree(ref)=0.6505 sat=6517794 (135s)
 [11:18:28] mnv2_050_relu6   tflite-m31-acc32-b32         fake=0.9100 int=0.9135 agree(ref)=1.0000 sat=0 (264s)
 [11:21:26] mnv2_050_relu6   single-m31-acc32-b32         fake=0.9100 int=0.9100 agree(ref)=0.9925 sat=0 (178s)
+[11:26:34] mnv2_050_relu6   half_even-m31-acc32-b32      fake=0.9100 int=0.9095 agree(ref)=0.9950 sat=0 (308s)
+[11:31:21] mnv2_050_relu6   truncate-m31-acc32-b32       fake=0.9100 int=0.8945 agree(ref)=0.9385 sat=0 (287s)
+[11:35:41] mnv2_050_relu6   floor-m31-acc32-b32          fake=0.9100 int=0.8960 agree(ref)=0.9480 sat=0 (260s)

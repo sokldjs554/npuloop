@@ -31,9 +31,8 @@ def part_a(ds, res):
         return
     m = load_model(name); float_acc = evaluate(m, ds)
     calib = calib_batches(ds, 512, seed=0)
-    for sname in ["per-tensor", "npu-default"]:
+    for sname in ["per-tensor"]:            # the per-channel PTQ reference comes from E2
         sch = PRESET_SCHEMES[sname]
-        steps = []
         if not res.has(part="a", model=name, scheme=sname, step="ptq"):
             qm = prepare(m, sch); calibrate(qm, calib)
             res.add(dict(part="a", model=name, scheme=sname, step="ptq", float_acc=float_acc, fake_acc=evaluate(qm, ds), int_acc=int_acc(qm, ds)))
@@ -99,7 +98,9 @@ def part_b(ds, res):
 def part_c(ds, res):
     calib = calib_batches(ds, 512, seed=0)
     for name in available_baselines():
-        schemes = ["npu-default", "per-tensor"] if name in ("resnet20_relu", "mnv2_050_relu6") else ["npu-default"]
+        if name not in ("resnet20_relu", "mnv2_050_relu6"):
+            continue                          # SiLU's QAT is in part (b)
+        schemes = ["npu-default"]
         if all(res.has(part="c", model=name, scheme=s_) for s_ in schemes):
             continue
         m = load_model(name); float_acc = evaluate(m, ds)

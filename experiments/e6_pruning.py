@@ -16,9 +16,8 @@ FT_EPOCHS = int(os.environ.get("NPULOOP_FT_EPOCHS", "3"))
 SPECS = ["tiny-1tops", "edge-10tops", "pcie-80tops"]
 MODELS = os.environ.get("NPULOOP_MODELS", "resnet20_relu,mnv2_050_relu6").split(",")
 CONFIGS = [  # (strategy, ratio/target, align)
-    ("uniform", 0.75, 0), ("aligned", 0.75, 16),
-    ("uniform", 0.5, 0), ("aligned", 0.5, 16), ("aligned", 0.5, 32),
-    ("uniform", 0.25, 0),
+    ("uniform", 0.75, 0), ("uniform", 0.5, 0), ("uniform", 0.25, 0),
+    ("aligned", 0.5, 16), ("aligned", 0.5, 32),
     ("cost-greedy", 0.85, 8), ("cost-greedy", 0.7, 8), ("cost-greedy", 0.55, 8),   # 8-channel steps: finer K-tile staircase
 ]
 
@@ -46,7 +45,7 @@ def main():
             qm = prepare(m, PRESET_SCHEMES["npu-default"]); calibrate(qm, calib)
             res.add(dict(model=name, strategy="none", ratio=1.0, align=0, keep=[g.channels for g in find_groups(m)],
                          float_acc=evaluate(m, ds), ft_acc=evaluate(m, ds), int8_acc=evaluate(qm, ds), **base_costs), provenance="measured+simulated")
-        configs = CONFIGS if name.startswith("resnet") else [c for c in CONFIGS if c[1] in (0.5, 0.7) or c == ("uniform", 0.25, 0)]
+        configs = CONFIGS if name.startswith("resnet") else [("uniform", 0.5, 0), ("cost-greedy", 0.7, 8)]
         for strategy, ratio, align in configs:
             if res.has(model=name, strategy=strategy, ratio=ratio, align=align):
                 continue
