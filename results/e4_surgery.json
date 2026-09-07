@@ -59,6 +59,71 @@
    "heal_log": null,
    "provenance": "measured+simulated",
    "timestamp": "2026-09-07T07:24:35"
+  },
+  {
+   "part": "b",
+   "variant": "swap-relu-heal3",
+   "act": "relu",
+   "float_acc": 0.905,
+   "float_acc_after_swap": 0.5396,
+   "float_acc_after_heal": 0.9002,
+   "fake_acc": 0.9004,
+   "int_acc": 0.9009,
+   "cycles": {
+    "edge-10tops": 34417.0,
+    "edge-10tops-strict": 34417.0,
+    "pcie-80tops": 22791.0,
+    "tiny-1tops": 87730.0
+   },
+   "heal_epochs": 3,
+   "heal_log": [
+    {
+     "epoch": 1,
+     "train_loss": 0.20729983733632626,
+     "train_acc": 0.9276642628205128,
+     "test_acc": 0.8706,
+     "lr": 0.018644779853310957,
+     "epoch_sec": 145.00041580200195
+    },
+    {
+     "epoch": 2,
+     "train_loss": 0.2137441346087517,
+     "train_acc": 0.9252403846153846,
+     "test_acc": 0.889,
+     "lr": 0.007392024426860376,
+     "epoch_sec": 142.9042489528656
+    },
+    {
+     "epoch": 3,
+     "train_loss": 0.16415631233308559,
+     "train_acc": 0.9435296474358974,
+     "test_acc": 0.9002,
+     "lr": 2.0056270805599783e-05,
+     "epoch_sec": 147.03944373130798
+    }
+   ],
+   "provenance": "measured+simulated",
+   "timestamp": "2026-09-07T07:42:18"
+  },
+  {
+   "part": "b",
+   "variant": "swap-hswish-heal0",
+   "act": "hswish",
+   "float_acc": 0.905,
+   "float_acc_after_swap": 0.8958,
+   "float_acc_after_heal": 0.8958,
+   "fake_acc": 0.8965,
+   "int_acc": 0.8975,
+   "cycles": {
+    "edge-10tops": 34785.0,
+    "edge-10tops-strict": 1554865.0,
+    "pcie-80tops": 22817.0,
+    "tiny-1tops": 90674.0
+   },
+   "heal_epochs": 0,
+   "heal_log": null,
+   "provenance": "measured+simulated",
+   "timestamp": "2026-09-07T07:53:41"
   }
  ]
 }
