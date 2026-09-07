@@ -3,9 +3,7 @@ title: "npuloop: closed-loop NPU-aware model compression with a validated analyt
 message: "If you use this software, please cite it as below."
 type: software
 authors:
-  - family-names: "Kim"
-    given-names: "Y. H."
-    alias: sokldjs554
+  - name: "sokldjs554"
 repository-code: "https://github.com/sokldjs554/npuloop"
 license: Apache-2.0
 version: 0.1.0
