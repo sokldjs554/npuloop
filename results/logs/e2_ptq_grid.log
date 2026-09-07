@@ -7,3 +7,4 @@
 [00:10:57] resnet20_relu    per-tensor-mse   float=0.9047 fake=0.9050 int=0.9090 top1-agree=0.994 (139s)
 [00:13:17] resnet20_relu    pow2             float=0.9047 fake=0.9053 int=0.9090 top1-agree=0.988 (140s)
 [00:15:36] resnet20_relu    sym-act          float=0.9047 fake=0.9070 int=0.0905 top1-agree=0.088 (139s)
+[03:36:14] resnet20_relu    sym-act          float=0.9047 fake=0.9070 int=0.9105 top1-agree=0.988 (237s)

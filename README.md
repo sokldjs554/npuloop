@@ -183,7 +183,9 @@ npuloop cost runs/resnet20_relu/best.pt --spec edge-10tops          # 레이어�
 npuloop lint runs/resnet20_relu/best.pt --spec edge-10tops --data data/cifar10.npz
 npuloop quantize runs/resnet20_relu/best.pt --data data/cifar10.npz --scheme npu-default --verify 500 --int-eval 2000
 
+python examples/walkthrough.py --ckpt runs/resnet20_relu/best.pt --data data/cifar10.npz   # 1~2분짜리 전체 흐름 데모
 bash experiments/run_all.sh     # E1–E7 전부 (CPU 4코어 기준 수 시간), results/*.json
+python experiments/e8_scalesim.py   # 비용 모델 vs SCALE-Sim (pip install scalesim)
 python demo/build.py            # results → demo/index.html, docs/index.html
 ```
 
