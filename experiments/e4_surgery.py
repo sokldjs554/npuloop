@@ -18,6 +18,7 @@ from npuloop.intengine import export_int_graph, NumpyEngine
 HEAL_EPOCHS = int(os.environ.get("NPULOOP_HEAL_EPOCHS", "3"))
 QAT_EPOCHS = int(os.environ.get("NPULOOP_QAT_EPOCHS", "2"))
 QAT_STEPS = int(os.environ.get("NPULOOP_QAT_STEPS", "250"))     # steps per QAT epoch (fake-quant training is ~3x slower than FP32)
+QAT_LR = float(os.environ.get("NPULOOP_QAT_LR", "0.002"))        # 0.005 diverges on the BN-folded ReLU ResNet (no BN left to stabilise)
 INT_EVAL = int(os.environ.get("NPULOOP_INT_EVAL", "5000"))
 
 
@@ -53,7 +54,7 @@ def part_a(ds, res):
         if not res.has(part="a", model=name, scheme=sname, step="cle+qat"):
             gm = fold_bn(m); equalize(gm)
             qm = prepare(gm, sch); calibrate(qm, calib)
-            t = time.time(); lg = qat(qm, ds, epochs=QAT_EPOCHS, lr=0.005, seed=0, steps_per_epoch=QAT_STEPS)
+            t = time.time(); lg = qat(qm, ds, epochs=QAT_EPOCHS, lr=QAT_LR, seed=0, steps_per_epoch=QAT_STEPS)
             res.add(dict(part="a", model=name, scheme=sname, step="cle+qat", float_acc=float_acc, fake_acc=evaluate(qm, ds), int_acc=int_acc(qm, ds),
                          qat_epochs=QAT_EPOCHS, minutes=(time.time() - t) / 60, qat_log=lg["epochs"]))
         log(f"part a {sname} done")
@@ -74,7 +75,7 @@ def part_b(ds, res):
         qm = prepare(m, sch); calibrate(qm, calib)
         res.add(dict(part="b", variant="silu-ptq", act="silu", float_acc=float_acc, fake_acc=evaluate(qm, ds), int_acc=int_acc(qm, ds), cycles=cost(m), heal_epochs=0), provenance="measured+simulated")
     if not res.has(part="b", variant="silu-qat"):
-        qm = prepare(m, sch); calibrate(qm, calib); lg = qat(qm, ds, epochs=QAT_EPOCHS, lr=0.005, seed=0, steps_per_epoch=QAT_STEPS)
+        qm = prepare(m, sch); calibrate(qm, calib); lg = qat(qm, ds, epochs=QAT_EPOCHS, lr=QAT_LR, seed=0, steps_per_epoch=QAT_STEPS)
         res.add(dict(part="b", variant="silu-qat", act="silu", float_acc=float_acc, fake_acc=evaluate(qm, ds), int_acc=int_acc(qm, ds), cycles=cost(m), qat_epochs=QAT_EPOCHS), provenance="measured+simulated")
     for target in ["relu", "hswish"]:
         for heal in [0, HEAL_EPOCHS]:
@@ -109,7 +110,7 @@ def part_c(ds, res):
                 continue
             qm = prepare(m, PRESET_SCHEMES[sname]); calibrate(qm, calib)
             ptq = evaluate(qm, ds)
-            t = time.time(); lg = qat(qm, ds, epochs=QAT_EPOCHS, lr=0.005, seed=0, steps_per_epoch=QAT_STEPS)
+            t = time.time(); lg = qat(qm, ds, epochs=QAT_EPOCHS, lr=QAT_LR, seed=0, steps_per_epoch=QAT_STEPS)
             res.add(dict(part="c", model=name, scheme=sname, float_acc=float_acc, ptq_acc=ptq, qat_acc=evaluate(qm, ds), int_acc=int_acc(qm, ds),
                          qat_epochs=QAT_EPOCHS, minutes=(time.time() - t) / 60, qat_log=lg["epochs"]))
             log(f"part c {name} {sname}: ptq {ptq:.4f} -> qat {res.data['records'][-1]['qat_acc']:.4f}")
@@ -118,7 +119,7 @@ def part_c(ds, res):
 def main():
     torch.set_num_threads(int(os.environ.get("NPULOOP_THREADS", "4")))
     ds = dataset()
-    res = Results("e4_surgery", meta=dict(heal_epochs=HEAL_EPOCHS, qat_epochs=QAT_EPOCHS, qat_steps_per_epoch=QAT_STEPS, int_eval_images=INT_EVAL))
+    res = Results("e4_surgery", meta=dict(heal_epochs=HEAL_EPOCHS, qat_epochs=QAT_EPOCHS, qat_steps_per_epoch=QAT_STEPS, qat_lr=QAT_LR, int_eval_images=INT_EVAL))
     parts = os.environ.get("NPULOOP_PARTS", "abc")
     if "a" in parts: part_a(ds, res)
     if "b" in parts: part_b(ds, res)

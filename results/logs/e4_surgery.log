@@ -21,3 +21,6 @@
 {"epoch": 2, "train_loss": 0.18667510384932542, "train_acc": 0.9346554487179487, "test_acc": 0.8931, "lr": 0.007392024426860376, "epoch_sec": 118.44520139694214}
 {"epoch": 3, "train_loss": 0.14299344238944542, "train_acc": 0.9510416666666667, "test_acc": 0.9019, "lr": 2.0056270805599783e-05, "epoch_sec": 119.63479661941528}
 [12:24:59] part b swap-hswish-heal3: swap 0.8958 -> heal 0.9019 -> int8 0.9012
+{"epoch": 1, "train_loss": 11.178876385316252, "train_acc": 0.24609375, "test_acc": 0.1, "lr": 0.0029210880230566756, "epoch_sec": 124.6351318359375}
+{"epoch": 2, "train_loss": 13.727067848205566, "train_acc": 0.0980625, "test_acc": 0.1, "lr": 1.0060801390040107e-05, "epoch_sec": 121.56289625167847}
+[12:33:19] part c resnet20_relu npu-default: ptq 0.9051 -> qat 0.1000

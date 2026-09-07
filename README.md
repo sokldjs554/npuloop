@@ -158,7 +158,7 @@ _(아직 실행되지 않음)_
 
 (b) **활성함수 교체가 가장 싼 수술입니다.** ResNet-20-SiLU(FP32 90.50%)의 SiLU 19개를 ReLU로 바꾸면 재학습 없이는 54%로 무너지지만, **3 epoch만 healing하면 90.0%(INT8 정수 엔진 90.0%)**로 돌아옵니다. HardSwish로 바꾸면 SiLU와 모양이 비슷해서 **재학습 없이도 89.6%**, 3 epoch healing 후 **90.2%(정수 엔진 90.1%)**로 SiLU 원본과 사실상 같습니다. 대가로 얻는 것: LUT가 없는 strict NPU에서 사이클 **1,554,865 → 34,417 (45배)**, LUT가 있는 NPU에서도 LUT 사이클 1%가 사라집니다. "SiLU를 NPU가 지원하나요?"라는 질문에 대한 답은 "지원 여부보다, 3 epoch 재학습으로 ReLU가 되는지 먼저 보라"입니다.
 (a) **MobileNetV2 per-tensor 실험은 "실패를 재현하지 못한" 정직한 결과입니다.** 논문(DFQ)에서 per-tensor 가중치가 MobileNetV2를 무너뜨리는 이유는 BN folding 후 depthwise 채널 범위가 수십~수백 배 벌어지기 때문인데, 이 저장소의 CIFAR MobileNetV2-0.5(BN 파라미터에 weight decay 없음, 30 epoch)는 **최대 비율이 3.5배**뿐입니다. lint는 이 모델의 양자화 강건성을 98점으로 매겨 "per-tensor로도 괜찮다"고 예측했고, 측정도 그랬습니다(per-tensor PTQ 91.05%, FP32 91.01%). CLE는 필요 없는 수술이었고 ReLU6→ReLU 치환 때문에 0.2%p를 오히려 잃었습니다. 정적 lint가 **"고치지 말라"**고 말해 주는 것도 값이 있다는 예입니다. CLE의 이득을 보려면 ImageNet 계열의 죽은 채널이 있는 체크포인트가 필요하며, 이는 한계로 남깁니다.
-(c) 각 모델의 짧은 QAT(2 epoch × 250 step)는 아래 표에 있습니다. SiLU 모델의 QAT는 PTQ보다 0.25%p 낮게 끝났는데, PTQ 손실이 이미 0.05%p뿐인 모델에 짧은 QAT를 얹으면 얻을 것이 없고 lr 잡음만 남는다는 뜻입니다 — QAT는 PTQ가 실제로 무너지는 곳(per-tensor MobileNetV2)에서만 값을 합니다.
+(c) 각 모델의 짧은 QAT(2 epoch × 250 step, lr 0.002)는 아래 표에 있습니다. PTQ 손실이 이미 0.1%p 이하인 모델에 짧은 QAT를 얹으면 얻을 것이 거의 없습니다 — QAT는 PTQ가 실제로 무너지는 곳에서만 값을 합니다. 부수적으로 배운 것: **BN을 접은 모델의 QAT는 학습률에 민감합니다.** lr 0.005에서는 ReLU ResNet-20이 40 step 안에 발산했고(정규화 층이 남아 있지 않기 때문), 0.002에서는 안정적이었습니다. 그래서 모든 QAT를 0.002로 다시 돌렸습니다.
 
 <!-- TABLE:E4 -->
 **(a) MobileNetV2-0.5, per-tensor 가중치 NPU 가정**

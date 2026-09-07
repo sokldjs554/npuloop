@@ -3,7 +3,8 @@
   "heal_epochs": 3,
   "qat_epochs": 2,
   "int_eval_images": 10000,
-  "qat_steps_per_epoch": 250
+  "qat_steps_per_epoch": 250,
+  "qat_lr": 0.002
  },
  "records": [
   {
@@ -22,23 +23,6 @@
    "heal_epochs": 0,
    "provenance": "measured+simulated",
    "timestamp": "2026-09-07T05:09:44"
-  },
-  {
-   "part": "b",
-   "variant": "silu-qat",
-   "act": "silu",
-   "float_acc": 0.905,
-   "fake_acc": 0.902,
-   "int_acc": 0.9028,
-   "cycles": {
-    "edge-10tops": 34785.0,
-    "edge-10tops-strict": 1554865.0,
-    "pcie-80tops": 22817.0,
-    "tiny-1tops": 90674.0
-   },
-   "qat_epochs": 2,
-   "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T07:13:17"
   },
   {
    "part": "b",
@@ -175,37 +159,6 @@
    "int_acc": 0.9103,
    "provenance": "measured",
    "timestamp": "2026-09-07T11:18:44"
-  },
-  {
-   "part": "a",
-   "model": "mnv2_050_relu6",
-   "scheme": "per-tensor",
-   "step": "cle+qat",
-   "float_acc": 0.9101,
-   "fake_acc": 0.9097,
-   "int_acc": 0.9099,
-   "qat_epochs": 2,
-   "minutes": 35.7355036854744,
-   "qat_log": [
-    {
-     "epoch": 1,
-     "train_loss": 0.14936390653252601,
-     "train_acc": 0.94678125,
-     "test_acc": 0.9067,
-     "lr": 0.0029210880230566756,
-     "epoch_sec": 466.44132804870605
-    },
-    {
-     "epoch": 2,
-     "train_loss": 0.1377631948441267,
-     "train_acc": 0.95284375,
-     "test_acc": 0.9097,
-     "lr": 1.0060801390040107e-05,
-     "epoch_sec": 462.1907367706299
-    }
-   ],
-   "provenance": "measured",
-   "timestamp": "2026-09-07T12:14:21"
   },
   {
    "part": "b",
