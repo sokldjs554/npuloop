@@ -69,9 +69,12 @@ class FakeQuantAct(nn.Module):
 
     def forward(self, x):
         if self.calibrating and self.tied_to is None:
-            self.observer(x)
-            if self.observer_kind == "minmax" and self.observer.ema is not None:
-                self.compute_qparams()
+            if self.enabled and self.observer_kind != "minmax":
+                pass          # percentile/MSE searches are far too expensive per training step; ranges stay frozen
+            else:
+                self.observer(x)
+                if self.enabled or (self.observer_kind == "minmax" and self.observer.ema is not None):
+                    self.compute_qparams()      # QAT: track ranges as the weights move
         if not self.enabled:
             return x
         if self.tied_to is not None:

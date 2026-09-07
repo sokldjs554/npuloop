@@ -45,6 +45,7 @@ class LintReport:
         n_compute = max(self.stats.get("n_compute", 1), 1)
         n_act = max(self.stats.get("n_act", 1), 1)
         n_add = max(self.stats.get("n_add", 1), 1)
+        n_tensors = max(self.stats.get("n_tensors", n_compute), 1)   # nodes the dynamic checks can flag
 
         def frac(check, sev=None):
             fs = bc.get(check, [])
@@ -61,7 +62,7 @@ class LintReport:
         eff -= 3.0 * min(1.0, frac("stem-underutilization"))
         qr = 100.0
         qr -= 35.0 * min(1.0, frac("weight-range-disparity", "high") / n_compute) + 15.0 * min(1.0, frac("weight-range-disparity", "medium") / n_compute)
-        qr -= 15.0 * min(1.0, frac("activation-outliers", "medium") / n_compute) + 6.0 * min(1.0, frac("activation-outliers", "low") / n_compute)
+        qr -= 15.0 * min(1.0, frac("activation-outliers", "medium") / n_tensors) + 6.0 * min(1.0, frac("activation-outliers", "low") / n_tensors)
         qr -= 10.0 * min(1.0, frac("activation-asymmetry") / n_act)
         qr -= 12.0 * min(1.0, frac("activation-support", "low") / n_act)      # LUT activation = extra quantization point
         qr -= 10.0 * min(1.0, frac("residual-scale-mismatch", "medium") / n_add) + 4.0 * min(1.0, frac("residual-scale-mismatch", "low") / n_add)
@@ -122,6 +123,7 @@ def check_array_alignment(graph: StaticGraph, spec: NPUSpec) -> list[Finding]:
         if n.op == "conv":
             cout, cin_g, kh, kw = n.weight.shape
             k = cin_g * kh * kw
+            cout = cout // n.attrs.get("groups", 1)        # grouped conv: each group is its own GEMM
         else:
             cout, k = n.weight.shape
         n_util = cout / (math.ceil(cout / C) * C)
@@ -290,6 +292,7 @@ def lint(graph: StaticGraph, spec="edge-10tops", calib: np.ndarray | None = None
     stats["n_compute"] = len(graph.compute_nodes())
     stats["n_act"] = sum(1 for n in graph.nodes if n.op == "act")
     stats["n_add"] = sum(1 for n in graph.nodes if n.op == "add")
+    stats["n_tensors"] = sum(1 for n in graph.nodes if n.op in ("conv", "linear", "add", "act", "pool"))
     stats["alignment_util_weighted"] = alignment_util_weighted(graph, spec)
     stats["weights"] = {n.name: dict(ratio=float(weight_channel_ranges(n).max() / max(np.median(weight_channel_ranges(n)), 1e-12)))
                         for n in graph.compute_nodes()}

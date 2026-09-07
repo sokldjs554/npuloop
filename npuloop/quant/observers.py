@@ -157,6 +157,11 @@ def weight_qparams(w: torch.Tensor, bits: int = 8, per_channel: bool = True, met
             better = err < best_err
             best = torch.where(better, amax * r, best); best_err = torch.where(better, err, best_err)
         amax = best
+    # an all-zero channel (e.g. BN gamma = 0) has no meaningful scale; give it the largest channel's scale so the
+    # requantization multiplier stays representable and its int32 bias survives (a 1e-12 scale would make the
+    # multiplier underflow to zero and silently drop the bias in the integer engine)
+    fallback = amax.max() if float(amax.max()) > 0 else torch.tensor(1.0, dtype=amax.dtype)
+    amax = torch.where(amax > 0, amax, fallback)
     scale = (amax / qmax).clamp_min(1e-12)
     if pow2:
         scale = torch.pow(2.0, torch.ceil(torch.log2(scale)))

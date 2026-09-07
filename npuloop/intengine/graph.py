@@ -129,8 +129,10 @@ def export_int_graph(gm: fx.GraphModule, requant: RequantConfig = RequantConfig(
                 add_node(n); alias[node.name] = n.name
             elif type(m) in ACT_MODULE_KINDS:
                 kind = ACT_MODULE_KINDS[type(m)]
-                if kind in RELU_FAMILY:
-                    producer = by_name[alias[src.name]]
+                producer = by_name[alias[src.name]]
+                fusable = (kind in RELU_FAMILY and producer.op in ("conv", "linear", "add")
+                           and producer.out_q is None and "fused_act" not in producer.attrs)
+                if fusable:
                     producer.attrs["fused_act"] = kind
                     alias[node.name] = producer.name
                 else:
@@ -145,7 +147,7 @@ def export_int_graph(gm: fx.GraphModule, requant: RequantConfig = RequantConfig(
                 n = add_node(IntNode(node.name, "flatten", [alias[src.name]], attrs=dict(out_shape=shape_of(node))))
                 n.out_q = by_name[alias[src.name]].out_q
                 alias[node.name] = n.name
-            elif isinstance(m, nn.Identity):
+            elif isinstance(m, (nn.Identity, nn.Dropout)):
                 alias[node.name] = alias[src.name]
             else:
                 raise ValueError(f"export: unsupported module {type(m).__name__} at {node.target}")
@@ -153,7 +155,8 @@ def export_int_graph(gm: fx.GraphModule, requant: RequantConfig = RequantConfig(
             a, b = node.args
             n = add_node(IntNode(node.name, "add", [alias[a.name], alias[b.name]], attrs=dict(out_shape=shape_of(node))))
             alias[node.name] = n.name
-        elif node.op == "call_function" and node.target is torch.flatten:
+        elif (node.op == "call_function" and node.target is torch.flatten) or \
+             (node.op == "call_method" and node.target in ("flatten", "view", "reshape") and len(shape_of(node)) == 1):
             src = node.args[0]
             n = add_node(IntNode(node.name, "flatten", [alias[src.name]], attrs=dict(out_shape=shape_of(node))))
             n.out_q = by_name[alias[src.name]].out_q; alias[node.name] = n.name

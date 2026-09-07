@@ -72,6 +72,8 @@ def prepare(model: nn.Module, scheme: QScheme = QScheme()) -> fx.GraphModule:
             insert_after(node, new_fq(node.name))
         elif node.op == "call_module" and isinstance(modules[node.target], nn.AdaptiveAvgPool2d):
             src = node.args[0]
+            while src.op == "call_module" and isinstance(gm.get_submodule(src.target), (nn.Identity, nn.Dropout)):
+                src = src.args[0]                       # look through pass-through modules
             q = insert_after(node, new_fq(node.name))
             src_fq = gm.get_submodule(src.target) if src.op == "call_module" else None
             if isinstance(src_fq, FakeQuantAct):

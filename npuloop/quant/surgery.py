@@ -25,7 +25,11 @@ def swap_activations(model: nn.Module, mapping: dict[str, str]) -> nn.Module:
 
 
 def qat(qm, ds, epochs: int = 3, lr: float = 0.01, seed: int = 0, out: str | None = None, freeze_ranges: bool = True, **kw):
-    """Quantization-aware fine-tuning of a prepared+calibrated fake-quant GraphModule."""
+    """Quantization-aware fine-tuning of a prepared+calibrated fake-quant GraphModule.
+
+    freeze_ranges=False lets min/max quantizers keep tracking activation ranges during training (running
+    min/max, or EMA if the scheme sets `ema`); percentile/MSE quantizers always keep their calibrated ranges.
+    """
     from ..zoo.train import fit
     from .prepare import set_mode
     set_mode(qm, enabled=True, w_enabled=True, calibrating=not freeze_ranges)

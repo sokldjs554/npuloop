@@ -256,7 +256,7 @@ function estimate(model, spec){ const sram=spec.sram_kb*1024, bpc=spec.dram_gbps
       else { r.kind=l.op; const [c,sp]=gemmCycles(l.m,l.k,l.n,spec); r.compute=c; r.split=sp; r.util=l.macs/(r.compute*macsPerCycle); }
       r.dramB=l.weight_bytes+inTraffic(l)+place(l,liveIn); r.dramCyc=r.dramB/bpc; r.cycles=Math.max(r.compute,r.dramCyc); r.bound=r.compute>=r.dramCyc?'compute':'memory'; }
     else if(l.op==='act'){ if(spec.fused_acts.includes(l.kind)){ r.kind='act-fused'; r.cycles=0; resident[l.name]=resident[l.inputs[0]]||false; }
-      else if(spec.unsupported_ops.includes(l.kind)||!spec.lut_acts.includes(l.kind)){ r.kind='act-fallback'; r.dramB=2*l.elements; r.dramCyc=r.dramB/bpc; r.cycles=l.elements*spec.fallback_cycles_per_elem+r.dramCyc; r.bound='fallback'; resident[l.name]=false; }
+      else if(spec.unsupported_ops.includes(l.kind)||!spec.lut_acts.includes(l.kind)){ r.kind='act-fallback'; r.dramB=l.elements; r.dramCyc=r.dramB/bpc; r.cycles=l.elements*spec.fallback_cycles_per_elem+r.dramCyc; r.bound='fallback'; resident[l.name]=false; }
       else { r.kind='act-lut'; const v=Math.ceil(l.elements/(spec.vector_lanes*spec.cores)); r.dramB=inTraffic(l)+place(l); r.dramCyc=r.dramB/bpc; r.cycles=Math.max(v,r.dramCyc); r.bound=v>=r.dramCyc?'vector':'memory'; } }
     else if(l.op==='add'||l.op==='pool'){ r.kind=l.op; const elems=l.op==='add'? l.in_bytes.reduce((a,b)=>a+b,0): l.in_bytes[0]; const v=Math.ceil(elems/(spec.vector_lanes*spec.cores)); r.dramB=inTraffic(l)+place(l); r.dramCyc=r.dramB/bpc; r.cycles=Math.max(v,r.dramCyc); r.bound=v>=r.dramCyc?'vector':'memory'; }
     total+=r.cycles; totalMacs+=r.macs; dram+=r.dramB; rows.push(r); }

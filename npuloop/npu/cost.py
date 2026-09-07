@@ -16,8 +16,8 @@ Mapping assumptions (documented, deliberately simple, deterministic):
   * Memory: int8 weights (+int32 bias) are streamed from DRAM once per layer. Activations stay in SRAM
     when producer output + consumer input fit in sram_kb, otherwise they round-trip through DRAM.
     Roofline per layer: cycles = max(compute, dram). No cross-layer overlap.
-  * Unsupported ops fall back to the host: activation round-trips through DRAM plus
-    fallback_cycles_per_elem per element.
+  * Unsupported ops fall back to the host: the tensor is written to DRAM (the consumer reads it back)
+    plus fallback_cycles_per_elem per element of host work.
 """
 from __future__ import annotations
 from dataclasses import dataclass, asdict
@@ -200,8 +200,9 @@ def estimate(graph: StaticGraph, spec="edge-10tops") -> CostReport:
             elif kind in spec.unsupported_ops or kind not in spec.lut_acts:
                 lc.kind = "act-fallback"
                 elems = node.n_elements
-                # write activation to DRAM, host computes, read back
-                lc.dram_bytes = 2 * elems
+                # the NPU writes the tensor to DRAM for the host; the consumer's read-back is charged to the
+                # consumer because the output is marked non-resident below
+                lc.dram_bytes = elems
                 lc.dram_cycles = lc.dram_bytes / spec.dram_bytes_per_cycle
                 lc.vector_cycles = elems * spec.fallback_cycles_per_elem
                 lc.cycles = lc.vector_cycles + lc.dram_cycles

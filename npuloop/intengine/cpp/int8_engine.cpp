@@ -23,15 +23,15 @@ static inline int32_t rdbpot(int32_t x, int exponent, int rounding) {
     if (exponent <= 0) return x;
     if (rounding == R_TRUNCATE) return x >= 0 ? (x >> exponent) : -((-x) >> exponent);
     if (rounding == R_FLOOR) return x >> exponent;
-    int32_t mask = (int32_t)((1LL << exponent) - 1);
-    int32_t remainder = x & mask;
+    int64_t mask = (1LL << exponent) - 1;
+    int64_t remainder = (int64_t)x & mask;
     if (rounding == R_HALF_EVEN) {
-        int32_t half = (mask + 1) >> 1;
+        int64_t half = (mask + 1) >> 1;
         int32_t q = x >> exponent;
         bool up = remainder > half || (remainder == half && (q & 1));
         return q + (up ? 1 : 0);
     }
-    int32_t threshold = (mask >> 1) + (x < 0 ? 1 : 0);
+    int64_t threshold = (mask >> 1) + (x < 0 ? 1 : 0);
     return (x >> exponent) + (remainder > threshold ? 1 : 0);
 }
 

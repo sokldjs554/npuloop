@@ -143,7 +143,7 @@ def trace(model: nn.Module, input_shape=(3, 32, 32)) -> StaticGraph:
                     raise UnsupportedOpError(f"dilated conv {n.target}")
                 nodes.append(node); fxname_to_node[n.name] = n.name
             elif isinstance(m, nn.BatchNorm2d):
-                prev_name = src(n.args[0]); prev = nodes[-1] if nodes and nodes[-1].name == prev_name else None
+                prev_name = src(n.args[0]); prev = next((x for x in nodes if x.name == prev_name), None)
                 if prev is None or prev.op != "conv" or prev.attrs.get("bn_folded"):
                     raise UnsupportedOpError(f"BatchNorm {n.target} not directly after a conv")
                 if len(n.args[0].users) != 1:

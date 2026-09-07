@@ -70,7 +70,7 @@ def importance(model: nn.Module, g: Group) -> torch.Tensor:
         l1 += w.abs().sum(dim=(0, 2, 3))
     if g.dw:
         wd = _get(model, g.dw).weight.detach()
-        l1 = l1 * wd.abs().sum(dim=(1, 2, 3))
+        l1 = l1 * wd.abs().sum(dim=(1, 2, 3)) * _get(model, g.dw_bn).weight.detach().abs()
     return gamma * l1
 
 

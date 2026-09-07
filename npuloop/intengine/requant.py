@@ -98,7 +98,7 @@ def multiply_by_quantized_multiplier(x: np.ndarray, q: np.ndarray | int, shift: 
         out = _rdbpot(prod, total, "tflite")
         return np.clip(out, INT32_MIN, INT32_MAX)
     left = np.maximum(shift, 0); right = np.maximum(-shift, 0)
-    xs = x.astype(np.int64) * (np.int64(1) << left)
+    xs = np.clip(x.astype(np.int64) * (np.int64(1) << left), INT32_MIN, INT32_MAX)   # saturate like the C++ kernel
     hi = _srdhm(xs, q)
     return _rdbpot(hi, right, rounding)
 
