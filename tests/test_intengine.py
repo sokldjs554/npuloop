@@ -168,7 +168,11 @@ def test_symmetric_activations_keep_fused_relu(small_resnet, small_mobilenet, ca
             assert r.local_max_abs <= 1, r
             # power-of-two scales make exact .5 ties common (multipliers are exactly 2^k): the NPU rounds half away
             # from zero, torch.round rounds half to even, so up to ~25% of outputs legitimately differ by 1 LSB
-            assert r.local_mismatch_frac < (0.35 if scheme.pow2 else 0.02), r
+            # local_max_abs <= 1 above already bounds every difference to one LSB, so what matters here is that
+            # mismatches stay rare rather than systematic. Small nodes (fc: 8x10 = 80 values) need a count floor:
+            # one rounding-boundary tie is 1.25% there, and torch's own kernels flip one or two across versions.
+            flips = round(r.local_mismatch_frac * r.n)
+            assert flips <= max(2, (0.35 if scheme.pow2 else 0.02) * r.n), r
         assert summ["logit_max_abs_diff"] < 0.5
         codes = quantize_input(batch.numpy(), ig.input_q)
         assert all(np.array_equal(a, b) for a, b in zip(NumpyEngine(ig).run(codes, True).values(), CppEngine(ig).run(codes, True).values()))

@@ -87,7 +87,7 @@ def e4():
             out.append(f"| {r['variant']} | {fp} | {pct(r['fake_acc'])} / {pct(r['int_acc'])} | {r['cycles']['edge-10tops']:,.0f} | {r['cycles']['edge-10tops-strict']:,.0f} |")
     c = [r for r in rs if r["part"] == "c"]
     if c:
-        out += ["", "**(c) PTQ → QAT (3 epochs)**", "", "| 모델 | 스킴 | FP32 | PTQ | QAT fake | QAT int | QAT 이득 |", "|---|---|---|---|---|---|---|"]
+        out += ["", "**(c) PTQ → QAT (2 epochs × 250 steps, lr 0.002)**", "", "| 모델 | 스킴 | FP32 | PTQ | QAT fake | QAT int | QAT 이득 |", "|---|---|---|---|---|---|---|"]
         for r in c:
             out.append(f"| {LABEL.get(r['model'], r['model'])} | {r['scheme']} | {pct(r['float_acc'])} | {pct(r['ptq_acc'])} | {pct(r['qat_acc'])} | {pct(r['int_acc'])} | {pp(r['qat_acc']-r['ptq_acc'])} |")
     return "\n".join(out)

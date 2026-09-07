@@ -13,8 +13,16 @@ pass() {
   done
   python3 experiments/e3_lint_vs_drop.py >> results/logs/e3_lint_vs_drop.log 2>&1 || true
 }
-while true; do
-  pass
-  if [ -f /home/user/work/runs/QUEUE_DONE ]; then pass; echo ALL_DONE >> results/logs/run_all.log; touch results/ALL_DONE; break; fi
-  sleep 120
-done
+# Default: one pass over every experiment (each script skips configs that already have a record).
+# Set NPULOOP_WAIT_FOR_QUEUE=1 to keep re-running while a separate training queue fills runs/ ,
+# stopping once $NPULOOP_QUEUE_DONE appears.
+QUEUE_DONE=${NPULOOP_QUEUE_DONE:-${NPULOOP_RUNS:-runs}/QUEUE_DONE}
+if [ -n "${NPULOOP_WAIT_FOR_QUEUE:-}" ]; then
+  while true; do
+    pass
+    if [ -f "$QUEUE_DONE" ]; then break; fi
+    sleep 120
+  done
+fi
+pass
+echo ALL_DONE >> results/logs/run_all.log; touch results/ALL_DONE

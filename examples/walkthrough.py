@@ -11,8 +11,9 @@ import torch
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("--ckpt", default=os.environ.get("NPULOOP_CKPT", "/home/user/work/runs/resnet20_relu/best.pt"))
-    p.add_argument("--data", default=os.environ.get("NPULOOP_DATA", "/home/user/data/cifar10.npz"))
+    ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    p.add_argument("--ckpt", default=os.environ.get("NPULOOP_CKPT", os.path.join(ROOT, "runs", "resnet20_relu", "best.pt")))
+    p.add_argument("--data", default=os.environ.get("NPULOOP_DATA", os.path.join(ROOT, "data", "cifar10.npz")))
     p.add_argument("--spec", default="edge-10tops")
     p.add_argument("--images", type=int, default=1000)
     p.add_argument("--threads", type=int, default=2)

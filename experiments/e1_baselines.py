@@ -6,6 +6,7 @@ from npuloop.graph import trace
 from npuloop.npu import estimate, PRESETS
 from npuloop.lint import lint
 from npuloop.zoo import count_params
+from npuloop.quant import evaluate
 
 
 def main():
@@ -19,7 +20,8 @@ def main():
         m = load_model(name)
         g = trace(m)
         rec = dict(model=name, config=m.config, params=count_params(m), macs=g.total_macs,
-                   float_acc=log_["final_test_acc"], best_acc=log_["best_test_acc"], train_minutes=log_["train_minutes"],
+                   float_acc=evaluate(m, ds),   # re-evaluate the loaded checkpoint so E1 matches E2/E4/E6 exactly
+                   final_test_acc=log_["final_test_acc"], best_acc=log_["best_test_acc"], train_minutes=log_["train_minutes"],
                    epochs=[dict(epoch=e["epoch"], test_acc=e["test_acc"], train_loss=e["train_loss"]) for e in log_["epochs"]],
                    cost={}, lint={})
         for spec in PRESETS:

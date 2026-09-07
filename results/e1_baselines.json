@@ -22,6 +22,7 @@
    "params": 272474,
    "macs": 40813184,
    "float_acc": 0.9047,
+   "final_test_acc": 0.9047,
    "best_acc": 0.9047,
    "train_minutes": 35.03690244754156,
    "epochs": [
@@ -4177,7 +4178,7 @@
     "fc": 1.2940517663955688
    },
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T04:17:28"
+   "timestamp": "2026-09-07T23:24:53"
   },
   {
    "model": "resnet20_silu",
@@ -4195,7 +4196,8 @@
    },
    "params": 272474,
    "macs": 40813184,
-   "float_acc": 0.9049,
+   "float_acc": 0.905,
+   "final_test_acc": 0.9049,
    "best_acc": 0.905,
    "train_minutes": 11.744712471961975,
    "epochs": [
@@ -9567,7 +9569,7 @@
     "fc": 1.215081810951233
    },
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T04:17:42"
+   "timestamp": "2026-09-07T23:25:08"
   },
   {
    "model": "mnv2_050_relu6",
@@ -9624,7 +9626,8 @@
    },
    "params": 700490,
    "macs": 27969024,
-   "float_acc": 0.9097,
+   "float_acc": 0.9101,
+   "final_test_acc": 0.9097,
    "best_acc": 0.9101,
    "train_minutes": 202.339928205808,
    "epochs": [
@@ -16799,7 +16802,7 @@
     "fc": 2.0073041915893555
    },
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T13:33:39"
+   "timestamp": "2026-09-07T23:26:14"
   }
  ]
 }

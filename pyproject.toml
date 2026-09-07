@@ -20,5 +20,8 @@ npuloop = "npuloop.cli:main"
 [tool.setuptools.packages.find]
 include = ["npuloop*"]
 
+[tool.setuptools.package-data]
+npuloop = ["intengine/cpp/*.cpp", "intengine/cpp/*.h"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]

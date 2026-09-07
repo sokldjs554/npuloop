@@ -3,7 +3,7 @@
 (a) MobileNetV2 with per-tensor weights (NPU without per-channel support): PTQ -> +CLE -> +CLE+BC -> +QAT
 (b) ResNet-20-SiLU: PTQ (LUT) vs swap SiLU->ReLU / SiLU->HardSwish + short healing fine-tune, with NPU cycles
     on the LUT-capable and strict presets
-(c) QAT on every baseline with the default NPU scheme (3 epochs)
+(c) QAT on every baseline with the default NPU scheme (2 epochs x 250 steps)
 """
 import os, sys, time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))

@@ -6,8 +6,8 @@ import torch
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
-DATA = os.environ.get("NPULOOP_DATA", "/home/user/data/cifar10.npz")
-RUNS = os.environ.get("NPULOOP_RUNS", "/home/user/work/runs")
+DATA = os.environ.get("NPULOOP_DATA", os.path.join(ROOT, "data", "cifar10.npz"))   # override with NPULOOP_DATA
+RUNS = os.environ.get("NPULOOP_RUNS", os.path.join(ROOT, "runs"))                    # override with NPULOOP_RUNS
 RESULTS = os.path.join(ROOT, "results")
 os.makedirs(RESULTS, exist_ok=True)
 

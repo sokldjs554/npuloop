@@ -26,7 +26,7 @@
    "dacc": 0.0,
    "sqnr_db": 38.677894125821894,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -38,7 +38,7 @@
    "dacc": -0.0040000000000000036,
    "sqnr_db": 35.914400348634146,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -50,7 +50,7 @@
    "dacc": 0.0020000000000000018,
    "sqnr_db": 37.51288255649294,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -62,7 +62,7 @@
    "dacc": -0.0020000000000000018,
    "sqnr_db": 39.68670779667124,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -74,7 +74,7 @@
    "dacc": -0.0020000000000000018,
    "sqnr_db": 37.89286316481112,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -86,7 +86,7 @@
    "dacc": 0.0,
    "sqnr_db": 39.796051229913076,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -98,7 +98,7 @@
    "dacc": 0.0020000000000000018,
    "sqnr_db": 37.15139324600483,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -110,7 +110,7 @@
    "dacc": 0.0,
    "sqnr_db": 39.10626924628423,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -122,7 +122,7 @@
    "dacc": 0.0,
    "sqnr_db": 38.96337152280471,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -134,7 +134,7 @@
    "dacc": 0.0020000000000000018,
    "sqnr_db": 41.29754267045031,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -146,7 +146,7 @@
    "dacc": 0.0,
    "sqnr_db": 39.17683651615968,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -158,7 +158,7 @@
    "dacc": 0.0,
    "sqnr_db": 38.593714662046246,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -170,7 +170,7 @@
    "dacc": -0.0020000000000000018,
    "sqnr_db": 38.606450892194985,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -182,7 +182,7 @@
    "dacc": 0.0,
    "sqnr_db": 39.680890064680256,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -194,7 +194,7 @@
    "dacc": 0.0,
    "sqnr_db": 39.993090211527054,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -206,7 +206,7 @@
    "dacc": -0.0020000000000000018,
    "sqnr_db": 38.26298776108806,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -218,7 +218,7 @@
    "dacc": -0.0020000000000000018,
    "sqnr_db": 39.00939954450048,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -230,7 +230,7 @@
    "dacc": 0.0,
    "sqnr_db": 39.330202348672685,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -242,7 +242,7 @@
    "dacc": -0.0020000000000000018,
    "sqnr_db": 39.539725687591805,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -254,7 +254,7 @@
    "dacc": -0.0020000000000000018,
    "sqnr_db": 39.5477797519213,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -266,7 +266,7 @@
    "dacc": -0.0020000000000000018,
    "sqnr_db": 39.57403705387817,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -278,7 +278,7 @@
    "dacc": -0.0020000000000000018,
    "sqnr_db": 41.465892349815825,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -290,7 +290,7 @@
    "dacc": 0.0,
    "sqnr_db": 44.50549684175793,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -302,7 +302,7 @@
    "dacc": 0.0,
    "sqnr_db": 41.09920511997717,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -314,7 +314,7 @@
    "dacc": 0.0,
    "sqnr_db": 41.740850647212625,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -326,7 +326,7 @@
    "dacc": 0.0,
    "sqnr_db": 42.13131302996901,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -338,7 +338,7 @@
    "dacc": -0.0020000000000000018,
    "sqnr_db": 43.35880517797439,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -350,7 +350,7 @@
    "dacc": -0.0020000000000000018,
    "sqnr_db": 43.06787953134369,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -362,7 +362,7 @@
    "dacc": 0.0020000000000000018,
    "sqnr_db": 43.295170984474005,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -374,7 +374,7 @@
    "dacc": -0.0020000000000000018,
    "sqnr_db": 42.71475890891483,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -386,7 +386,7 @@
    "dacc": 0.0,
    "sqnr_db": 42.25161813530324,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -398,7 +398,7 @@
    "dacc": 0.0,
    "sqnr_db": 46.43251250776862,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -410,7 +410,7 @@
    "dacc": -0.0020000000000000018,
    "sqnr_db": 42.718498919292514,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -422,7 +422,7 @@
    "dacc": -0.0020000000000000018,
    "sqnr_db": 42.961811686601024,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -434,7 +434,7 @@
    "dacc": -0.0020000000000000018,
    "sqnr_db": 42.42537999921451,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -446,7 +446,7 @@
    "dacc": -0.0020000000000000018,
    "sqnr_db": 43.04811977827307,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -458,7 +458,7 @@
    "dacc": 0.0,
    "sqnr_db": 42.78450600758844,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -470,7 +470,7 @@
    "dacc": 0.0,
    "sqnr_db": 42.04097499370701,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -482,7 +482,7 @@
    "dacc": 0.0,
    "sqnr_db": 45.30442830362813,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -494,7 +494,7 @@
    "dacc": -0.0020000000000000018,
    "sqnr_db": 42.13340989292314,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -506,7 +506,7 @@
    "dacc": 0.0,
    "sqnr_db": 42.32332963400948,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -518,7 +518,7 @@
    "dacc": -0.0020000000000000018,
    "sqnr_db": 42.55319030995561,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -530,7 +530,7 @@
    "dacc": 0.0020000000000000018,
    "sqnr_db": 42.605031805884835,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -542,7 +542,7 @@
    "dacc": -0.0020000000000000018,
    "sqnr_db": 43.55184450312688,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -554,7 +554,7 @@
    "dacc": 0.0,
    "sqnr_db": 37.717119656662696,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -566,7 +566,7 @@
    "dacc": 0.0,
    "sqnr_db": 37.240553167327725,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -578,7 +578,7 @@
    "dacc": 0.0,
    "sqnr_db": 40.647719431213574,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -590,7 +590,7 @@
    "dacc": 0.0,
    "sqnr_db": 37.69590154016143,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -602,7 +602,7 @@
    "dacc": 0.0,
    "sqnr_db": 36.335241636054,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -614,7 +614,7 @@
    "dacc": 0.0,
    "sqnr_db": 39.89358635558978,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -626,7 +626,7 @@
    "dacc": 0.0,
    "sqnr_db": 39.15961370316936,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -638,7 +638,7 @@
    "dacc": 0.0,
    "sqnr_db": 39.29709258218172,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -650,7 +650,7 @@
    "dacc": 0.0,
    "sqnr_db": 37.68258629844942,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -662,7 +662,7 @@
    "dacc": 0.0,
    "sqnr_db": 39.353433415480616,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -674,7 +674,7 @@
    "dacc": 0.0,
    "sqnr_db": 38.41066848357257,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -686,7 +686,7 @@
    "dacc": 0.0,
    "sqnr_db": 40.36238302462869,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -698,7 +698,7 @@
    "dacc": 0.0,
    "sqnr_db": 39.33323154799463,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -710,7 +710,7 @@
    "dacc": 0.0,
    "sqnr_db": 38.89858566097339,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -722,7 +722,7 @@
    "dacc": 0.0,
    "sqnr_db": 39.12475512580814,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -734,7 +734,7 @@
    "dacc": 0.0,
    "sqnr_db": 38.3187948523678,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -746,7 +746,7 @@
    "dacc": 0.0,
    "sqnr_db": 39.28453557998821,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -758,7 +758,7 @@
    "dacc": 0.0,
    "sqnr_db": 39.951363307771935,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -770,7 +770,7 @@
    "dacc": 0.0,
    "sqnr_db": 39.27391536043925,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -782,7 +782,7 @@
    "dacc": 0.0,
    "sqnr_db": 38.14983620243946,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -794,7 +794,7 @@
    "dacc": 0.0,
    "sqnr_db": 38.97104555226952,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -806,7 +806,7 @@
    "dacc": 0.0,
    "sqnr_db": 41.53435855206553,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -818,7 +818,7 @@
    "dacc": 0.0,
    "sqnr_db": 45.45123292226586,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -830,7 +830,7 @@
    "dacc": 0.0,
    "sqnr_db": 41.893822373450206,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -842,7 +842,7 @@
    "dacc": 0.0,
    "sqnr_db": 43.06562404388154,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -854,7 +854,7 @@
    "dacc": 0.0,
    "sqnr_db": 41.510485009950685,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -866,7 +866,7 @@
    "dacc": 0.0,
    "sqnr_db": 42.80258658252174,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -878,7 +878,7 @@
    "dacc": 0.0,
    "sqnr_db": 42.48494407049794,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -890,7 +890,7 @@
    "dacc": 0.0,
    "sqnr_db": 42.98819646803699,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -902,7 +902,7 @@
    "dacc": 0.0,
    "sqnr_db": 43.10654206637281,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -914,7 +914,7 @@
    "dacc": 0.0,
    "sqnr_db": 42.02760095262468,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -926,7 +926,7 @@
    "dacc": 0.0,
    "sqnr_db": 45.83902446618582,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -938,7 +938,7 @@
    "dacc": 0.0,
    "sqnr_db": 42.3863469701315,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -950,7 +950,7 @@
    "dacc": 0.0,
    "sqnr_db": 43.024777314034466,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -962,7 +962,7 @@
    "dacc": 0.0,
    "sqnr_db": 42.815271467504246,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -974,7 +974,7 @@
    "dacc": 0.0,
    "sqnr_db": 42.683857059041316,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -986,7 +986,7 @@
    "dacc": 0.0,
    "sqnr_db": 42.524146845179885,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -998,7 +998,7 @@
    "dacc": 0.0,
    "sqnr_db": 42.04802189186252,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1010,7 +1010,7 @@
    "dacc": 0.0,
    "sqnr_db": 45.32492125761805,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1022,7 +1022,7 @@
    "dacc": 0.0,
    "sqnr_db": 42.39966985073739,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1034,7 +1034,7 @@
    "dacc": 0.0,
    "sqnr_db": 42.282608880199454,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1046,7 +1046,7 @@
    "dacc": 0.0,
    "sqnr_db": 42.287854797590434,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1058,7 +1058,7 @@
    "dacc": 0.0,
    "sqnr_db": 42.40008872623844,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1070,7 +1070,7 @@
    "dacc": 0.0,
    "sqnr_db": 43.52932993991507,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1082,7 +1082,7 @@
    "dacc": -0.006000000000000005,
    "sqnr_db": 37.08952631232653,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1094,7 +1094,7 @@
    "dacc": 0.0020000000000000018,
    "sqnr_db": 41.023269299354595,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1106,7 +1106,7 @@
    "dacc": 0.0020000000000000018,
    "sqnr_db": 43.054182670435054,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1118,7 +1118,7 @@
    "dacc": 0.0,
    "sqnr_db": 42.77419103765801,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1130,7 +1130,7 @@
    "dacc": 0.0020000000000000018,
    "sqnr_db": 38.91042933649497,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1142,7 +1142,7 @@
    "dacc": 0.0,
    "sqnr_db": 43.31882359480574,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1154,7 +1154,7 @@
    "dacc": -0.0020000000000000018,
    "sqnr_db": 41.972967327727304,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1166,7 +1166,7 @@
    "dacc": 0.0,
    "sqnr_db": 40.562285695469534,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1178,7 +1178,7 @@
    "dacc": 0.0,
    "sqnr_db": 40.529732273818965,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1190,7 +1190,7 @@
    "dacc": 0.0,
    "sqnr_db": 42.40957152273665,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1202,7 +1202,7 @@
    "dacc": 0.0,
    "sqnr_db": 42.36205180496735,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1214,7 +1214,7 @@
    "dacc": 0.0,
    "sqnr_db": 39.997731951429884,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1226,7 +1226,7 @@
    "dacc": 0.0,
    "sqnr_db": 42.78115937637462,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1238,7 +1238,7 @@
    "dacc": 0.0,
    "sqnr_db": 40.96246586124479,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1250,7 +1250,7 @@
    "dacc": 0.0,
    "sqnr_db": 40.29307746348636,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1262,7 +1262,7 @@
    "dacc": 0.0,
    "sqnr_db": 42.53169295349552,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1274,7 +1274,7 @@
    "dacc": -0.0020000000000000018,
    "sqnr_db": 42.21650358890156,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1286,7 +1286,7 @@
    "dacc": 0.0,
    "sqnr_db": 40.54205340474617,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1298,7 +1298,7 @@
    "dacc": 0.0,
    "sqnr_db": 42.736311091138475,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1310,7 +1310,7 @@
    "dacc": 0.0,
    "sqnr_db": 41.60004467891427,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1322,7 +1322,7 @@
    "dacc": 0.0,
    "sqnr_db": 40.5299453978073,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1334,7 +1334,7 @@
    "dacc": 0.0,
    "sqnr_db": 40.18688072985702,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1346,7 +1346,7 @@
    "dacc": 0.0,
    "sqnr_db": 42.46950784021938,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1358,7 +1358,7 @@
    "dacc": -0.0020000000000000018,
    "sqnr_db": 39.94307929221093,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1370,7 +1370,7 @@
    "dacc": 0.0,
    "sqnr_db": 40.653756068332996,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1382,7 +1382,7 @@
    "dacc": 0.0,
    "sqnr_db": 38.67495528399346,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1394,7 +1394,7 @@
    "dacc": -0.0020000000000000018,
    "sqnr_db": 40.369320989297705,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1406,7 +1406,7 @@
    "dacc": 0.0,
    "sqnr_db": 41.99787451844525,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1418,7 +1418,7 @@
    "dacc": 0.0,
    "sqnr_db": 42.16246814229375,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1430,7 +1430,7 @@
    "dacc": -0.0020000000000000018,
    "sqnr_db": 39.97192005351731,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1442,7 +1442,7 @@
    "dacc": 0.0,
    "sqnr_db": 40.492938591677685,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1454,7 +1454,7 @@
    "dacc": 0.0,
    "sqnr_db": 42.08553506119977,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1466,7 +1466,7 @@
    "dacc": 0.0,
    "sqnr_db": 39.645555922047976,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1478,7 +1478,7 @@
    "dacc": 0.0,
    "sqnr_db": 41.15114918790512,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1490,7 +1490,7 @@
    "dacc": 0.0,
    "sqnr_db": 41.251246578503256,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1502,7 +1502,7 @@
    "dacc": 0.0,
    "sqnr_db": 39.40212177224811,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1514,7 +1514,7 @@
    "dacc": 0.0,
    "sqnr_db": 40.69393108098235,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1526,7 +1526,7 @@
    "dacc": 0.0,
    "sqnr_db": 42.1186549577186,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1538,7 +1538,7 @@
    "dacc": 0.0,
    "sqnr_db": 39.17357229571694,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1550,7 +1550,7 @@
    "dacc": 0.0,
    "sqnr_db": 41.09386192783937,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1562,7 +1562,7 @@
    "dacc": -0.0020000000000000018,
    "sqnr_db": 43.010014528925055,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1574,7 +1574,7 @@
    "dacc": 0.0,
    "sqnr_db": 39.83751656454699,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1586,7 +1586,7 @@
    "dacc": 0.0,
    "sqnr_db": 39.78105377430425,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1598,7 +1598,7 @@
    "dacc": 0.0,
    "sqnr_db": 41.778004233428796,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1610,7 +1610,7 @@
    "dacc": 0.0,
    "sqnr_db": 37.3182915430461,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1622,7 +1622,7 @@
    "dacc": 0.0,
    "sqnr_db": 40.372253026856804,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1634,7 +1634,7 @@
    "dacc": 0.0,
    "sqnr_db": 41.90359723889231,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1646,7 +1646,7 @@
    "dacc": 0.0,
    "sqnr_db": 37.94214512175188,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1658,7 +1658,7 @@
    "dacc": 0.0,
    "sqnr_db": 40.34062320195024,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1670,7 +1670,7 @@
    "dacc": -0.0020000000000000018,
    "sqnr_db": 40.2840520399985,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1682,7 +1682,7 @@
    "dacc": 0.0,
    "sqnr_db": 36.79711929724268,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1694,7 +1694,7 @@
    "dacc": 0.0,
    "sqnr_db": 39.914302207056416,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1706,7 +1706,7 @@
    "dacc": 0.0,
    "sqnr_db": 33.36946507440648,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1718,7 +1718,7 @@
    "dacc": 0.0020000000000000018,
    "sqnr_db": 44.80228306285596,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1730,7 +1730,7 @@
    "dacc": 0.0,
    "sqnr_db": 46.843937840023735,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1742,7 +1742,7 @@
    "dacc": 0.0020000000000000018,
    "sqnr_db": 46.03872633212177,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1754,7 +1754,7 @@
    "dacc": 0.0,
    "sqnr_db": 48.147489754540686,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1766,7 +1766,7 @@
    "dacc": -0.0020000000000000018,
    "sqnr_db": 47.83249735634822,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1778,7 +1778,7 @@
    "dacc": 0.0,
    "sqnr_db": 44.431606707527266,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1790,7 +1790,7 @@
    "dacc": 0.0,
    "sqnr_db": 46.58640555811998,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1802,7 +1802,7 @@
    "dacc": 0.0,
    "sqnr_db": 48.606658733004345,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1814,7 +1814,7 @@
    "dacc": 0.0,
    "sqnr_db": 43.57169455889313,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1826,7 +1826,7 @@
    "dacc": 0.0,
    "sqnr_db": 46.482850995718216,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1838,7 +1838,7 @@
    "dacc": 0.0,
    "sqnr_db": 48.87600157546886,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1850,7 +1850,7 @@
    "dacc": 0.0020000000000000018,
    "sqnr_db": 43.154159357766716,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1862,7 +1862,7 @@
    "dacc": 0.0,
    "sqnr_db": 46.77471450104267,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1874,7 +1874,7 @@
    "dacc": 0.0,
    "sqnr_db": 48.20656103165596,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1886,7 +1886,7 @@
    "dacc": 0.0,
    "sqnr_db": 43.72516557901143,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1898,7 +1898,7 @@
    "dacc": -0.0020000000000000018,
    "sqnr_db": 46.27198274285921,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1910,7 +1910,7 @@
    "dacc": 0.0,
    "sqnr_db": 48.4898289445383,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1922,7 +1922,7 @@
    "dacc": 0.0,
    "sqnr_db": 44.27927646351562,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1934,7 +1934,7 @@
    "dacc": -0.0020000000000000018,
    "sqnr_db": 46.356867638476196,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1946,7 +1946,7 @@
    "dacc": 0.0,
    "sqnr_db": 48.93049083689207,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1958,7 +1958,7 @@
    "dacc": 0.0,
    "sqnr_db": 43.46160231249467,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1970,7 +1970,7 @@
    "dacc": 0.0,
    "sqnr_db": 45.79937596626236,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1982,7 +1982,7 @@
    "dacc": 0.0,
    "sqnr_db": 48.17142110216352,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -1994,7 +1994,7 @@
    "dacc": 0.0,
    "sqnr_db": 42.97059814744689,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -2006,7 +2006,7 @@
    "dacc": 0.0,
    "sqnr_db": 45.62567969233656,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -2018,7 +2018,7 @@
    "dacc": 0.0,
    "sqnr_db": 47.98119653426538,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -2030,7 +2030,7 @@
    "dacc": 0.0,
    "sqnr_db": 43.03674269578239,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -2042,7 +2042,7 @@
    "dacc": 0.0,
    "sqnr_db": 45.51328894814144,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -2054,7 +2054,7 @@
    "dacc": 0.0,
    "sqnr_db": 48.04101020135907,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -2066,7 +2066,7 @@
    "dacc": 0.0,
    "sqnr_db": 43.01711038450677,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -2078,7 +2078,7 @@
    "dacc": 0.0,
    "sqnr_db": 45.38835391627099,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -2090,7 +2090,7 @@
    "dacc": 0.0,
    "sqnr_db": 48.074642541497255,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -2102,7 +2102,7 @@
    "dacc": 0.0,
    "sqnr_db": 43.13072198454051,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -2114,7 +2114,7 @@
    "dacc": 0.0,
    "sqnr_db": 44.86816805103249,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -2126,7 +2126,7 @@
    "dacc": 0.0,
    "sqnr_db": 48.395410101421376,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -2138,7 +2138,7 @@
    "dacc": 0.0,
    "sqnr_db": 42.31368042607876,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -2150,7 +2150,7 @@
    "dacc": 0.0,
    "sqnr_db": 44.90718740803108,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -2162,7 +2162,7 @@
    "dacc": -0.0020000000000000018,
    "sqnr_db": 48.36303115357296,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -2174,7 +2174,7 @@
    "dacc": 0.0,
    "sqnr_db": 42.70492670740459,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -2186,7 +2186,7 @@
    "dacc": 0.0,
    "sqnr_db": 44.81288306576183,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -2198,7 +2198,7 @@
    "dacc": 0.0,
    "sqnr_db": 48.86014519566718,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -2210,7 +2210,7 @@
    "dacc": 0.0,
    "sqnr_db": 42.1342362989272,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -2222,7 +2222,7 @@
    "dacc": 0.0,
    "sqnr_db": 44.40720478940239,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -2234,7 +2234,7 @@
    "dacc": 0.0,
    "sqnr_db": 48.23467096753827,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -2246,7 +2246,7 @@
    "dacc": 0.0,
    "sqnr_db": 42.213924626648314,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -2258,7 +2258,7 @@
    "dacc": 0.0,
    "sqnr_db": 44.35102323428633,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -2270,7 +2270,7 @@
    "dacc": 0.0,
    "sqnr_db": 48.1522545659076,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -2282,7 +2282,7 @@
    "dacc": 0.0,
    "sqnr_db": 41.98893759691859,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -2294,7 +2294,7 @@
    "dacc": 0.0,
    "sqnr_db": 44.37455999137312,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -2306,7 +2306,7 @@
    "dacc": 0.0,
    "sqnr_db": 48.38575213811373,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -2318,7 +2318,7 @@
    "dacc": 0.0,
    "sqnr_db": 42.18009225968616,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -2330,7 +2330,7 @@
    "dacc": 0.0,
    "sqnr_db": 43.88252496525952,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "layer",
@@ -2342,7 +2342,7 @@
    "dacc": 0.0,
    "sqnr_db": 37.63032838774364,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "model",
@@ -2353,7 +2353,7 @@
    "drop_fake": -0.00040000000000006697,
    "drop_int": -0.00010000000000010001,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "model",
@@ -2364,7 +2364,7 @@
    "drop_fake": -0.000500000000000056,
    "drop_int": -0.0038000000000000256,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "model",
@@ -2375,7 +2375,7 @@
    "drop_fake": -0.000300000000000078,
    "drop_int": -0.0023000000000000798,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "model",
@@ -2386,7 +2386,7 @@
    "drop_fake": -0.000500000000000056,
    "drop_int": -0.000500000000000056,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "model",
@@ -2397,7 +2397,7 @@
    "drop_fake": -0.000300000000000078,
    "drop_int": -0.0043000000000000815,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:08"
   },
   {
    "kind": "model",
@@ -2408,7 +2408,7 @@
    "drop_fake": -0.0006000000000000449,
    "drop_int": -0.0043000000000000815,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:09"
   },
   {
    "kind": "model",
@@ -2419,7 +2419,7 @@
    "drop_fake": -0.0023000000000000798,
    "drop_int": -0.005800000000000027,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:09"
   },
   {
    "kind": "model",
@@ -2430,7 +2430,7 @@
    "drop_fake": 0.000500000000000056,
    "drop_int": 0.0008000000000000229,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:09"
   },
   {
    "kind": "model",
@@ -2441,7 +2441,7 @@
    "drop_fake": 0.000300000000000078,
    "drop_int": 0.0034999999999999476,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:09"
   },
   {
    "kind": "model",
@@ -2452,7 +2452,7 @@
    "drop_fake": -0.0008000000000000229,
    "drop_int": 0.0014999999999999458,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:09"
   },
   {
    "kind": "model",
@@ -2463,7 +2463,7 @@
    "drop_fake": 0.00040000000000006697,
    "drop_int": 0.0010000000000000009,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:09"
   },
   {
    "kind": "model",
@@ -2474,7 +2474,7 @@
    "drop_fake": -0.0010000000000000009,
    "drop_int": -0.000500000000000056,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:09"
   },
   {
    "kind": "model",
@@ -2485,7 +2485,7 @@
    "drop_fake": 0.0030999999999999917,
    "drop_int": 0.0040000000000000036,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:09"
   },
   {
    "kind": "model",
@@ -2496,7 +2496,7 @@
    "drop_fake": 0.0023000000000000798,
    "drop_int": 0.0024999999999999467,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:09"
   },
   {
    "kind": "model",
@@ -2507,7 +2507,7 @@
    "drop_fake": 0.0009000000000000119,
    "drop_int": -0.0007000000000000339,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:09"
   },
   {
    "kind": "model",
@@ -2518,7 +2518,7 @@
    "drop_fake": 0.0006000000000000449,
    "drop_int": -0.000500000000000056,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:09"
   },
   {
    "kind": "model",
@@ -2529,7 +2529,7 @@
    "drop_fake": -9.999999999998899e-05,
    "drop_int": -0.000500000000000056,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:09"
   },
   {
    "kind": "model",
@@ -2540,7 +2540,7 @@
    "drop_fake": -0.00039999999999995595,
    "drop_int": -0.0010000000000000009,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:09"
   },
   {
    "kind": "model",
@@ -2551,7 +2551,7 @@
    "drop_fake": 9.999999999998899e-05,
    "drop_int": -0.0030000000000000027,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:09"
   },
   {
    "kind": "model",
@@ -2562,7 +2562,7 @@
    "drop_fake": 0.0010000000000000009,
    "drop_int": 0.0024999999999999467,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:09"
   },
   {
    "kind": "model",
@@ -2573,7 +2573,7 @@
    "drop_fake": -0.00029999999999996696,
    "drop_int": -0.0010000000000000009,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-07T15:12:22"
+   "timestamp": "2026-09-07T23:27:09"
   }
  ]
 }

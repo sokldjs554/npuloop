@@ -6,10 +6,9 @@
 > 해석적 systolic-array 비용 모델(`npu`) → 정적 준비도 lint(`lint`) → NPU 방식 양자화·QAT·CLE·활성함수 교체(`quant`)
 > → PE-array 정렬 구조적 프루닝(`prune`) → int8 가중치/int32 바이어스/고정소수점 requant로 export한 정수 그래프를
 > NumPy와 C++ 커널로 **비트 단위로 같게** 실행하고 fake-quant와 비교(`intengine`)하는 한 저장소입니다.
-> CIFAR-10에서 ResNet-20 계열 4종과 MobileNetV2로 7개 실험(E1–E7)을 돌려 결과를 JSON으로 남겼고, 그 JSON을 읽는
+> CIFAR-10에서 ResNet-20 2종(ReLU·SiLU)과 MobileNetV2-0.5로 8개 실험(E1–E8)을 돌려 결과를 JSON으로 남겼고, 그 JSON을 읽는
 > [인터랙티브 데모](#데모)가 있습니다.
 
-<!-- RESULTS_SUMMARY -->
 
 ## 왜 이 프로젝트를 했나
 
@@ -51,13 +50,14 @@ flowchart LR
 ResNet-20의 16/32 채널은 64폭 배열의 열을 1/4~1/2밖에 채우지 못해 2코어 64×64(edge-10tops)에서 배열 활용률이 14%, 8코어(pcie-80tops)에서는 5%까지 떨어지고, 32×32 배열(tiny-1tops)에서는 45%로 올라갑니다.
 지연 시간은 큰 NPU가 짧지만 실리콘의 대부분이 놀고 있다는 뜻이고, "작은 모델에는 큰 배열이 낭비"라는 것이 첫 번째 관찰입니다.
 SiLU 모델은 strict 프리셋(LUT 없음, 호스트 폴백)에서 사이클이 45배로 뛰고 lint의 효율성·강건성 점수가 모두 떨어집니다.
+FP32 정확도는 분석 대상 체크포인트(`best.pt`)를 그대로 다시 평가한 값이라 E2·E4·E6의 FP32와 정확히 같습니다.
 
 <!-- TABLE:E1 -->
 | 모델 | 파라미터 | MACs | FP32 acc | tiny-1tops cycles (util) | edge-10tops cycles (util) | pcie-80tops cycles (util) | lint eff / q-rob |
 |---|---|---|---|---|---|---|---|
 | ResNet-20 ReLU | 272,474 | 40.8M | 90.47% | 87,730 (45%) | 34,417 (14%) | 22,791 (5%) | 80 / 97 |
-| ResNet-20 SiLU | 272,474 | 40.8M | 90.49% | 90,674 (44%) | 34,785 (14%) | 22,817 (5%) | 72 / 75 |
-| MobileNetV2-0.5 ReLU6 | 700,490 | 28.0M | 90.97% | 200,536 (12%) | 87,056 (3%) | 67,351 (1%) | 77 / 98 |
+| ResNet-20 SiLU | 272,474 | 40.8M | 90.50% | 90,674 (44%) | 34,785 (14%) | 22,817 (5%) | 72 / 75 |
+| MobileNetV2-0.5 ReLU6 | 700,490 | 28.0M | 91.01% | 200,536 (12%) | 87,056 (3%) | 67,351 (1%) | 77 / 98 |
 <!-- /TABLE:E1 -->
 
 ### E8. 비용 모델은 믿을 만한가 — SCALE-Sim 대조
@@ -117,10 +117,10 @@ SiLU 모델은 strict 프리셋(LUT 없음, 호스트 폴백)에서 사이클이
 관찰:
 
 * **fake-quant는 정확도 예측기로는 충분히 정확합니다.** ResNet-20 ReLU에서 fake 90.51% vs 정수 90.48%, 이미지 단위 top-1 일치 99%대.
-* **그러나 텐서 단위로는 전혀 같지 않습니다.** 각 conv의 국소(teacher-forced) 불일치는 0.03~0.2%(±1 LSB)뿐인데, 끝까지 정수로 실행하면 깊은 레이어에서 코드의 15~30%, 최종 로짓의 45%가 달라집니다. ±1 LSB가 다음 레이어의 반올림 결정을 바꾸는 나비효과이고, 분류 결과는 그래도 거의 바뀌지 않습니다. "fake-quant와 하드웨어 결과가 다르다"는 보고를 받으면 먼저 *어느 레이어에서, 국소로, 몇 LSB* 인지 물어야 하는 이유입니다.
+* **그러나 텐서 단위로는 전혀 같지 않습니다.** 각 conv의 국소(teacher-forced) 불일치는 0.03~0.2%(±1 LSB)뿐인데, 끝까지 정수로 실행하면 깊은 레이어에서 코드의 15~30%, 최종 로짓의 46%가 달라집니다. ±1 LSB가 다음 레이어의 반올림 결정을 바꾸는 나비효과이고, 분류 결과는 그래도 거의 바뀌지 않습니다. "fake-quant와 하드웨어 결과가 다르다"는 보고를 받으면 먼저 *어느 레이어에서, 국소로, 몇 LSB* 인지 물어야 하는 이유입니다.
 * **국소 불일치의 출처**: conv/linear(고정소수점 곱셈기 + 바이어스 반올림), avgpool(half-away vs half-even 타이), pow2 스킴의 add(정확한 .5 타이). TFLite식 add(20비트 left-shift)는 일반 스킴에서 국소 불일치가 0입니다.
 * **SiLU 모델(LUT 활성함수)도 PTQ에 강합니다.** FP32 90.50% → npu-default 90.45%, 정수 엔진 90.42%. LUT 노드의 국소 불일치는 정확히 0(테이블 조회는 fake-quant의 "양자화→활성함수→양자화"와 동일한 함수)이고, 레이어당 양자화 지점이 하나 더 있어도 정확도는 ReLU 모델과 같습니다. lint가 SiLU 모델의 양자화 강건성 점수를 75점으로 깎은 것은 **이 네트워크에서는 과한 경고**였습니다(E3에서 다시 다룹니다). 다만 pow2·sym-act처럼 스케일에 제약을 두는 스킴에서는 SiLU 모델이 0.3%p 정도 더 잃습니다. SiLU의 진짜 비용은 정확도가 아니라 **효율성**(strict NPU에서 45배 사이클)입니다.
-* **MobileNetV2-0.5도 7개 스킴 전부에서 ±0.1%p 안입니다.** depthwise·6배 확장 채널이 있어도 per-tensor 가중치(91.05%)가 per-channel(90.92%)보다 나쁘지 않습니다 — E4(a)·E3에서 이유를 다룹니다. 정수 엔진은 대부분의 스킴에서 fake-quant보다 오히려 0.05~0.25%p 높고, 유일한 예외가 pow2(정수 −0.40%p, top-1 일치 97.6%, 출력 코드 불일치 77%)입니다. 2의 거듭제곱 스케일은 residual add의 requant에서 정확한 .5 타이를 만들고, fake-quant(half-even)와 정수 엔진(half-away)이 이 타이를 다르게 반올림해 불일치가 누적됩니다. 정확도 예측기로서 fake-quant가 가장 못 믿을 만한 곳이 바로 이 "타이가 많은 스킴"입니다.
+* **MobileNetV2-0.5도 7개 스킴 전부에서 ±0.1%p 안입니다.** depthwise·6배 확장 채널이 있어도 per-tensor 가중치(91.05%)가 per-channel(90.92%)보다 나쁘지 않습니다 — E4(a)·E3에서 이유를 다룹니다. 정수 엔진은 7개 중 4개 스킴에서 fake-quant보다 오히려 0.05~0.25%p 높고, 가장 크게 어긋나는 쪽이 pow2(정수 −0.40%p, top-1 일치 97.6%, 출력 코드 불일치 77%; sym-act가 −0.10%p로 그다음)입니다. 2의 거듭제곱 스케일은 residual add의 requant에서 정확한 .5 타이를 만들고, fake-quant(half-even)와 정수 엔진(half-away)이 이 타이를 다르게 반올림해 불일치가 누적됩니다. 정확도 예측기로서 fake-quant가 가장 못 믿을 만한 곳이 바로 이 "타이가 많은 스킴"입니다.
 * **`sym-act`(대칭 int8 활성값)는 처음 실행에서 정수 엔진 정확도가 9%로 무너졌습니다.** "requant clamp가 곧 ReLU"라는 가정이 `qmin=-127`에서는 틀리기 때문입니다. fake-quant만 보면 절대 안 보이는 버그를 정수 엔진이 잡았고, export 단계에서 노드별 clamp 하한을 `zp`로 명시하도록 고쳤습니다 ([docs/INTEGER_DATAPATH.md](docs/INTEGER_DATAPATH.md)).
 
 ### E7. 정수 구현 세부의 정확도 비용
@@ -150,7 +150,7 @@ SiLU 모델은 strict 프리셋(LUT 없음, 호스트 폴백)에서 사이클이
 세 모델(ResNet-20 ReLU/SiLU, MobileNetV2)에서 순위가 똑같이 나옵니다.
 
 * **반올림 모드**: TFLite single rounding과 half-even은 기준(gemmlowp 이중 반올림)과 99%대로 일치하고 정확도 차이는 잡음 수준입니다. **truncate/floor는 일치율이 93~95%로 떨어지고 1.5~2.3%p를 잃습니다.** requant에서 "그냥 시프트"는 공짜가 아닙니다.
-* **곱셈기 비트**: 15비트까지는 손실이 없고(99.4%), 7비트에서 99.0%, **3비트(사실상 2의 거듭제곱 곱셈기)에서 95.6%, −1.2%p** — 스케일을 2의 거듭제곱으로 제한하는 NPU라면 QAT 때 그 제약을 같이 학습시켜야 하는 근거입니다.
+* **곱셈기 비트**: 15비트까지는 손실이 없고(99.4%), 7비트에서 99.0%, **3비트(사실상 2의 거듭제곱 곱셈기)에서 95.6%, −1.3%p** — 스케일을 2의 거듭제곱으로 제한하는 NPU라면 QAT 때 그 제약을 같이 학습시켜야 하는 근거입니다.
 * **바이어스 폭이 가장 위험합니다.** 바이어스는 `s_in·s_w[c]` 단위의 정수라 값이 크고, int16으로 자르면 **−8.2%p(일치율 86%)**, int12면 모델이 무너집니다(9.8%). 포화 카운터는 0인데 정확도가 떨어지는 이유는 포화가 바이어스 양자화 시점(export)에 일어나기 때문입니다.
 * **누산기 폭**: int24·int20은 포화 0회(MobileNetV2의 int20만 소수)에 기준과 100% 일치 — ResNet-20의 K=576 레이어도 실제 누산값은 20비트 안에 듭니다. **int16은 ResNet-20에서 1,070만 회 포화하며 52.8%로, MobileNetV2에서는 15.5%로 붕괴**합니다. "최악 케이스 K·127·255 = 25비트"라는 정적 계산과 실제 분포(20비트) 사이의 여유를 이렇게 숫자로 볼 수 있습니다.
 
@@ -185,7 +185,7 @@ lint의 `weight-range-disparity` 검사는 BN folding 후 채널별 가중치 �
 
 ### E4. 수술: CLE · 바이어스 보정 · 활성함수 교체 · QAT
 
-(b) **활성함수 교체가 가장 싼 수술입니다.** ResNet-20-SiLU(FP32 90.50%)의 SiLU 19개를 ReLU로 바꾸면 재학습 없이는 54%로 무너지지만, **3 epoch만 healing하면 90.0%(INT8 정수 엔진 90.0%)**로 돌아옵니다. HardSwish로 바꾸면 SiLU와 모양이 비슷해서 **재학습 없이도 89.6%**, 3 epoch healing 후 **90.2%(정수 엔진 90.1%)**로 SiLU 원본과 사실상 같습니다. 대가로 얻는 것: LUT가 없는 strict NPU에서 사이클 **1,554,865 → 34,417 (45배)**, LUT가 있는 NPU에서도 LUT 사이클 1%가 사라집니다. "SiLU를 NPU가 지원하나요?"라는 질문에 대한 답은 "지원 여부보다, 3 epoch 재학습으로 ReLU가 되는지 먼저 보라"입니다.
+(b) **활성함수 교체가 가장 싼 수술입니다.** ResNet-20-SiLU(FP32 90.50%)의 SiLU 19개를 ReLU로 바꾸면 재학습 없이는 54%로 무너지지만, **3 epoch만 healing하면 90.0%(INT8 정수 엔진 90.1%)**로 돌아옵니다. HardSwish로 바꾸면 SiLU와 모양이 비슷해서 **재학습 없이도 89.6%**, 3 epoch healing 후 **90.2%(정수 엔진 90.0%)**로 SiLU 원본과 사실상 같습니다. 대가로 얻는 것: LUT가 없는 strict NPU에서 사이클 **1,554,865 → 34,417 (45배)**, LUT가 있는 NPU에서도 LUT 사이클 1%가 사라집니다. "SiLU를 NPU가 지원하나요?"라는 질문에 대한 답은 "지원 여부보다, 3 epoch 재학습으로 ReLU가 되는지 먼저 보라"입니다.
 (a) **MobileNetV2 per-tensor 실험은 "실패를 재현하지 못한" 정직한 결과입니다.** 논문(DFQ)에서 per-tensor 가중치가 MobileNetV2를 무너뜨리는 이유는 BN folding 후 depthwise 채널 범위가 수십~수백 배 벌어지기 때문인데, 이 저장소의 CIFAR MobileNetV2-0.5(BN 파라미터에 weight decay 없음, 30 epoch)는 **최대 비율이 3.5배**뿐입니다. lint는 이 모델의 양자화 강건성을 98점으로 매겨 "per-tensor로도 괜찮다"고 예측했고, 측정도 그랬습니다(per-tensor PTQ 91.05%, FP32 91.01%). CLE는 필요 없는 수술이었고 ReLU6→ReLU 치환 때문에 0.2%p를 오히려 잃었습니다. 정적 lint가 **"고치지 말라"**고 말해 주는 것도 값이 있다는 예입니다. CLE의 이득을 보려면 ImageNet 계열의 죽은 채널이 있는 체크포인트가 필요하며, 이는 한계로 남깁니다.
 (c) 각 모델의 짧은 QAT(2 epoch × 250 step, lr 0.002)는 아래 표에 있습니다. PTQ 손실이 이미 0.1%p 이하인 모델에 짧은 QAT를 얹으면 얻을 것이 거의 없습니다 — QAT는 PTQ가 실제로 무너지는 곳에서만 값을 합니다. 부수적으로 배운 것: **BN을 접은 모델의 QAT는 학습률에 민감합니다.** lr 0.005에서는 ReLU ResNet-20이 40 step 안에 발산했고(정규화 층이 남아 있지 않기 때문), 0.002에서는 안정적이었습니다. 그래서 모든 QAT를 0.002로 다시 돌렸습니다.
 
@@ -211,7 +211,7 @@ lint의 `weight-range-disparity` 검사는 BN folding 후 채널별 가중치 �
 | swap-hswish-heal3 | 89.58% → 90.19% | 90.12% / 90.03% | 34,785 | 1,554,865 |
 | silu-qat | 90.50% | 90.26% / 90.19% | 34,785 | 1,554,865 |
 
-**(c) PTQ → QAT (3 epochs)**
+**(c) PTQ → QAT (2 epochs × 250 steps, lr 0.002)**
 
 | 모델 | 스킴 | FP32 | PTQ | QAT fake | QAT int | QAT 이득 |
 |---|---|---|---|---|---|---|
@@ -292,10 +292,10 @@ npuloop/
 ├── prune/structured.py  채널 프루닝: uniform · aligned · cost-greedy(비용 모델 in-the-loop)
 ├── zoo/                 CIFAR-10 npz 로더, 모델, 재현 가능한 트레이너(resume)
 └── cli.py               npuloop cost | lint | quantize
-experiments/             E1–E7 스크립트 (재개 가능, results/*.json에 provenance 라벨과 함께 저장)
+experiments/             E1–E8 스크립트 (재개 가능, results/*.json에 provenance 라벨과 함께 저장)
 results/                 실험 결과 JSON
 demo/                    build.py + index.template.html → 인라인 JSON 데모 페이지 (docs/index.html)
-tests/                   pytest 44개 (참조 구현 대조, 비트 동일성, 정확성 회귀)
+tests/                   pytest 57개 (참조 구현 대조, 비트 동일성, 정확성 회귀)
 docs/                    DESIGN.md · INTEGER_DATAPATH.md · RELATED.md
 ```
 
@@ -303,7 +303,7 @@ docs/                    DESIGN.md · INTEGER_DATAPATH.md · RELATED.md
 
 ```bash
 pip install -e .[dev]           # torch(CPU), numpy, pytest
-python -m pytest -q             # 44 tests, ~5 s (C++ 커널은 첫 실행 때 g++로 컴파일)
+python -m pytest -q             # 57 tests, ~15 s (C++ 커널은 첫 실행 때 g++로 컴파일되어 처음엔 더 걸립니다)
 
 # CIFAR-10 (npz 한 파일) 준비: tools/prepare_cifar10.py 참고
 python -m npuloop.zoo.train --arch resnet --act relu --epochs 30 --out runs/resnet20_relu --data data/cifar10.npz
@@ -317,6 +317,8 @@ bash experiments/run_all.sh     # E1–E7 전부 (CPU 4코어 기준 수 시간)
 python experiments/e8_scalesim.py   # 비용 모델 vs SCALE-Sim (pip install scalesim)
 python demo/build.py            # results → demo/index.html, docs/index.html
 ```
+
+경로는 저장소 기준 `runs/`(체크포인트)와 `data/cifar10.npz`(데이터셋)가 기본값이고, 각각 `NPULOOP_RUNS`·`NPULOOP_DATA` 환경변수로 바꿀 수 있습니다.
 
 파이썬 API 한 줄 요약:
 
@@ -344,7 +346,7 @@ print(NumpyEngine(ig).evaluate(ds, limit=2000), CppEngine(ig).evaluate(ds, limit
 
 * **양자화 지점이 NPU 데이터패스와 1:1.** ReLU 계열은 requant clamp에 융합되므로 활성함수 뒤에만 양자화기가 있고, SiLU/GELU/HardSwish는 int8 LUT라서 **활성함수 앞에 양자화기가 하나 더** 들어갑니다. avgpool 출력은 입력 스케일에 묶입니다(TFLite와 동일). "ReLU 모델이 INT8에 강하다"는 통념의 기계적 이유가 코드에 그대로 있습니다 ([docs/INTEGER_DATAPATH.md](docs/INTEGER_DATAPATH.md)).
 * **정수 산술은 참조 구현과 비트 동일.** `SaturatingRoundingDoublingHighMul`, `RoundingDivideByPOT`, TFLite add의 20비트 left-shift, avgpool의 half-away 반올림을 그대로 구현하고, 스칼라 gemmlowp 참조와 랜덤 테스트로 대조합니다. NumPy 엔진과 C++ 커널은 **모든 중간 텐서**가 같아야 테스트가 통과합니다.
-* **비용 모델은 시뮬레이터로 검증.** weight-stationary 타일당 `M + 2R + C − 2` 사이클 모델이 SCALE-Sim v3의 사이클 정확 결과와 레이어당 0.5% 이내(합계 0.03%)로 일치합니다(E8). 처음 만든 `M + R + C` 모델은 10–13% 낙관적이었고, 이 차이를 SCALE-Sim으로 찾아 고쳤습니다.
+* **비용 모델은 시뮬레이터로 검증.** weight-stationary 타일당 `M + 2R + C − 2` 사이클 모델이 SCALE-Sim v3의 사이클 정확 결과와 레이어당 0.5% 이내(합계 0.05% 이내)로 일치합니다(E8). 처음 만든 `M + R + C` 모델은 10–13% 낙관적이었고, 이 차이를 SCALE-Sim으로 찾아 고쳤습니다.
 * **불일치를 두 관점으로 분리.** fake-quant와 정수 엔진의 차이를 "국소(각 op에 fake-quant 코드를 먹였을 때)"와 "전파(끝까지 정수로 실행)"로 나눠 재서, ±1 LSB의 국소 오차가 어떻게 누적되고 최종 정확도에는 왜 거의 영향이 없는지 보입니다.
 * **재현 가능성과 출처 라벨.** 학습·프루닝·QAT는 시드 고정·재개 가능(`state.pt`)이고, 실험 JSON의 모든 레코드에 `provenance: measured | simulated` 라벨이 붙습니다. 프리셋 NPU는 공개 헤드라인 수치에 맞춘 **가정**이며 특정 벤더의 실제 구조가 아님을 코드와 문서에 명시했습니다.
 * **테스트가 실제 버그를 잡았습니다.** 프루닝으로 새로 만든 BatchNorm이 eval 모드를 물려받지 않아 배치 통계로 평가되던 버그, half-even 반올림의 shift=0 예외, per-tensor 서브셋 평가가 클래스 순서로 정렬된 테스트셋 때문에 편향되던 문제를 모두 테스트/실험 단계에서 발견해 고쳤습니다(커밋 이력 참고).

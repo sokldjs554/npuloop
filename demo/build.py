@@ -33,7 +33,12 @@ def layer_descriptors(model):
 
 def main():
     data = dict(built=time.strftime("%Y-%m-%d %H:%M UTC", time.gmtime()), presets={k: v.to_dict() for k, v in PRESETS.items()}, models={}, results={})
-    for name in available_baselines():
+    names = available_baselines()
+    if not names:
+        sys.exit(f"no trained checkpoints under {os.environ.get('NPULOOP_RUNS', os.path.join(ROOT, 'runs'))} — "
+                 "train baselines first (see README) or set NPULOOP_RUNS; refusing to overwrite the built pages "
+                 "with a model-less one")
+    for name in names:
         m = load_model(name)
         data["models"][name] = dict(config=m.config, **layer_descriptors(m))
     for path in sorted(glob.glob(os.path.join(RESULTS, "*.json"))):
