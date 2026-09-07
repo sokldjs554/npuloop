@@ -204,6 +204,37 @@
    ],
    "provenance": "measured+simulated",
    "timestamp": "2026-09-07T12:24:59"
+  },
+  {
+   "part": "a",
+   "model": "mnv2_050_relu6",
+   "scheme": "per-tensor",
+   "step": "cle+qat",
+   "float_acc": 0.9101,
+   "fake_acc": 0.9098,
+   "int_acc": 0.9098,
+   "qat_epochs": 2,
+   "minutes": 37.826241751511894,
+   "qat_log": [
+    {
+     "epoch": 1,
+     "train_loss": 0.1418390836417675,
+     "train_acc": 0.94975,
+     "test_acc": 0.908,
+     "lr": 0.0011684352092226702,
+     "epoch_sec": 445.26768946647644
+    },
+    {
+     "epoch": 2,
+     "train_loss": 0.135023791924119,
+     "train_acc": 0.953875,
+     "test_acc": 0.9098,
+     "lr": 4.024320556016042e-06,
+     "epoch_sec": 437.6210823059082
+    }
+   ],
+   "provenance": "measured",
+   "timestamp": "2026-09-07T13:15:48"
   }
  ]
 }

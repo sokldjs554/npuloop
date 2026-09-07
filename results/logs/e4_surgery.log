@@ -26,3 +26,6 @@
 [12:33:19] part c resnet20_relu npu-default: ptq 0.9051 -> qat 0.1000
 {"epoch": 1, "train_loss": 0.1418390836417675, "train_acc": 0.94975, "test_acc": 0.908, "lr": 0.0011684352092226702, "epoch_sec": 445.26768946647644}
 {"epoch": 2, "train_loss": 0.135023791924119, "train_acc": 0.953875, "test_acc": 0.9098, "lr": 4.024320556016042e-06, "epoch_sec": 437.6210823059082}
+[13:15:48] part a per-tensor done
+{"epoch": 1, "train_loss": 0.12743036207556724, "train_acc": 0.95578125, "test_acc": 0.8975, "lr": 0.0011684352092226702, "epoch_sec": 157.0549020767212}
+{"epoch": 2, "train_loss": 0.12056505988538266, "train_acc": 0.95796875, "test_acc": 0.9026, "lr": 4.024320556016042e-06, "epoch_sec": 158.57521963119507}
