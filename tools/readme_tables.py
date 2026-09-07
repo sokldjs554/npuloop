@@ -35,21 +35,21 @@ def e2():
     rs = load("e2_ptq_grid")["records"]
     if not rs: return ""
     models = list(dict.fromkeys(r["model"] for r in rs)); schemes = list(dict.fromkeys(r["scheme"] for r in rs))
-    out = ["| 모델 (FP32) | " + " | ".join(schemes) + " |", "|---|" + "---|" * len(schemes)]
+    out = ["**(A) fake-quant 정확도 (test 10,000장)**", "", "| 모델 (FP32) | " + " | ".join(schemes) + " |", "|---|" + "---|" * len(schemes)]
     for m in models:
         cells = []
         for s in schemes:
             r = next((x for x in rs if x["model"] == m and x["scheme"] == s), None)
-            cells.append(f"{pct(r['fake_acc'])} / {pct(r['int_acc'])}" if r else "—")
+            cells.append(f"{pct(r['fake_acc'])} ({pp(-r['drop_fake'], 2)})" if r else "—")
         fa = next(x for x in rs if x["model"] == m)["float_acc"]
         out.append(f"| {LABEL.get(m, m)} ({pct(fa)}) | " + " | ".join(cells) + " |")
-    out.append("")
-    out.append("fake-quant / 비트 정확 정수 엔진 정확도. 정수 엔진은 npu-default·per-tensor는 10,000장, 나머지는 2,000장에서 측정.")
-    ag = ["", "| 모델 | 스킴 | top-1 일치 (500장) | 출력 코드 불일치 | 첫 분기 레이어 | max Δlogit |", "|---|---|---|---|---|---|"]
+    out += ["", "**(B) 비트 정확 정수 엔진 vs fake-quant — 같은 이미지에서**", "",
+            "| 모델 | 스킴 | 이미지 수 | fake-quant | 정수 엔진 | 차이 | top-1 일치 (500장) | 출력 코드 불일치 | 첫 분기 |",
+            "|---|---|---|---|---|---|---|---|---|"]
     for r in rs:
-        if r["scheme"] in ("npu-default", "per-tensor"):
-            a = r["agreement"]; ag.append(f"| {LABEL.get(r['model'], r['model'])} | {r['scheme']} | {pct(a['top1_agreement'],1)} | {pct(a['output_mismatch_frac'],1)} | {a['first_divergence']} | {a['logit_max_abs_diff']:.3f} |")
-    return "\n".join(out + ag)
+        a = r["agreement"]; fs = r.get("fake_acc_on_int_subset", r["fake_acc"])
+        out.append(f"| {LABEL.get(r['model'], r['model'])} | {r['scheme']} | {r['int_eval_images']:,} | {pct(fs)} | {pct(r['int_acc'])} | {pp(r['int_acc'] - fs)} | {pct(a['top1_agreement'],1)} | {pct(a['output_mismatch_frac'],0)} | {a['first_divergence']} |")
+    return "\n".join(out)
 
 
 def e7():
