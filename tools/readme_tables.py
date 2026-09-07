@@ -1,5 +1,5 @@
 """Generate the markdown result tables for README.md from results/*.json (run after the experiments)."""
-import json, os
+import json, os, sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 R = os.path.join(ROOT, "results")
 LABEL = {"resnet20_relu": "ResNet-20 ReLU", "resnet20_silu": "ResNet-20 SiLU", "resnet20_hswish": "ResNet-20 HardSwish",
@@ -138,8 +138,28 @@ def e3():
     return "\n".join(f"* `{k}`: {v:.3f}" if isinstance(v, float) else f"* `{k}`: {v}" for k, v in s.items())
 
 
-if __name__ == "__main__":
-    for name, fn in [("E1", e1), ("E2", e2), ("E3", e3), ("E4", e4), ("E5", e5), ("E6", e6), ("E7", e7), ("E8", e8)]:
+TABLES = [("E1", e1), ("E2", e2), ("E3", e3), ("E4", e4), ("E5", e5), ("E6", e6), ("E7", e7), ("E8", e8)]
+
+
+def inject(readme_path: str) -> int:
+    """Replace the text between <!-- TABLE:Ex --> and <!-- /TABLE:Ex --> markers in README with fresh tables."""
+    import re
+    src = open(readme_path, encoding="utf-8").read()
+    n = 0
+    for name, fn in TABLES:
         t = fn()
-        if t:
-            print(f"\n<!-- {name} -->\n{t}\n")
+        pat = re.compile(rf"(<!-- TABLE:{name} -->)(.*?)(<!-- /TABLE:{name} -->)", re.S)
+        if pat.search(src):
+            src = pat.sub(lambda m: f"{m.group(1)}\n{t if t else '_(아직 실행되지 않음)_'}\n{m.group(3)}", src); n += 1
+    open(readme_path, "w", encoding="utf-8").write(src)
+    return n
+
+
+if __name__ == "__main__":
+    if len(sys.argv) > 2 and sys.argv[1] == "--inject":
+        print(f"injected {inject(sys.argv[2])} tables")
+    else:
+        for name, fn in TABLES:
+            t = fn()
+            if t:
+                print(f"\n<!-- {name} -->\n{t}\n")

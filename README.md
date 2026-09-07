@@ -39,7 +39,117 @@ flowchart LR
     I -. 결과가 다시 결정으로 .-> E
 ```
 
-<!-- SECTIONS -->
+
+## 실험 결과 (CIFAR-10, seed 0, CPU 4코어)
+
+숫자는 전부 `results/*.json`에서 `tools/readme_tables.py --inject README.md`로 생성한 것입니다. 정확도는 test 10,000장 기준이며,
+`simulated`로 표시한 사이클·활용률은 가상 NPU 비용 모델 값입니다.
+
+### E1. 베이스라인과 정적 분석
+
+같은 학습 레시피(30 epoch OneCycle SGD)로 훈련한 5개 모델을 4개 가상 NPU 프리셋에 올렸을 때의 사이클과 lint 점수입니다.
+ResNet-20의 16/32 채널은 64폭 배열의 열을 1/4~1/2밖에 채우지 못해 배열 활용률이 20% 아래로 떨어지고, 32×32 배열(tiny-1tops)에서는 50%대로 올라갑니다.
+"큰 NPU가 항상 유리하지 않다"는 것이 첫 번째 관찰입니다.
+
+<!-- TABLE:E1 -->
+| 모델 | 파라미터 | MACs | FP32 acc | tiny-1tops cycles (util) | edge-10tops cycles (util) | pcie-80tops cycles (util) | lint eff / q-rob |
+|---|---|---|---|---|---|---|---|
+| ResNet-20 ReLU | 272,474 | 40.8M | 90.47% | 87,730 (45%) | 34,417 (14%) | 22,791 (5%) | 80 / 94 |
+<!-- /TABLE:E1 -->
+
+### E8. 비용 모델은 믿을 만한가 — SCALE-Sim 대조
+
+해석적 모델의 연산 사이클을 SCALE-Sim v3(사이클 정확 systolic 시뮬레이터, WS dataflow, 대역폭 제한 없음)와 레이어별로 비교했습니다.
+처음 만든 모델(타일당 `M + R + C`)은 10~13% 낙관적이었고, SCALE-Sim의 per-fold 사이클을 뜯어보니 가중치 타일을 배열에 싣는 `R` 사이클이 빠져 있었습니다.
+`M + 2R + C − 2`로 고친 뒤에는 세 배열 크기 모두에서 합계 0.03%, 최악 레이어 0.5%(FC의 off-by-one) 이내입니다.
+
+<!-- TABLE:E8 -->
+| 모델 | 배열 | SCALE-Sim cycles | npuloop cycles | 비율 | 최악 레이어 오차 | fill/drain 없이 |
+|---|---|---|---|---|---|---|
+| ResNet-20 ReLU | 32×32 | 84,276 | 84,298 | 1.0003 | 0.5% | 0.683 |
+| ResNet-20 ReLU | 64×64 | 49,123 | 49,145 | 1.0004 | 0.5% | 0.614 |
+| ResNet-20 ReLU | 16×16 | 208,486 | 208,508 | 1.0001 | 0.5% | 0.766 |
+<!-- /TABLE:E8 -->
+
+### E2. PTQ 스킴 그리드 — fake-quant는 정수 엔진을 얼마나 잘 예측하는가
+
+같은 512장 캘리브레이션으로 7개 스킴을 적용한 뒤 (a) PyTorch fake-quant 정확도, (b) 같은 파라미터를 int8 가중치·int32 바이어스·고정소수점 requant로 export해 **비트 정확 정수 엔진**으로 돌린 정확도를 따로 쟀습니다.
+
+<!-- TABLE:E2 -->
+| 모델 (FP32) | npu-default | npu-percentile | npu-mse | per-tensor | per-tensor-mse | pow2 |
+|---|---|---|---|---|---|---|
+| ResNet-20 ReLU (90.47%) | 90.51% / 90.48% | 90.52% / 90.85% | 90.50% / 90.70% | 90.52% / 90.52% | 90.50% / 90.90% | 90.53% / 90.90% |
+
+fake-quant / 비트 정확 정수 엔진 정확도. 정수 엔진은 npu-default·per-tensor는 10,000장, 나머지는 2,000장에서 측정.
+
+| 모델 | 스킴 | top-1 일치 (500장) | 출력 코드 불일치 | 첫 분기 레이어 | max Δlogit |
+|---|---|---|---|---|---|
+| ResNet-20 ReLU | npu-default | 99.2% | 45.9% | stem_conv | 0.459 |
+| ResNet-20 ReLU | per-tensor | 99.4% | 45.1% | stem_conv | 0.612 |
+<!-- /TABLE:E2 -->
+
+관찰:
+
+* **fake-quant는 정확도 예측기로는 충분히 정확합니다.** ResNet-20 ReLU에서 fake 90.51% vs 정수 90.48%, 이미지 단위 top-1 일치 99%대.
+* **그러나 텐서 단위로는 전혀 같지 않습니다.** 각 conv의 국소(teacher-forced) 불일치는 0.03~0.2%(±1 LSB)뿐인데, 끝까지 정수로 실행하면 깊은 레이어에서 코드의 15~30%, 최종 로짓의 45%가 달라집니다. ±1 LSB가 다음 레이어의 반올림 결정을 바꾸는 나비효과이고, 분류 결과는 그래도 거의 바뀌지 않습니다. "fake-quant와 하드웨어 결과가 다르다"는 보고를 받으면 먼저 *어느 레이어에서, 국소로, 몇 LSB* 인지 물어야 하는 이유입니다.
+* **국소 불일치의 출처**: conv/linear(고정소수점 곱셈기 + 바이어스 반올림), avgpool(half-away vs half-even 타이), pow2 스킴의 add(정확한 .5 타이). TFLite식 add(20비트 left-shift)는 일반 스킴에서 국소 불일치가 0입니다.
+* **`sym-act`(대칭 int8 활성값)는 처음 실행에서 정수 엔진 정확도가 9%로 무너졌습니다.** "requant clamp가 곧 ReLU"라는 가정이 `qmin=-127`에서는 틀리기 때문입니다. fake-quant만 보면 절대 안 보이는 버그를 정수 엔진이 잡았고, export 단계에서 노드별 clamp 하한을 `zp`로 명시하도록 고쳤습니다 ([docs/INTEGER_DATAPATH.md](docs/INTEGER_DATAPATH.md)).
+
+### E7. 정수 구현 세부의 정확도 비용
+
+양자화 파라미터는 그대로 두고 정수 엔진의 구현만 바꿨습니다. 기준 구현(gemmlowp 이중 반올림, Q31 곱셈기, int32 누산기·바이어스)과의 **이미지 단위 top-1 일치율**은 시드 잡음이 없는 지표입니다.
+
+<!-- TABLE:E7 -->
+| RequantConfig | ResNet-20 ReLU: acc / 기준 대비 top-1 일치 |
+|---|---|
+| `tflite-m31-acc32-b32` | 91.00% / 100.0% |
+| `single-m31-acc32-b32` | 91.00% / 99.4% |
+| `half_even-m31-acc32-b32` | 90.85% / 99.4% |
+| `truncate-m31-acc32-b32` | 89.30% / 95.2% |
+| `floor-m31-acc32-b32` | 88.65% / 94.0% |
+| `tflite-m15-acc32-b32` | 90.85% / 99.4% |
+| `tflite-m7-acc32-b32` | 90.80% / 99.0% |
+| `tflite-m3-acc32-b32` | 89.70% / 95.6% |
+
+2000장 기준. 기준 구현은 `tflite-m31-acc32-b32`(gemmlowp 이중 반올림). 곱셈기 비트·누산기 폭이 줄어들 때 무엇이 먼저 무너지는지 보세요.
+<!-- /TABLE:E7 -->
+
+* 반올림 모드: TFLite single rounding과 half-even은 기준과 99.4% 일치하지만, **truncate/floor는 95%로 떨어지고 정확도도 1.6~2.3%p 잃습니다.** requant에서 "그냥 시프트"는 공짜가 아닙니다.
+* 곱셈기 비트: 15비트까지는 거의 손실이 없고, 7비트에서 99.0%, **3비트(사실상 2의 거듭제곱 곱셈기)에서 95.6%** — 스케일을 2의 거듭제곱으로 제한하는 NPU라면 QAT 때 그 제약을 같이 학습시켜야 하는 근거입니다.
+* 누산기/바이어스 폭: 표를 보세요 — 포화(saturation) 횟수와 함께 기록했습니다.
+
+### E3. 정적 lint는 실제 손실을 예측하는가
+
+<!-- TABLE:E3 -->
+_(아직 실행되지 않음)_
+<!-- /TABLE:E3 -->
+
+### E4. 수술: CLE · 바이어스 보정 · 활성함수 교체 · QAT
+
+<!-- TABLE:E4 -->
+_(아직 실행되지 않음)_
+<!-- /TABLE:E4 -->
+
+### E5. 캘리브레이션 세트는 몇 장이면 되는가
+
+<!-- TABLE:E5 -->
+_(아직 실행되지 않음)_
+<!-- /TABLE:E5 -->
+
+### E6. PE-array 정렬 프루닝 — MACs와 사이클은 다르게 움직인다
+
+<!-- TABLE:E6 -->
+_(아직 실행되지 않음)_
+<!-- /TABLE:E6 -->
+
+## 데모
+
+`docs/index.html`(= `demo/index.html`)은 위 JSON을 인라인한 정적 페이지입니다. 비용 모델을 JavaScript로 그대로 포팅해서
+배열 크기·코어 수·DRAM 대역폭·depthwise 엔진 유무·비-ReLU 활성함수 실행 방식을 바꾸면 레이어별 사이클과 활용률이 즉시 다시 계산됩니다.
+lint 리포트, PTQ 그리드와 레이어별 일치도, requant ablation, 수술, 캘리브레이션, 프루닝 Pareto, lint-vs-drop 산점도를 모두 담았습니다.
+
+<!-- DEMO_URL -->
+
 
 ## 저장소 구조
 
