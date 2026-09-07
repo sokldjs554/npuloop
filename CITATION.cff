@@ -1,0 +1,13 @@
+cff-version: 1.2.0
+title: "npuloop: closed-loop NPU-aware model compression with a validated analytical cost model and a bit-exact integer engine"
+message: "If you use this software, please cite it as below."
+type: software
+authors:
+  - family-names: "Kim"
+    given-names: "Y. H."
+    alias: sokldjs554
+repository-code: "https://github.com/sokldjs554/npuloop"
+license: Apache-2.0
+version: 0.1.0
+date-released: 2026-09-07
+keywords: [npu, quantization, pruning, systolic-array, cost-model, integer-inference, cifar-10]
