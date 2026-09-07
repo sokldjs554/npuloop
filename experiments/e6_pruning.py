@@ -12,7 +12,7 @@ from npuloop.prune import prune, prune_cost_greedy, find_groups
 from npuloop.quant import prepare, calibrate, evaluate, PRESET_SCHEMES
 from npuloop.zoo import fit
 
-FT_EPOCHS = int(os.environ.get("NPULOOP_FT_EPOCHS", "4"))
+FT_EPOCHS = int(os.environ.get("NPULOOP_FT_EPOCHS", "3"))
 SPECS = ["tiny-1tops", "edge-10tops", "pcie-80tops"]
 MODELS = os.environ.get("NPULOOP_MODELS", "resnet20_relu,mnv2_050_relu6").split(",")
 CONFIGS = [  # (strategy, ratio/target, align)
