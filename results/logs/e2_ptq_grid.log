@@ -18,3 +18,5 @@
 [10:06:44] mnv2_050_relu6   npu-default      float=0.9101 fake=0.9092 int=0.9108 top1-agree=0.990 (1954s)
 [10:16:00] mnv2_050_relu6   npu-percentile   float=0.9101 fake=0.9095 int=0.9110 top1-agree=1.000 (556s)
 [10:25:58] mnv2_050_relu6   npu-mse          float=0.9101 fake=0.9102 int=0.9110 top1-agree=0.996 (598s)
+[11:00:28] mnv2_050_relu6   per-tensor       float=0.9101 fake=0.9105 int=0.9111 top1-agree=0.992 (2070s)
+[11:09:56] mnv2_050_relu6   per-tensor-mse   float=0.9101 fake=0.9100 int=0.9135 top1-agree=0.996 (568s)

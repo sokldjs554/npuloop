@@ -152,6 +152,29 @@
    "float_acc_after_cle": 0.9097,
    "provenance": "measured",
    "timestamp": "2026-09-07T10:21:13"
+  },
+  {
+   "part": "a",
+   "model": "mnv2_050_relu6",
+   "scheme": "per-tensor",
+   "step": "cle+bc",
+   "float_acc": 0.9101,
+   "fake_acc": 0.9088,
+   "int_acc": 0.9094,
+   "bias_shift_mean": 0.002157229587506011,
+   "provenance": "measured",
+   "timestamp": "2026-09-07T10:49:01"
+  },
+  {
+   "part": "a",
+   "model": "mnv2_050_relu6",
+   "scheme": "per-tensor",
+   "step": "bc",
+   "float_acc": 0.9101,
+   "fake_acc": 0.9102,
+   "int_acc": 0.9103,
+   "provenance": "measured",
+   "timestamp": "2026-09-07T11:18:44"
   }
  ]
 }

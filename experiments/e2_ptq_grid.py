@@ -17,7 +17,7 @@ def main():
     ds = dataset()
     res = Results("e2_ptq_grid", meta=dict(calib="512 random train images (seed 0)", int_eval_images=INT_EVAL, schemes={k: v.to_dict() for k, v in PRESET_SCHEMES.items()}))
     calib = calib_batches(ds, 512, seed=0)
-    x_agree, y_agree = next(ds.test_batches(500))
+    x_agree, y_agree = next(ds.test_batches(int(os.environ.get("NPULOOP_AGREE_IMAGES", "250"))))
     for name in available_baselines():
         m = load_model(name)
         float_acc = None

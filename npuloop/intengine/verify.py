@@ -41,7 +41,7 @@ def fake_codes(gm, ig: IntGraph, x: torch.Tensor) -> dict[str, np.ndarray]:
         def mk(node_name, s, z, fq):
             def hook(mod, inp, out):
                 codes = np.rint(out.detach().double().numpy() / s) + z
-                captured[node_name] = np.clip(codes, fq.qmin, fq.qmax).astype(np.int64)
+                captured[node_name] = np.clip(codes, fq.qmin, fq.qmax).astype(np.int16)   # codes fit int16; keeps memory low
             return hook
         hooks.append(fq.register_forward_hook(mk(node_name, s, z, fq)))
     gm.eval()

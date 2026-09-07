@@ -33,3 +33,5 @@ FAILED side e2_ptq_grid
 === side e2_ptq_grid 07:24:42
 === A e4_surgery 09:31:46
 === B e2_ptq_grid 09:31:46
+FAILED B e2_ptq_grid
+=== B e7_requant_ablation 11:13:36
