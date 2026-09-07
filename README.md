@@ -84,6 +84,7 @@ SiLU 모델은 strict 프리셋(LUT 없음, 호스트 폴백)에서 사이클이
 |---|---|---|---|---|---|---|---|
 | ResNet-20 ReLU (90.47%) | 90.51% (+0.04%p) | 90.52% (+0.05%p) | 90.50% (+0.03%p) | 90.52% (+0.05%p) | 90.50% (+0.03%p) | 90.53% (+0.06%p) | 90.70% (+0.23%p) |
 | ResNet-20 SiLU (90.50%) | 90.45% (-0.05%p) | 90.47% (-0.03%p) | 90.58% (+0.08%p) | 90.46% (-0.04%p) | 90.60% (+0.10%p) | 90.19% (-0.31%p) | 90.27% (-0.23%p) |
+| MobileNetV2-0.5 ReLU6 (91.01%) | 90.92% (-0.09%p) | 90.95% (-0.06%p) | 91.02% (+0.01%p) | — | — | — | — |
 
 **(B) 비트 정확 정수 엔진 vs fake-quant — 같은 이미지에서**
 
@@ -103,6 +104,9 @@ SiLU 모델은 strict 프리셋(LUT 없음, 호스트 폴백)에서 사이클이
 | ResNet-20 SiLU | per-tensor-mse | 2,000 | 90.85% | 90.70% | -0.15%p | 99.2% | 45% | stem_conv |
 | ResNet-20 SiLU | pow2 | 2,000 | 89.80% | 90.25% | +0.45%p | 98.0% | 75% | stem_conv |
 | ResNet-20 SiLU | sym-act | 2,000 | 90.25% | 90.40% | +0.15%p | 99.0% | 55% | stem_conv |
+| MobileNetV2-0.5 ReLU6 | npu-default | 10,000 | 90.92% | 91.08% | +0.16%p | 99.0% | 47% | stem_conv |
+| MobileNetV2-0.5 ReLU6 | npu-percentile | 2,000 | 91.10% | 91.10% | +0.00%p | 100.0% | 39% | stem_conv |
+| MobileNetV2-0.5 ReLU6 | npu-mse | 2,000 | 91.05% | 91.10% | +0.05%p | 99.6% | 42% | stem_conv |
 <!-- /TABLE:E2 -->
 
 관찰:
@@ -151,9 +155,16 @@ _(아직 실행되지 않음)_
 ### E4. 수술: CLE · 바이어스 보정 · 활성함수 교체 · QAT
 
 (b) **활성함수 교체가 가장 싼 수술입니다.** ResNet-20-SiLU(FP32 90.50%)의 SiLU 19개를 ReLU로 바꾸면 재학습 없이는 54%로 무너지지만, **3 epoch만 healing하면 90.0%(INT8 정수 엔진 90.0%)**로 돌아옵니다. HardSwish로 바꾸면 SiLU와 모양이 비슷해서 **재학습 없이도 89.6%**입니다. 대가로 얻는 것: LUT가 없는 strict NPU에서 사이클 **1,554,865 → 34,417 (45배)**, LUT가 있는 NPU에서도 LUT 사이클 1%가 사라집니다. "SiLU를 NPU가 지원하나요?"라는 질문에 대한 답은 "지원 여부보다, 3 epoch 재학습으로 ReLU가 되는지 먼저 보라"입니다.
-(a) MobileNetV2에 per-tensor 가중치 제약을 가정한 CLE/바이어스 보정, (c) 각 모델의 짧은 QAT(2 epoch × 250 step)는 아래 표에 있습니다. SiLU 모델의 QAT는 PTQ보다 0.25%p 낮게 끝났는데, PTQ 손실이 이미 0.05%p뿐인 모델에 짧은 QAT를 얹으면 얻을 것이 없고 lr 잡음만 남는다는 뜻입니다 — QAT는 PTQ가 실제로 무너지는 곳(per-tensor MobileNetV2)에서만 값을 합니다.
+(a) **MobileNetV2 per-tensor 실험은 "실패를 재현하지 못한" 정직한 결과입니다.** 논문(DFQ)에서 per-tensor 가중치가 MobileNetV2를 무너뜨리는 이유는 BN folding 후 depthwise 채널 범위가 수십~수백 배 벌어지기 때문인데, 이 저장소의 CIFAR MobileNetV2-0.5(BN 파라미터에 weight decay 없음, 30 epoch)는 **최대 비율이 3.5배**뿐입니다. lint는 이 모델의 양자화 강건성을 98점으로 매겨 "per-tensor로도 괜찮다"고 예측했고, 측정도 그랬습니다(per-tensor PTQ 91.05%, FP32 91.01%). CLE는 필요 없는 수술이었고 ReLU6→ReLU 치환 때문에 0.2%p를 오히려 잃었습니다. 정적 lint가 **"고치지 말라"**고 말해 주는 것도 값이 있다는 예입니다. CLE의 이득을 보려면 ImageNet 계열의 죽은 채널이 있는 체크포인트가 필요하며, 이는 한계로 남깁니다.
+(c) 각 모델의 짧은 QAT(2 epoch × 250 step)는 아래 표에 있습니다. SiLU 모델의 QAT는 PTQ보다 0.25%p 낮게 끝났는데, PTQ 손실이 이미 0.05%p뿐인 모델에 짧은 QAT를 얹으면 얻을 것이 없고 lr 잡음만 남는다는 뜻입니다 — QAT는 PTQ가 실제로 무너지는 곳(per-tensor MobileNetV2)에서만 값을 합니다.
 
 <!-- TABLE:E4 -->
+**(a) MobileNetV2-0.5, per-tensor 가중치 NPU 가정**
+
+| 단계 | fake-quant | 정수 엔진 |
+|---|---|---|
+| ptq | 91.05% | 91.11% |
+| cle | 90.80% | 90.84% |
 
 **(b) ResNet-20-SiLU 활성함수 교체 + healing**
 

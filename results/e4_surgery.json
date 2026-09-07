@@ -124,6 +124,34 @@
    "heal_log": null,
    "provenance": "measured+simulated",
    "timestamp": "2026-09-07T07:53:41"
+  },
+  {
+   "part": "a",
+   "model": "mnv2_050_relu6",
+   "scheme": "per-tensor",
+   "step": "ptq",
+   "float_acc": 0.9101,
+   "fake_acc": 0.9105,
+   "int_acc": 0.9111,
+   "provenance": "measured",
+   "timestamp": "2026-09-07T09:55:59"
+  },
+  {
+   "part": "a",
+   "model": "mnv2_050_relu6",
+   "scheme": "per-tensor",
+   "step": "cle",
+   "float_acc": 0.9101,
+   "cle": {
+    "pairs": 36,
+    "iterations": 20,
+    "max_log_scale": 0.0009238027851097286
+   },
+   "fake_acc": 0.908,
+   "int_acc": 0.9084,
+   "float_acc_after_cle": 0.9097,
+   "provenance": "measured",
+   "timestamp": "2026-09-07T10:21:13"
   }
  ]
 }

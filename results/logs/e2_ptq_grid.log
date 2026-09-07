@@ -15,3 +15,6 @@
 [06:29:14] resnet20_silu    per-tensor-mse   float=0.9050 fake=0.9060 int=0.9070 top1-agree=0.992 (313s)
 [06:34:17] resnet20_silu    pow2             float=0.9050 fake=0.9019 int=0.9025 top1-agree=0.980 (303s)
 [06:39:20] resnet20_silu    sym-act          float=0.9050 fake=0.9027 int=0.9040 top1-agree=0.990 (303s)
+[10:06:44] mnv2_050_relu6   npu-default      float=0.9101 fake=0.9092 int=0.9108 top1-agree=0.990 (1954s)
+[10:16:00] mnv2_050_relu6   npu-percentile   float=0.9101 fake=0.9095 int=0.9110 top1-agree=1.000 (556s)
+[10:25:58] mnv2_050_relu6   npu-mse          float=0.9101 fake=0.9102 int=0.9110 top1-agree=0.996 (598s)
