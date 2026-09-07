@@ -76,3 +76,11 @@
 [06:50:32] resnet20_relu    per-tensor   n= 2048 bal=1 seed=0 acc=0.9059 drop=-0.0012
 [06:51:04] resnet20_relu    per-tensor   n= 2048 bal=1 seed=1 acc=0.9056 drop=-0.0009
 [06:51:37] resnet20_relu    per-tensor   n= 2048 bal=1 seed=2 acc=0.9061 drop=-0.0014
+[12:15:39] mnv2_050_relu6   npu-default  n=    8 bal=0 seed=0 acc=0.9107 drop=-0.0006
+[12:16:54] mnv2_050_relu6   npu-default  n=    8 bal=0 seed=1 acc=0.9111 drop=-0.0010
+[12:18:05] mnv2_050_relu6   npu-default  n=    8 bal=0 seed=2 acc=0.9099 drop=+0.0002
+[12:19:20] mnv2_050_relu6   npu-default  n=   32 bal=0 seed=0 acc=0.9102 drop=-0.0001
+[12:20:33] mnv2_050_relu6   npu-default  n=   32 bal=0 seed=1 acc=0.9100 drop=+0.0001
+[12:21:49] mnv2_050_relu6   npu-default  n=   32 bal=0 seed=2 acc=0.9088 drop=+0.0013
+[12:23:04] mnv2_050_relu6   npu-default  n=   32 bal=1 seed=0 acc=0.9104 drop=-0.0003
+[12:24:20] mnv2_050_relu6   npu-default  n=   32 bal=1 seed=1 acc=0.9105 drop=-0.0004
