@@ -307,6 +307,7 @@ def alignment_util_weighted(graph: StaticGraph, spec: NPUSpec) -> float:
             continue
         if n.op == "conv":
             cout, cin_g, kh, kw = n.weight.shape; k = cin_g * kh * kw
+            cout = cout // n.attrs.get("groups", 1)          # grouped conv: each group is its own GEMM
         else:
             cout, k = n.weight.shape
         util = (cout / (math.ceil(cout / spec.pe_cols) * spec.pe_cols)) * (k / (math.ceil(k / spec.pe_rows) * spec.pe_rows))

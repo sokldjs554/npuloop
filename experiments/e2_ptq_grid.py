@@ -34,9 +34,11 @@ def main():
             n_int = INT_EVAL if sname in PRIMARY else INT_EVAL_SECONDARY
             int_acc = NumpyEngine(ig).evaluate(ds, limit=n_int)
             fake_acc_subset = evaluate(qm, ds, limit=n_int)
+            float_acc_subset = float_acc if n_int >= len(ds.y_test) else evaluate(m, ds, limit=n_int)
             rec = dict(model=name, scheme=sname, float_acc=float_acc, fake_acc=fq_acc, int_acc=int_acc, int_eval_images=n_int,
-                       fake_acc_on_int_subset=fake_acc_subset,
-                       drop_fake=float_acc - fq_acc, drop_int=float_acc - int_acc, agreement=summ,
+                       fake_acc_on_int_subset=fake_acc_subset, float_acc_on_int_subset=float_acc_subset,
+                       drop_fake=float_acc - fq_acc, drop_int=float_acc_subset - int_acc,      # same images
+                       int_minus_fake_same_images=int_acc - fake_acc_subset, agreement=summ,
                        per_layer_agreement=[r.to_dict() for r in rows], seconds=time.time() - t)
             if sname in ("npu-default", "per-tensor"):
                 sens = layer_sensitivity(qm, [(x_agree, y_agree)])

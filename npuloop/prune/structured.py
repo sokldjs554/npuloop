@@ -191,16 +191,20 @@ def prune_cost_greedy(model: nn.Module, spec, target_ratio: float, align: int = 
             m_trial, _ = prune(base, keep=trial)
             cyc = cycles_of(m_trial, spec)
             saving = cur_cycles - cyc
+            if saving <= 0:
+                continue                     # removing these channels would not save a single cycle on this NPU
             lost = float(imps[gi][trial[gi]:counts[gi]].sum()) + 1e-12
             score = saving / lost
             if best is None or score > best[0]:
                 best = (score, gi, cyc, saving)
         if best is None:
-            break
+            break                            # no candidate saves cycles any more (staircase floor reached)
         _, gi, cyc, saving = best
         counts[gi] -= align; cur_cycles = cyc
         history.append(dict(step=step, group=groups[gi].name, cycles=cyc, saving=saving, counts=list(counts)))
         if verbose:
             print(f"step {step}: -{align}ch from {groups[gi].name} -> cycles {cyc:,.0f} ({cyc/base_cycles*100:.1f}%)")
     pruned, groups = prune(base, keep=counts)
+    history[-1]["target_reached"] = bool(cur_cycles <= target)
+    history[-1]["achieved_ratio"] = cur_cycles / base_cycles
     return pruned, groups, history

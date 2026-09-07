@@ -43,10 +43,10 @@ def calib_batches(ds, n: int = 512, seed: int = 0, per_batch: int = 256, balance
     rng = np.random.default_rng(seed)
     if balanced:
         idx = []
-        per = n // 10
+        extra = set(rng.permutation(10)[: n % 10].tolist())     # classes that get one extra image so the total is exactly n
         for c in range(10):
             cls = np.flatnonzero(ds.y_train == c)
-            idx.extend(rng.choice(cls, size=per, replace=False))
+            idx.extend(rng.choice(cls, size=n // 10 + (1 if c in extra else 0), replace=False))
         idx = np.array(idx)
     else:
         idx = rng.choice(len(ds.x_train), size=n, replace=False)

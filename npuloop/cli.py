@@ -57,7 +57,8 @@ def cmd_quantize(a):
         acc = NumpyEngine(ig).evaluate(ds, limit=a.int_eval)
         print(f"bit-exact integer engine acc ({a.int_eval} images): {acc:.4f}")
     if a.out:
-        torch.save({"config": m.config, "state_dict": qm.state_dict(), "scheme": scheme.to_dict()}, a.out)
+        # float weights (loadable by cost/lint/quantize) + the calibrated fake-quant state for reproducibility
+        torch.save({"config": m.config, "state_dict": m.state_dict(), "scheme": scheme.to_dict(), "qstate": qm.state_dict()}, a.out)
 
 
 def main(argv=None):

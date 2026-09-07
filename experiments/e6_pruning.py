@@ -19,7 +19,7 @@ CONFIGS = [  # (strategy, ratio/target, align)
     ("uniform", 0.75, 0), ("aligned", 0.75, 16), ("aligned", 0.75, 32),
     ("uniform", 0.5, 0), ("aligned", 0.5, 16), ("aligned", 0.5, 32),
     ("uniform", 0.25, 0), ("aligned", 0.25, 16),
-    ("cost-greedy", 0.8, 16), ("cost-greedy", 0.6, 16), ("cost-greedy", 0.45, 16),
+    ("cost-greedy", 0.85, 8), ("cost-greedy", 0.7, 8), ("cost-greedy", 0.55, 8),   # 8-channel steps: finer K-tile staircase
 ]
 
 
@@ -46,7 +46,7 @@ def main():
             qm = prepare(m, PRESET_SCHEMES["npu-default"]); calibrate(qm, calib)
             res.add(dict(model=name, strategy="none", ratio=1.0, align=0, keep=[g.channels for g in find_groups(m)],
                          float_acc=evaluate(m, ds), ft_acc=evaluate(m, ds), int8_acc=evaluate(qm, ds), **base_costs), provenance="measured+simulated")
-        configs = CONFIGS if name.startswith("resnet") else [c for c in CONFIGS if c[1] in (0.5, 0.6) or c == ("uniform", 0.25, 0)]
+        configs = CONFIGS if name.startswith("resnet") else [c for c in CONFIGS if c[1] in (0.5, 0.7) or c == ("uniform", 0.25, 0)]
         for strategy, ratio, align in configs:
             if res.has(model=name, strategy=strategy, ratio=ratio, align=align):
                 continue
@@ -61,7 +61,8 @@ def main():
             qm = prepare(pm, PRESET_SCHEMES["npu-default"]); calibrate(qm, calib)
             rec = dict(model=name, strategy=strategy, ratio=ratio, align=align, keep=[g.channels for g in groups],
                        acc_after_prune=acc_pruned, ft_acc=ft_acc, int8_acc=evaluate(qm, ds), ft_epochs=FT_EPOCHS,
-                       greedy_steps=(len(hist) - 1) if hist else None, minutes=(time.time() - t) / 60, **costs(pm))
+                       greedy_steps=(len(hist) - 1) if hist else None, target_reached=(hist[-1].get("target_reached") if hist else None),
+                       achieved_ratio=(hist[-1].get("achieved_ratio") if hist else None), minutes=(time.time() - t) / 60, **costs(pm))
             res.add(rec, provenance="measured+simulated")
             log(f"{name} {strategy} r={ratio} a={align}: keep={rec['keep']} MACs={rec['macs']/1e6:.1f}M edge-cycles={rec['edge-10tops']['cycles']:.0f} ft_acc={ft_acc:.4f} int8={rec['int8_acc']:.4f}")
 

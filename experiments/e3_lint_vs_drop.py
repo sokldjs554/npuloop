@@ -8,10 +8,21 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from common import *
 
 
+def _rank(v):
+    """Average ranks (ties share the mean rank), like scipy.stats.rankdata."""
+    v = np.asarray(v, float); order = v.argsort(kind="mergesort"); ranks = np.empty(len(v)); i = 0
+    while i < len(v):
+        j = i
+        while j + 1 < len(v) and v[order[j + 1]] == v[order[i]]:
+            j += 1
+        ranks[order[i:j + 1]] = (i + j) / 2.0 + 1; i = j + 1
+    return ranks
+
+
 def spearman(a, b):
-    a, b = np.asarray(a, float), np.asarray(b, float)
-    ra = a.argsort().argsort(); rb = b.argsort().argsort()
-    return float(np.corrcoef(ra, rb)[0, 1]) if len(a) > 2 else float("nan")
+    if len(a) <= 2:
+        return float("nan")
+    return float(np.corrcoef(_rank(a), _rank(b))[0, 1])
 
 
 def main():
@@ -46,7 +57,11 @@ def main():
         if len(mp) > 2:
             summary[f"model_spearman_robustness_vs_drop_{scheme}"] = spearman([-p["quant_robustness"] for p in mp], [p["drop_fake"] for p in mp])
     res.data["meta"]["summary"] = summary
-    res.data["records"] = [dict(kind="layer", **p) for p in layer_points] + [dict(kind="model", **p) for p in model_points]
+    res.data["records"] = []
+    for p in layer_points:
+        res.add(dict(kind="layer", **p), provenance="measured+simulated")
+    for p in model_points:
+        res.add(dict(kind="model", **p), provenance="measured+simulated")
     res.save()
     print(json.dumps(summary, indent=1))
 

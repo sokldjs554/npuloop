@@ -41,7 +41,9 @@ class LayerCost:
     dram_cycles: float = 0.0
     cycles: float = 0.0
     bound: str = "none"       # compute|memory|vector|fallback|none
-    array_util: float = 0.0   # MACs / (cycles * array MACs/cycle) for array ops
+    array_util: float = 0.0   # MACs / (cycles * array MACs/cycle) for ops that run on the MAC array (0 for the depthwise engine)
+    engine_util: float = 0.0  # depthwise-engine utilization (MACs / (cycles * dw lanes)) for dwconv on the engine
+    on_array: bool = False    # whether this layer's MACs execute on the MAC array
     split: str = ""           # multi-core split strategy chosen
     weight_tiles: int = 0
     note: str = ""
@@ -72,9 +74,14 @@ class CostReport:
         return self.total_macs / self.spec.macs_per_cycle
 
     @property
+    def array_macs(self) -> int:
+        return sum(l.macs for l in self.layers if l.on_array)
+
+    @property
     def array_utilization(self) -> float:
-        """Whole-network MAC-array utilization = ideal cycles / actual cycles."""
-        return self.ideal_cycles / self.total_cycles if self.total_cycles else 0.0
+        """Whole-network MAC-array utilization: MACs executed on the array / (total cycles * array MACs per cycle).
+        MACs that run on the depthwise engine are not counted as array work."""
+        return self.array_macs / (self.total_cycles * self.spec.macs_per_cycle) if self.total_cycles else 0.0
 
     @property
     def dram_bytes(self) -> int:
@@ -96,7 +103,8 @@ class CostReport:
         for l in self.layers:
             if l.op in ("input", "output", "flatten"):
                 continue
-            rows.append(f"{l.name:26s} {l.kind:12s} {l.macs:11,d} {l.m:5d} {l.k:5d} {l.n:5d} {l.cycles:10,.0f} {l.bound:8s} {l.array_util*100:5.1f}% {l.split:6s} {l.dram_bytes/1024:8.1f}")
+            util = f"{l.array_util*100:5.1f}%" if l.on_array else (f"{l.engine_util*100:4.0f}%e" if l.kind == "dwconv" else "     ")
+            rows.append(f"{l.name:26s} {l.kind:12s} {l.macs:11,d} {l.m:5d} {l.k:5d} {l.n:5d} {l.cycles:10,.0f} {l.bound:8s} {util:>6s} {l.split:6s} {l.dram_bytes/1024:8.1f}")
         rows.append(f"TOTAL cycles={self.total_cycles:,.0f}  latency={self.latency_ms:.3f} ms  "
                     f"array util={self.array_utilization*100:.1f}%  DRAM={self.dram_bytes/1024:.0f} KB  "
                     f"(spec {self.spec.name}: {self.spec.peak_tops:.1f} TOPS peak)")
@@ -163,10 +171,10 @@ def estimate(graph: StaticGraph, spec="edge-10tops") -> CostReport:
                 if spec.dw_lanes > 0:
                     ch_per_core = math.ceil(cout / spec.cores)
                     lc.compute_cycles = math.ceil(ch_per_core / spec.dw_lanes) * kh * kw * m
-                    lc.array_util = 0.0
+                    lc.array_util = 0.0                       # the MAC array is idle; the depthwise engine works
                     lc.note = "depthwise engine"
                     dw_peak = spec.dw_lanes * spec.cores
-                    lc.array_util = node.macs / (lc.compute_cycles * dw_peak) if lc.compute_cycles else 0
+                    lc.engine_util = node.macs / (lc.compute_cycles * dw_peak) if lc.compute_cycles else 0
                     lc.split = "C"
                 else:
                     # each channel is its own GEMM: M x (kh*kw) x 1 -> one weight tile per channel
@@ -175,21 +183,26 @@ def estimate(graph: StaticGraph, spec="edge-10tops") -> CostReport:
                     lc.weight_tiles = cout
                     lc.split = "C"
                     lc.array_util = node.macs / (lc.compute_cycles * spec.macs_per_cycle)
+                    lc.on_array = True
                     lc.note = "depthwise on array"
             elif groups > 1:
                 lc.kind = "gconv"
                 per_g, split, tiles = gemm_cycles(m, k, n // groups, spec)
                 lc.compute_cycles = per_g * groups; lc.split = split; lc.weight_tiles = tiles * groups
-                lc.array_util = node.macs / (lc.compute_cycles * spec.macs_per_cycle)
+                lc.array_util = node.macs / (lc.compute_cycles * spec.macs_per_cycle); lc.on_array = True
             else:
                 lc.kind = "conv" if node.op == "conv" else "linear"
                 lc.compute_cycles, lc.split, lc.weight_tiles = gemm_cycles(m, k, n, spec)
-                lc.array_util = node.macs / (lc.compute_cycles * spec.macs_per_cycle)
+                lc.array_util = node.macs / (lc.compute_cycles * spec.macs_per_cycle); lc.on_array = True
             weight_bytes = int(node.weight.size) + 4 * int(node.weight.shape[0])
             lc.dram_bytes = weight_bytes + in_traffic(node) + place_output(node, extra_live=live_in)
             lc.dram_cycles = lc.dram_bytes / spec.dram_bytes_per_cycle
             lc.cycles = max(lc.compute_cycles, lc.dram_cycles)
             lc.bound = "compute" if lc.compute_cycles >= lc.dram_cycles else "memory"
+            if lc.on_array:
+                lc.array_util = node.macs / (lc.cycles * spec.macs_per_cycle)      # against real cycles (incl. stalls)
+            elif lc.kind == "dwconv":
+                lc.engine_util = node.macs / (lc.cycles * spec.dw_lanes * spec.cores)
             layers.append(lc); continue
         if node.op == "act":
             kind = node.attrs["kind"]

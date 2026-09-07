@@ -98,10 +98,11 @@ def part_b(ds, res):
 def part_c(ds, res):
     calib = calib_batches(ds, 512, seed=0)
     for name in available_baselines():
-        if res.has(part="c", model=name):
+        schemes = ["npu-default", "per-tensor"]
+        if all(res.has(part="c", model=name, scheme=s_) for s_ in schemes):
             continue
         m = load_model(name); float_acc = evaluate(m, ds)
-        for sname in ["npu-default", "per-tensor"]:
+        for sname in schemes:
             if res.has(part="c", model=name, scheme=sname):
                 continue
             qm = prepare(m, PRESET_SCHEMES[sname]); calibrate(qm, calib)
