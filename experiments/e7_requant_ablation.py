@@ -48,13 +48,16 @@ def main():
         fake_acc = float((fake_logits.argmax(1) == y).mean())
         ref_logits = None
         for cfg in CONFIGS:
+            done = res.has(model=name, config=cfg.tag)
+            if done and cfg != CONFIGS[0]:
+                continue                      # the reference config is always recomputed (its logits are needed)
             t = time.time()
             ig = export_int_graph(qm, cfg)
             eng = NumpyEngine(ig)
             logits = np.concatenate([eng.predict(x[i:i + 500].numpy()) for i in range(0, len(x), 500)])
             if cfg == CONFIGS[0]:
                 ref_logits = logits
-            if res.has(model=name, config=cfg.tag):
+            if done:
                 continue
             acc = float((logits.argmax(1) == y).mean())
             rec = dict(model=name, config=cfg.tag, requant=cfg.to_dict(), n_images=INT_EVAL, fake_acc=fake_acc, int_acc=acc, drop_vs_fake=fake_acc - acc,
