@@ -56,7 +56,7 @@ def main():
             else:
                 pm, groups = prune(m, ratio=ratio, strategy=strategy, align=align); hist = None
             acc_pruned = evaluate(pm, ds)
-            lg = fit(pm, ds, epochs=FT_EPOCHS, lr=0.02, seed=0, warmup_pct=0.2); pm.eval()
+            fit(pm, ds, epochs=FT_EPOCHS, lr=0.02, seed=0, warmup_pct=0.2); pm.eval()
             ft_acc = evaluate(pm, ds)
             qm = prepare(pm, PRESET_SCHEMES["npu-default"]); calibrate(qm, calib)
             rec = dict(model=name, strategy=strategy, ratio=ratio, align=align, keep=[g.channels for g in groups],

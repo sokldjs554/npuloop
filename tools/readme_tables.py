@@ -1,5 +1,5 @@
 """Generate the markdown result tables for README.md from results/*.json (run after the experiments)."""
-import json, os, sys
+import json, os, sys, statistics
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 R = os.path.join(ROOT, "results")
 LABEL = {"resnet20_relu": "ResNet-20 ReLU", "resnet20_silu": "ResNet-20 SiLU", "resnet20_hswish": "ResNet-20 HardSwish",
@@ -96,7 +96,6 @@ def e4():
 def e5():
     rs = load("e5_calibration")["records"]
     if not rs: return ""
-    import statistics
     models = list(dict.fromkeys(r["model"] for r in rs)); sizes = sorted(set(r["n"] for r in rs))
     out = ["| 모델 | 스킴 | 샘플링 | " + " | ".join(str(n) for n in sizes) + " |", "|---|---|---|" + "---|" * len(sizes)]
     for m in models:
@@ -115,11 +114,17 @@ def e5():
 def e6():
     rs = load("e6_pruning")["records"]
     if not rs: return ""
-    out = ["| 모델 | 전략 | ratio | align | 남긴 채널 | MACs | edge-10tops cycles | util | FT acc | INT8 acc |", "|---|---|---|---|---|---|---|---|---|---|"]
+    specs = ["tiny-1tops", "edge-10tops", "pcie-80tops"]
+    out = ["| 모델 | 전략 | ratio | align | 남긴 채널 (블록 내부) | MACs | cycles tiny / edge / pcie | edge util | FT acc | INT8 acc |", "|---|---|---|---|---|---|---|---|---|---|"]
     for m in dict.fromkeys(r["model"] for r in rs):
         base = next(r for r in rs if r["model"] == m and r["strategy"] == "none")
         for r in [x for x in rs if x["model"] == m]:
-            out.append(f"| {LABEL.get(m, m)} | {r['strategy']} | {r['ratio']} | {r['align'] or ''} | {' '.join(map(str, r['keep']))} | {r['macs']/base['macs']*100:.0f}% | {r['edge-10tops']['cycles']/base['edge-10tops']['cycles']*100:.0f}% | {r['edge-10tops']['util']*100:.0f}% | {pct(r['ft_acc'])} | {pct(r['int8_acc'])} |")
+            ratio = f"{r['ratio']}"
+            if r["strategy"] == "cost-greedy":
+                ratio += " ✓" if r.get("target_reached") else f" ✗ ({r.get('achieved_ratio', float('nan')):.2f})"
+            cyc = " / ".join(f"{r[sp]['cycles']/base[sp]['cycles']*100:.0f}%" for sp in specs if sp in r and sp in base)
+            out.append(f"| {LABEL.get(m, m)} | {r['strategy']} | {ratio} | {r['align'] or ''} | {' '.join(map(str, r['keep']))} | {r['macs']/base['macs']*100:.0f}% | {cyc} | {r['edge-10tops']['util']*100:.0f}% | {pct(r['ft_acc'])} | {pct(r['int8_acc'])} |")
+    out.append("\nMACs·cycles는 프루닝 전 대비. cost-greedy의 ratio는 edge-10tops 사이클 목표이며 ✓ = 도달, ✗ = 최소 채널 폭(8)에서 멈춤(괄호는 실제 달성 비율). FT acc = 3 epoch fine-tune 후 FP32, INT8 acc = npu-default PTQ fake-quant.")
     return "\n".join(out)
 
 
@@ -133,9 +138,26 @@ def e8():
 
 
 def e3():
-    d = load("e3_lint_vs_drop"); s = d.get("meta", {}).get("summary", {})
+    d = load("e3_lint_vs_drop"); s = d.get("meta", {}).get("summary", {}); rs = d.get("records", [])
     if not s: return ""
-    return "\n".join(f"* `{k}`: {v:.3f}" if isinstance(v, float) else f"* `{k}`: {v}" for k, v in s.items())
+    out = ["**(a) 레이어 수준** — 한 레이어의 가중치만 양자화했을 때의 Δloss vs lint의 정적 채널 범위 비율(BN folding 후 max/median)", "",
+           "| 가중치 스킴 | 레이어 수 | Spearman ρ (범위 비율 vs Δloss) | Spearman ρ (범위 비율 vs −SQNR) |", "|---|---|---|---|"]
+    for sch in ["per-tensor", "npu-default"]:
+        if f"n_layers_{sch}" in s:
+            out.append(f"| {sch} | {s[f'n_layers_{sch}']} | {s[f'layer_spearman_range_vs_dloss_{sch}']:.2f} | {s[f'layer_spearman_range_vs_sqnr_{sch}']:.2f} |")
+    mp = [r for r in rs if r.get("kind") == "model"]
+    if mp:
+        out += ["", "**(b) 모델 수준** — lint 점수(edge-10tops) vs E2에서 측정한 FP32 대비 손실(%p; 양수 = 손실)", "",
+                "| 모델 | lint q-rob | lint eff | 스킴 수 | 평균 손실 fake / int | 최악 int 손실 |", "|---|---|---|---|---|---|"]
+        for m in dict.fromkeys(r["model"] for r in mp):
+            xs = [r for r in mp if r["model"] == m]
+            out.append(f"| {LABEL.get(m, m)} | {xs[0]['quant_robustness']:.0f} | {xs[0]['efficiency']:.0f} | {len(xs)} | "
+                       f"{statistics.mean(r['drop_fake'] for r in xs)*100:+.2f} / {statistics.mean(r['drop_int'] for r in xs)*100:+.2f} | {max(r['drop_int'] for r in xs)*100:+.2f} |")
+        for sch in ["per-tensor", "npu-default"]:
+            k = f"model_spearman_robustness_vs_drop_{sch}"
+            if k in s:
+                out.append(f"\n모델 수준 Spearman(−q-rob vs fake 손실, {sch}, n = {len(set(r['model'] for r in mp))}): {s[k]:.2f}")
+    return "\n".join(out)
 
 
 TABLES = [("E1", e1), ("E2", e2), ("E3", e3), ("E4", e4), ("E5", e5), ("E6", e6), ("E7", e7), ("E8", e8)]

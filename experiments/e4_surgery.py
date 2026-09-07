@@ -86,7 +86,7 @@ def part_b(ds, res):
             acc0 = evaluate(ms, ds)
             lg = None
             if heal:
-                t = time.time(); lg = fit(ms, ds, epochs=heal, lr=0.02, seed=0, warmup_pct=0.2)
+                lg = fit(ms, ds, epochs=heal, lr=0.02, seed=0, warmup_pct=0.2)
                 ms.eval()
             acc1 = evaluate(ms, ds)
             qm = prepare(ms, sch); calibrate(qm, calib)

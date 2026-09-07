@@ -20,3 +20,5 @@
 [10:25:58] mnv2_050_relu6   npu-mse          float=0.9101 fake=0.9102 int=0.9110 top1-agree=0.996 (598s)
 [11:00:28] mnv2_050_relu6   per-tensor       float=0.9101 fake=0.9105 int=0.9111 top1-agree=0.992 (2070s)
 [11:09:56] mnv2_050_relu6   per-tensor-mse   float=0.9101 fake=0.9100 int=0.9135 top1-agree=0.996 (568s)
+[15:05:18] mnv2_050_relu6   pow2             float=0.9101 fake=0.9091 int=0.9080 top1-agree=0.976 (437s)
+[15:11:54] mnv2_050_relu6   sym-act          float=0.9101 fake=0.9104 int=0.9115 top1-agree=1.000 (396s)

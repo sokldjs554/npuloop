@@ -88,7 +88,6 @@ def export_int_graph(gm: fx.GraphModule, requant: RequantConfig = RequantConfig(
     nodes: list[IntNode] = []
     by_name: dict[str, IntNode] = {}
     alias: dict[str, str] = {}          # fx node name -> IntNode name producing that tensor
-    pending_act: dict[str, str] = {}    # fx act node name -> IntNode it fuses into (relu-family)
     input_q: QParams | None = None
 
     def shape_of(n):

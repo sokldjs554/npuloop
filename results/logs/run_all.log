@@ -42,3 +42,7 @@ FAILED B e2_ptq_grid
 === B2 e1_baselines 13:32:53
 === B2 done 13:33:39
 === C e6_pruning(mnv2) 14:07:58
+=== A2 e6_pruning 14:13:08
+=== C done 14:45:15
+=== A2 e2_ptq_grid 14:57:06
+=== A2 done 15:11:54

@@ -283,6 +283,37 @@
    ],
    "provenance": "measured",
    "timestamp": "2026-09-07T13:36:21"
+  },
+  {
+   "part": "c",
+   "model": "mnv2_050_relu6",
+   "scheme": "npu-default",
+   "float_acc": 0.9101,
+   "ptq_acc": 0.9092,
+   "qat_acc": 0.91,
+   "int_acc": 0.9087,
+   "qat_epochs": 2,
+   "minutes": 35.729579508304596,
+   "qat_log": [
+    {
+     "epoch": 1,
+     "train_loss": 0.14207566921412945,
+     "train_acc": 0.94965625,
+     "test_acc": 0.9076,
+     "lr": 0.0011684352092226702,
+     "epoch_sec": 478.56681632995605
+    },
+    {
+     "epoch": 2,
+     "train_loss": 0.13461117528378963,
+     "train_acc": 0.95425,
+     "test_acc": 0.91,
+     "lr": 4.024320556016042e-06,
+     "epoch_sec": 462.90537905693054
+    }
+   ],
+   "provenance": "measured",
+   "timestamp": "2026-09-07T14:13:07"
   }
  ]
 }

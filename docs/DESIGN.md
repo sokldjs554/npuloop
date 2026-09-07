@@ -49,17 +49,18 @@ model ─►│ graph.trace (fx IR)  │─────────────�
 * global avgpool: int32 합 → 반올림 나눗셈(round half away), 스케일 유지.
 * 입력: 호스트가 float → uint8 (round half to even).
 
-## 실험 계획 (E1–E7)
+## 실험 계획 (E1–E8)
 
 | # | 질문 | 방법 |
 |---|---|---|
-| E1 | 베이스라인 | ResNet-20 {ReLU, SiLU, HardSwish, GELU}, MobileNetV2-0.5 (ReLU6), 30 epochs OneCycle, seed 0 |
+| E1 | 베이스라인 | ResNet-20 {ReLU, SiLU}, MobileNetV2-0.5 (ReLU6), 30 epochs OneCycle, seed 0 (계획했던 HardSwish·GELU 베이스라인은 CPU 시간 때문에 제외) |
 | E2 | PTQ 스킴별 INT8 정확도와 fake-quant↔정수 엔진 일치 | 스킴 × 모델, fake-quant 정확도 + 비트 정확 정수 엔진 정확도 |
 | E3 | 정적 lint 점수가 실제 INT8 손실을 예측하는가 | 모델/스킴별 quant-robustness 점수 vs 측정된 정확도 손실 |
 | E4 | 수술(CLE·BC·활성함수 교체·QAT)이 손실을 얼마나 회복하는가 | per-tensor MobileNetV2에 CLE+BC, SiLU→ReLU/HardSwish 교체 후 healing, QAT |
 | E5 | 캘리브레이션 세트 크기/구성 | N ∈ {8…2048}, 무작위 vs 클래스 균형, 시드 3개 |
 | E6 | PE-array 정렬 프루닝 | uniform vs aligned vs cost-greedy: 정확도(짧은 fine-tune) vs 비용 모델 사이클 vs FLOPs |
 | E7 | 정수 구현 선택의 정확도 비용 | RequantConfig ablation: 반올림 모드, 곱셈기 비트, 누산기/바이어스 폭 |
+| E8 | 비용 모델은 믿을 만한가 | SCALE-Sim v3(weight-stationary, 사이클 정확) 대조: 총 사이클과 레이어별 오차 |
 
 ## 검증 원칙
 
