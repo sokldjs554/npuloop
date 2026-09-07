@@ -83,6 +83,7 @@ SiLU 모델은 strict 프리셋(LUT 없음, 호스트 폴백)에서 사이클이
 | 모델 (FP32) | npu-default | npu-percentile | npu-mse | per-tensor | per-tensor-mse | pow2 | sym-act |
 |---|---|---|---|---|---|---|---|
 | ResNet-20 ReLU (90.47%) | 90.51% (+0.04%p) | 90.52% (+0.05%p) | 90.50% (+0.03%p) | 90.52% (+0.05%p) | 90.50% (+0.03%p) | 90.53% (+0.06%p) | 90.70% (+0.23%p) |
+| ResNet-20 SiLU (90.50%) | 90.45% (-0.05%p) | 90.47% (-0.03%p) | 90.58% (+0.08%p) | 90.46% (-0.04%p) | 90.60% (+0.10%p) | 90.19% (-0.31%p) | 90.27% (-0.23%p) |
 
 **(B) 비트 정확 정수 엔진 vs fake-quant — 같은 이미지에서**
 
@@ -95,6 +96,13 @@ SiLU 모델은 strict 프리셋(LUT 없음, 호스트 폴백)에서 사이클이
 | ResNet-20 ReLU | per-tensor-mse | 2,000 | 90.80% | 90.90% | +0.10%p | 99.4% | 38% | stem_conv |
 | ResNet-20 ReLU | pow2 | 2,000 | 90.55% | 90.90% | +0.35%p | 98.8% | 50% | stem_conv |
 | ResNet-20 ReLU | sym-act | 2,000 | 91.00% | 91.05% | +0.05%p | 98.8% | 52% | stem_conv |
+| ResNet-20 SiLU | npu-default | 10,000 | 90.45% | 90.42% | -0.03%p | 99.0% | 55% | stem_conv |
+| ResNet-20 SiLU | npu-percentile | 2,000 | 90.40% | 90.30% | -0.10%p | 99.4% | 39% | stem_conv |
+| ResNet-20 SiLU | npu-mse | 2,000 | 90.70% | 90.50% | -0.20%p | 99.6% | 44% | stem_conv |
+| ResNet-20 SiLU | per-tensor | 10,000 | 90.46% | 90.40% | -0.06%p | 98.8% | 54% | stem_conv |
+| ResNet-20 SiLU | per-tensor-mse | 2,000 | 90.85% | 90.70% | -0.15%p | 99.2% | 45% | stem_conv |
+| ResNet-20 SiLU | pow2 | 2,000 | 89.80% | 90.25% | +0.45%p | 98.0% | 75% | stem_conv |
+| ResNet-20 SiLU | sym-act | 2,000 | 90.25% | 90.40% | +0.15%p | 99.0% | 55% | stem_conv |
 <!-- /TABLE:E2 -->
 
 관찰:
@@ -102,6 +110,7 @@ SiLU 모델은 strict 프리셋(LUT 없음, 호스트 폴백)에서 사이클이
 * **fake-quant는 정확도 예측기로는 충분히 정확합니다.** ResNet-20 ReLU에서 fake 90.51% vs 정수 90.48%, 이미지 단위 top-1 일치 99%대.
 * **그러나 텐서 단위로는 전혀 같지 않습니다.** 각 conv의 국소(teacher-forced) 불일치는 0.03~0.2%(±1 LSB)뿐인데, 끝까지 정수로 실행하면 깊은 레이어에서 코드의 15~30%, 최종 로짓의 45%가 달라집니다. ±1 LSB가 다음 레이어의 반올림 결정을 바꾸는 나비효과이고, 분류 결과는 그래도 거의 바뀌지 않습니다. "fake-quant와 하드웨어 결과가 다르다"는 보고를 받으면 먼저 *어느 레이어에서, 국소로, 몇 LSB* 인지 물어야 하는 이유입니다.
 * **국소 불일치의 출처**: conv/linear(고정소수점 곱셈기 + 바이어스 반올림), avgpool(half-away vs half-even 타이), pow2 스킴의 add(정확한 .5 타이). TFLite식 add(20비트 left-shift)는 일반 스킴에서 국소 불일치가 0입니다.
+* **SiLU 모델(LUT 활성함수)도 PTQ에 강합니다.** FP32 90.50% → npu-default 90.45%, 정수 엔진 90.42%. LUT 노드의 국소 불일치는 정확히 0(테이블 조회는 fake-quant의 "양자화→활성함수→양자화"와 동일한 함수)이고, 레이어당 양자화 지점이 하나 더 있어도 정확도는 ReLU 모델과 같습니다. lint가 SiLU 모델의 양자화 강건성 점수를 75점으로 깎은 것은 **이 네트워크에서는 과한 경고**였습니다(E3에서 다시 다룹니다). 다만 pow2·sym-act처럼 스케일에 제약을 두는 스킴에서는 SiLU 모델이 0.3%p 정도 더 잃습니다. SiLU의 진짜 비용은 정확도가 아니라 **효율성**(strict NPU에서 45배 사이클)입니다.
 * **`sym-act`(대칭 int8 활성값)는 처음 실행에서 정수 엔진 정확도가 9%로 무너졌습니다.** "requant clamp가 곧 ReLU"라는 가정이 `qmin=-127`에서는 틀리기 때문입니다. fake-quant만 보면 절대 안 보이는 버그를 정수 엔진이 잡았고, export 단계에서 노드별 clamp 하한을 `zp`로 명시하도록 고쳤습니다 ([docs/INTEGER_DATAPATH.md](docs/INTEGER_DATAPATH.md)).
 
 ### E7. 정수 구현 세부의 정확도 비용
@@ -142,7 +151,12 @@ _(아직 실행되지 않음)_
 ### E4. 수술: CLE · 바이어스 보정 · 활성함수 교체 · QAT
 
 <!-- TABLE:E4 -->
-_(아직 실행되지 않음)_
+
+**(b) ResNet-20-SiLU 활성함수 교체 + healing**
+
+| 변형 | FP32 (교체 직후 → heal 후) | INT8 fake / int | edge-10tops cycles | strict NPU cycles |
+|---|---|---|---|---|
+| silu-ptq | 90.50% | 90.45% / 90.42% | 34,785 | 1,554,865 |
 <!-- /TABLE:E4 -->
 
 ### E5. 캘리브레이션 세트는 몇 장이면 되는가
