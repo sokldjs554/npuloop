@@ -1369,6 +1369,58 @@
    "seconds": 104.00799775123596,
    "provenance": "measured",
    "timestamp": "2026-09-07T13:26:14"
+  },
+  {
+   "model": "mnv2_050_relu6",
+   "scheme": "per-tensor",
+   "n": 2048,
+   "balanced": false,
+   "seed": 2,
+   "float_acc": 0.9101,
+   "fake_acc": 0.9096,
+   "drop": 0.000500000000000056,
+   "seconds": 99.08072996139526,
+   "provenance": "measured",
+   "timestamp": "2026-09-07T13:27:54"
+  },
+  {
+   "model": "mnv2_050_relu6",
+   "scheme": "per-tensor",
+   "n": 2048,
+   "balanced": true,
+   "seed": 0,
+   "float_acc": 0.9101,
+   "fake_acc": 0.9104,
+   "drop": -0.00029999999999996696,
+   "seconds": 96.36558246612549,
+   "provenance": "measured",
+   "timestamp": "2026-09-07T13:29:30"
+  },
+  {
+   "model": "mnv2_050_relu6",
+   "scheme": "per-tensor",
+   "n": 2048,
+   "balanced": true,
+   "seed": 1,
+   "float_acc": 0.9101,
+   "fake_acc": 0.911,
+   "drop": -0.0009000000000000119,
+   "seconds": 103.26868534088135,
+   "provenance": "measured",
+   "timestamp": "2026-09-07T13:31:13"
+  },
+  {
+   "model": "mnv2_050_relu6",
+   "scheme": "per-tensor",
+   "n": 2048,
+   "balanced": true,
+   "seed": 2,
+   "float_acc": 0.9101,
+   "fake_acc": 0.9108,
+   "drop": -0.0007000000000000339,
+   "seconds": 99.6445906162262,
+   "provenance": "measured",
+   "timestamp": "2026-09-07T13:32:53"
   }
  ]
 }

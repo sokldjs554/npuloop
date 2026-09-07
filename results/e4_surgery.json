@@ -235,6 +235,54 @@
    ],
    "provenance": "measured",
    "timestamp": "2026-09-07T13:15:48"
+  },
+  {
+   "part": "b",
+   "variant": "silu-qat",
+   "act": "silu",
+   "float_acc": 0.905,
+   "fake_acc": 0.9026,
+   "int_acc": 0.9019,
+   "cycles": {
+    "edge-10tops": 34785.0,
+    "edge-10tops-strict": 1554865.0,
+    "pcie-80tops": 22817.0,
+    "tiny-1tops": 90674.0
+   },
+   "qat_epochs": 2,
+   "provenance": "measured+simulated",
+   "timestamp": "2026-09-07T13:26:44"
+  },
+  {
+   "part": "c",
+   "model": "resnet20_relu",
+   "scheme": "npu-default",
+   "float_acc": 0.9047,
+   "ptq_acc": 0.9051,
+   "qat_acc": 0.9001,
+   "int_acc": 0.9018,
+   "qat_epochs": 2,
+   "minutes": 9.335298081239065,
+   "qat_log": [
+    {
+     "epoch": 1,
+     "train_loss": 0.16426439419388772,
+     "train_acc": 0.943625,
+     "test_acc": 0.8927,
+     "lr": 0.0011684352092226702,
+     "epoch_sec": 126.0290470123291
+    },
+    {
+     "epoch": 2,
+     "train_loss": 0.14209607750177383,
+     "train_acc": 0.95140625,
+     "test_acc": 0.9001,
+     "lr": 4.024320556016042e-06,
+     "epoch_sec": 125.3955442905426
+    }
+   ],
+   "provenance": "measured",
+   "timestamp": "2026-09-07T13:36:21"
   }
  ]
 }

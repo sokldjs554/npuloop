@@ -126,3 +126,7 @@
 [13:22:49] mnv2_050_relu6   per-tensor   n=  512 bal=1 seed=2 acc=0.9116 drop=-0.0015
 [13:24:30] mnv2_050_relu6   per-tensor   n= 2048 bal=0 seed=0 acc=0.9105 drop=-0.0004
 [13:26:15] mnv2_050_relu6   per-tensor   n= 2048 bal=0 seed=1 acc=0.9107 drop=-0.0006
+[13:27:54] mnv2_050_relu6   per-tensor   n= 2048 bal=0 seed=2 acc=0.9096 drop=+0.0005
+[13:29:30] mnv2_050_relu6   per-tensor   n= 2048 bal=1 seed=0 acc=0.9104 drop=-0.0003
+[13:31:13] mnv2_050_relu6   per-tensor   n= 2048 bal=1 seed=1 acc=0.9110 drop=-0.0009
+[13:32:53] mnv2_050_relu6   per-tensor   n= 2048 bal=1 seed=2 acc=0.9108 drop=-0.0007
