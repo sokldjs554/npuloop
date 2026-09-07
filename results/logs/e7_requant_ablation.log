@@ -1,0 +1,8 @@
+[00:17:04] resnet20_relu    tflite-m31-acc32-b32         fake=0.9090 int=0.9100 agree(ref)=1.0000 sat=0 (81s)
+[00:17:44] resnet20_relu    single-m31-acc32-b32         fake=0.9090 int=0.9100 agree(ref)=0.9940 sat=0 (40s)
+[00:18:58] resnet20_relu    half_even-m31-acc32-b32      fake=0.9090 int=0.9085 agree(ref)=0.9940 sat=0 (74s)
+[00:20:10] resnet20_relu    truncate-m31-acc32-b32       fake=0.9090 int=0.8930 agree(ref)=0.9515 sat=0 (72s)
+[00:21:19] resnet20_relu    floor-m31-acc32-b32          fake=0.9090 int=0.8865 agree(ref)=0.9395 sat=0 (69s)
+[00:22:30] resnet20_relu    tflite-m15-acc32-b32         fake=0.9090 int=0.9085 agree(ref)=0.9940 sat=0 (72s)
+[00:23:50] resnet20_relu    tflite-m7-acc32-b32          fake=0.9090 int=0.9080 agree(ref)=0.9900 sat=0 (79s)
+[00:25:07] resnet20_relu    tflite-m3-acc32-b32          fake=0.9090 int=0.8970 agree(ref)=0.9560 sat=0 (77s)

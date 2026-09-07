@@ -150,3 +150,29 @@ def test_float32_chunked_mac_is_exact_at_worst_case():
     ref = torch.nn.functional.conv2d(torch.from_numpy(x.astype(np.float64)), torch.from_numpy(w.astype(np.float64)), None, 1, 1).numpy().astype(np.int64)
     assert np.array_equal(acc, ref)
     assert np.abs(ref).max() > 2 ** 24      # the case really is beyond naive float32 range
+
+
+@pytest.mark.parametrize("scheme", [QScheme(a_symmetric=True), QScheme(a_symmetric=True, pow2=True)])
+def test_symmetric_activations_keep_fused_relu(small_resnet, small_mobilenet, calib_batches, batch, scheme):
+    """Regression: with symmetric int8 activations qmin=-127, so the clamp alone is not a ReLU. The exported node must
+    carry explicit clamp bounds (lower = code of 0.0) or negative pre-activations leak through."""
+    for m in (small_resnet, small_mobilenet):
+        qm = prepare(m, scheme); calibrate(qm, calib_batches)
+        ig = export_int_graph(qm)
+        fused = [n for n in ig.nodes if n.attrs.get("fused_act")]
+        assert fused and all(n.attrs["clamp"][0] == n.out_q.zero_point for n in fused)
+        relu6 = [n for n in fused if n.attrs["fused_act"] == "relu6"]
+        assert all(n.attrs["clamp"][1] <= n.out_q.qmax for n in relu6)
+        rows, summ = compare(qm, ig, batch)
+        for r in rows:
+            assert r.local_max_abs <= 1, r
+            # power-of-two scales make exact .5 ties common (multipliers are exactly 2^k): the NPU rounds half away
+            # from zero, torch.round rounds half to even, so up to ~25% of outputs legitimately differ by 1 LSB
+            assert r.local_mismatch_frac < (0.35 if scheme.pow2 else 0.02), r
+        assert summ["logit_max_abs_diff"] < 0.5
+        codes = quantize_input(batch.numpy(), ig.input_q)
+        assert all(np.array_equal(a, b) for a, b in zip(NumpyEngine(ig).run(codes, True).values(), CppEngine(ig).run(codes, True).values()))
+        if scheme.pow2:
+            # proof that those mismatches are ties: with half-to-even second-stage rounding they vanish completely
+            rows_he, _ = compare(qm, export_int_graph(qm, RequantConfig(rounding="half_even")), batch)
+            assert all(r.local_mismatch_frac == 0.0 for r in rows_he if r.op == "add")

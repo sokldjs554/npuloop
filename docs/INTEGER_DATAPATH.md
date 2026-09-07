@@ -64,6 +64,12 @@ y = MBQM( MBQM((q_1−z_1)<<20, m_1) + MBQM((q_2−z_2)<<20, m_2), m_o ) + z_y  
 
 E2의 레이어별 일치 그래프에서 add 노드의 **국소** 불일치가 0인 이유가 이것입니다: 20비트 여유가 있어 fake-quant의 float 덧셈과 같은 격자값으로 떨어집니다.
 
+단, 스케일을 2의 거듭제곱으로 제한하면(`QScheme(pow2=True)`) 두 입력의 스케일 비가 정확한 2의 거듭제곱이 되어 합이 정확히 `.5`에 떨어지는 경우가 흔해집니다. NPU는 half-away, `torch.round`는 half-to-even이라 add 출력의 10~15%가 1 LSB 어긋납니다. 엔진의 2단계 반올림을 `half_even`으로 바꾸면 이 불일치가 정확히 0이 되는 것을 테스트(`test_symmetric_activations_keep_fused_relu`)로 확인했습니다 — "불일치는 반올림 타이(tie)에서만 생긴다"는 것을 증명하는 방법입니다.
+
+### fused ReLU와 clamp — 대칭 int8 활성값에서의 함정
+
+"clamp가 곧 ReLU"는 0의 코드가 `qmin`일 때(uint8, zp=0)만 성립합니다. 대칭 int8(`qmin=-127`)에서는 음수 pre-activation이 clamp를 그대로 통과합니다. E2에서 `sym-act` 스킴의 정수 엔진 정확도가 9%로 무너지면서 이 버그를 잡았고, 지금은 export 단계에서 노드마다 `clamp=(max(qmin, zp), qmax)`(ReLU6는 상한도 `zp+round(6/s)`)를 명시적으로 계산합니다. fake-quant만 봤다면 절대 드러나지 않았을 종류의 버그입니다.
+
 ## 4. global average pool
 
 ```

@@ -86,7 +86,8 @@ class NumpyEngine:
                 acc = np.clip(acc, INT32_MIN, INT32_MAX)
                 y = multiply_by_quantized_multiplier(acc, n.mult.reshape(cshape), n.shift.reshape(cshape), cfg.rounding)
                 y = y + n.out_q.zero_point
-                return np.clip(y, n.out_q.qmin, n.out_q.qmax)      # clamp == fused ReLU/ReLU6
+                lo, hi = n.attrs.get("clamp", (n.out_q.qmin, n.out_q.qmax))
+                return np.clip(y, lo, hi)                          # clamp bounds implement the fused ReLU/ReLU6
             elif n.op == "lut":
                 x = vals[n.inputs[0]]
                 return n.lut[x - n.attrs["lut_qmin"]]
@@ -99,7 +100,8 @@ class NumpyEngine:
                 y2 = multiply_by_quantized_multiplier(x2, p["m2"][0], p["m2"][1], cfg.rounding)
                 raw = y1 + y2
                 y = multiply_by_quantized_multiplier(raw, p["mo"][0], p["mo"][1], cfg.rounding) + n.out_q.zero_point
-                return np.clip(y, n.out_q.qmin, n.out_q.qmax)
+                lo, hi = n.attrs.get("clamp", (n.out_q.qmin, n.out_q.qmax))
+                return np.clip(y, lo, hi)
             elif n.op == "pool":
                 x = vals[n.inputs[0]]
                 cnt = x.shape[2] * x.shape[3]

@@ -162,6 +162,16 @@ def export_int_graph(gm: fx.GraphModule, requant: RequantConfig = RequantConfig(
 
     # second pass: derive integer parameters now that every out_q is known
     for n in nodes:
+        if n.out_q is not None and n.op in ("conv", "linear", "add"):
+            # The requantization clamp implements the fused ReLU/ReLU6 only if its lower bound is the code of 0.0
+            # (true for uint8 with zp=0, NOT for symmetric int8 where qmin=-127). Derive explicit bounds.
+            lo, hi = n.out_q.qmin, n.out_q.qmax
+            fused = n.attrs.get("fused_act")
+            if fused in ("relu", "relu6"):
+                lo = max(lo, n.out_q.zero_point)
+            if fused == "relu6":
+                hi = min(hi, n.out_q.zero_point + int(round(6.0 / n.out_q.scale)))
+            n.attrs["clamp"] = (int(lo), int(hi))
         if n.op in ("conv", "linear"):
             in_q = by_name[n.inputs[0]].out_q
             if n.out_q is None:

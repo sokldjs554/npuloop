@@ -73,8 +73,9 @@ class CppEngine(NumpyEngine):
             in_q = self.g[n.inputs[0]].out_q
             bias, mult, shift = _i32(n.bias_int), _i32(n.mult), _i32(n.shift)
             nsat = np.zeros(1, dtype=np.int64)
+            lo, hi = n.attrs.get("clamp", (n.out_q.qmin, n.out_q.qmax))
             lib.conv_requant(_ptr(x), N, C, H, W, _ptr(w, ctypes.c_int8), Cout, kh, kw, sh, sw, ph, pw, n.attrs["groups"],
-                             in_q.zero_point, _ptr(bias), _ptr(mult), _ptr(shift), n.out_q.zero_point, n.out_q.qmin, n.out_q.qmax,
+                             in_q.zero_point, _ptr(bias), _ptr(mult), _ptr(shift), n.out_q.zero_point, lo, hi,
                              self.rounding, cfg.acc_bits, _ptr(out), Ho, Wo, _ptr(nsat, ctypes.c_int64))
             self.saturations[n.name] = int(nsat[0])
             return out.astype(np.int64)
@@ -84,16 +85,18 @@ class CppEngine(NumpyEngine):
             out = np.empty((N, M), dtype=np.int32)
             in_q = self.g[n.inputs[0]].out_q
             bias, mult, shift = _i32(n.bias_int), _i32(n.mult), _i32(n.shift)
+            lo, hi = n.attrs.get("clamp", (n.out_q.qmin, n.out_q.qmax))
             lib.linear_requant(_ptr(x), N, K, _ptr(w, ctypes.c_int8), M, in_q.zero_point, _ptr(bias), _ptr(mult), _ptr(shift),
-                               n.out_q.zero_point, n.out_q.qmin, n.out_q.qmax, self.rounding, cfg.acc_bits, _ptr(out))
+                               n.out_q.zero_point, lo, hi, self.rounding, cfg.acc_bits, _ptr(out))
             return out.astype(np.int64)
         if n.op == "add":
             a, b = _i32(vals[n.inputs[0]]), _i32(vals[n.inputs[1]])
             p = n.add_params; q1, q2 = self.g[n.inputs[0]].out_q, self.g[n.inputs[1]].out_q
             out = np.empty_like(a)
+            lo, hi = n.attrs.get("clamp", (n.out_q.qmin, n.out_q.qmax))
             lib.add_requant(_ptr(a), _ptr(b), a.size, q1.zero_point, q2.zero_point, p["left_shift"],
                             int(p["m1"][0]), int(p["m1"][1]), int(p["m2"][0]), int(p["m2"][1]), int(p["mo"][0]), int(p["mo"][1]),
-                            n.out_q.zero_point, n.out_q.qmin, n.out_q.qmax, self.rounding, _ptr(out))
+                            n.out_q.zero_point, lo, hi, self.rounding, _ptr(out))
             return out.astype(np.int64)
         if n.op == "pool":
             x = _i32(vals[n.inputs[0]]); N, C, H, W = x.shape
