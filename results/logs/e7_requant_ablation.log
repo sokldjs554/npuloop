@@ -17,3 +17,4 @@
 [04:10:31] resnet20_silu    truncate-m31-acc32-b32       fake=0.9070 int=0.8855 agree(ref)=0.9340 sat=0 (131s)
 [04:12:38] resnet20_silu    floor-m31-acc32-b32          fake=0.9070 int=0.8900 agree(ref)=0.9390 sat=0 (126s)
 [04:14:48] resnet20_silu    tflite-m15-acc32-b32         fake=0.9070 int=0.9060 agree(ref)=0.9890 sat=0 (130s)
+[04:17:06] resnet20_silu    tflite-m7-acc32-b32          fake=0.9070 int=0.9045 agree(ref)=0.9875 sat=0 (138s)

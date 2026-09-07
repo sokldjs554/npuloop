@@ -840,6 +840,50 @@
    "seconds": 129.96969628334045,
    "provenance": "measured",
    "timestamp": "2026-09-07T04:14:48"
+  },
+  {
+   "model": "resnet20_silu",
+   "config": "tflite-m7-acc32-b32",
+   "requant": {
+    "rounding": "tflite",
+    "mult_bits": 7,
+    "acc_bits": 32,
+    "bias_bits": 32
+   },
+   "n_images": 2000,
+   "fake_acc": 0.907,
+   "int_acc": 0.9045,
+   "drop_vs_fake": 0.0025000000000000577,
+   "top1_agreement_vs_reference": 0.9875,
+   "top1_agreement_vs_fake": 0.984,
+   "mean_abs_logit_diff_vs_reference": 0.15950728217363358,
+   "saturations": {
+    "stem_conv": 0,
+    "blocks_0_conv1": 0,
+    "blocks_0_conv2": 0,
+    "blocks_1_conv1": 0,
+    "blocks_1_conv2": 0,
+    "blocks_2_conv1": 0,
+    "blocks_2_conv2": 0,
+    "blocks_3_conv1": 0,
+    "blocks_3_conv2": 0,
+    "blocks_3_sc_conv": 0,
+    "blocks_4_conv1": 0,
+    "blocks_4_conv2": 0,
+    "blocks_5_conv1": 0,
+    "blocks_5_conv2": 0,
+    "blocks_6_conv1": 0,
+    "blocks_6_conv2": 0,
+    "blocks_6_sc_conv": 0,
+    "blocks_7_conv1": 0,
+    "blocks_7_conv2": 0,
+    "blocks_8_conv1": 0,
+    "blocks_8_conv2": 0,
+    "fc": 0
+   },
+   "seconds": 138.2193787097931,
+   "provenance": "measured",
+   "timestamp": "2026-09-07T04:17:06"
   }
  ]
 }
