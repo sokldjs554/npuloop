@@ -1,0 +1,26 @@
+{
+ "meta": {
+  "heal_epochs": 4,
+  "qat_epochs": 3,
+  "int_eval_images": 10000
+ },
+ "records": [
+  {
+   "part": "b",
+   "variant": "silu-ptq",
+   "act": "silu",
+   "float_acc": 0.905,
+   "fake_acc": 0.9045,
+   "int_acc": 0.9042,
+   "cycles": {
+    "edge-10tops": 34785.0,
+    "edge-10tops-strict": 1554865.0,
+    "pcie-80tops": 22817.0,
+    "tiny-1tops": 90674.0
+   },
+   "heal_epochs": 0,
+   "provenance": "measured+simulated",
+   "timestamp": "2026-09-07T05:09:44"
+  }
+ ]
+}
