@@ -16,9 +16,9 @@ FT_EPOCHS = int(os.environ.get("NPULOOP_FT_EPOCHS", "3"))
 SPECS = ["tiny-1tops", "edge-10tops", "pcie-80tops"]
 MODELS = os.environ.get("NPULOOP_MODELS", "resnet20_relu,mnv2_050_relu6").split(",")
 CONFIGS = [  # (strategy, ratio/target, align)
-    ("uniform", 0.75, 0), ("aligned", 0.75, 16), ("aligned", 0.75, 32),
+    ("uniform", 0.75, 0), ("aligned", 0.75, 16),
     ("uniform", 0.5, 0), ("aligned", 0.5, 16), ("aligned", 0.5, 32),
-    ("uniform", 0.25, 0), ("aligned", 0.25, 16),
+    ("uniform", 0.25, 0),
     ("cost-greedy", 0.85, 8), ("cost-greedy", 0.7, 8), ("cost-greedy", 0.55, 8),   # 8-channel steps: finer K-tile staircase
 ]
 
