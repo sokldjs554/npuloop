@@ -69,9 +69,9 @@ def compare(gm, ig: IntGraph, x: torch.Tensor, engine: NumpyEngine | None = None
     for n in ig.nodes:
         if n.name not in fcodes or n.name not in ivals:
             continue
-        a, b = fcodes[n.name], ivals[n.name]
+        a, b = fcodes[n.name].astype(np.int64), ivals[n.name].astype(np.int64)
         d = np.abs(a - b)
-        local = engine.exec_node(n, tf_vals) if n.op != "input" else b
+        local = engine.exec_node(n, tf_vals).astype(np.int64) if n.op != "input" else b
         dl = np.abs(a - local)
         rows.append(NodeAgreement(n.name, n.op, int(a.size), float((d > 0).mean()), int(d.max()), float(d.mean()),
                                   float((dl > 0).mean()), int(dl.max())))

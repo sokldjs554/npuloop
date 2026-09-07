@@ -23,6 +23,17 @@ def dequantize(codes: np.ndarray, q: QParams) -> np.ndarray:
     return (codes.astype(np.float64) - q.zero_point) * q.scale
 
 
+class _Int64View:
+    """Dict view that hands out int64 copies of stored integer tensors (stored tensors may be int16)."""
+
+    def __init__(self, d):
+        self.d = d
+
+    def __getitem__(self, k):
+        v = self.d[k]
+        return v if v.dtype == np.int64 else v.astype(np.int64)
+
+
 class NumpyEngine:
     def __init__(self, graph: IntGraph):
         self.g = graph
@@ -61,16 +72,39 @@ class NumpyEngine:
         return acc.astype(np.int64)
 
     def run(self, x_codes: np.ndarray, return_all: bool = False):
-        """x_codes: (N,C,H,W) integer input codes. Returns output codes (and all intermediates)."""
+        """x_codes: (N,C,H,W) integer input codes. Returns output codes (and all intermediates).
+
+        Memory: intermediate tensors are released as soon as every consumer has run (unless return_all), and
+        captured tensors are stored as int16 (codes fit) — a 500-image MobileNetV2 batch otherwise needs >10 GB.
+        """
+        remaining = {n.name: len(self.g_users[n.name]) for n in self.g.nodes}
         vals: dict[str, np.ndarray] = {"__input__": x_codes.astype(np.int64)}
+        keep: dict[str, np.ndarray] = {}
         for n in self.g.nodes:
-            vals[n.name] = self.exec_node(n, vals)
-        vals.pop("__input__")
-        return vals if return_all else vals["output"]
+            out = self.exec_node(n, vals)
+            vals[n.name] = out
+            if return_all:
+                keep[n.name] = out.astype(np.int16)
+            for src in n.inputs:
+                remaining[src] -= 1
+                if remaining[src] <= 0 and src in vals and not (return_all and src == "output"):
+                    del vals[src]
+        result = vals["output"]
+        return keep if return_all else result
+
+    @property
+    def g_users(self) -> dict[str, list]:
+        if not hasattr(self, "_users"):
+            self._users = {n.name: [] for n in self.g.nodes}
+            for n in self.g.nodes:
+                for src in n.inputs:
+                    self._users[src].append(n.name)
+        return self._users
 
     def exec_node(self, n: IntNode, vals: dict) -> np.ndarray:
-        """Execute one node given a dict of (already computed) input tensors."""
+        """Execute one node given a dict of (already computed) input tensors (any integer dtype)."""
         cfg = self.cfg
+        vals = _Int64View(vals)
         if True:
             if n.op == "input":
                 return vals["__input__"]

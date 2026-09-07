@@ -1,8 +1,9 @@
 {
  "meta": {
-  "heal_epochs": 4,
-  "qat_epochs": 3,
-  "int_eval_images": 10000
+  "heal_epochs": 3,
+  "qat_epochs": 2,
+  "int_eval_images": 10000,
+  "qat_steps_per_epoch": 250
  },
  "records": [
   {
@@ -21,6 +22,43 @@
    "heal_epochs": 0,
    "provenance": "measured+simulated",
    "timestamp": "2026-09-07T05:09:44"
+  },
+  {
+   "part": "b",
+   "variant": "silu-qat",
+   "act": "silu",
+   "float_acc": 0.905,
+   "fake_acc": 0.902,
+   "int_acc": 0.9028,
+   "cycles": {
+    "edge-10tops": 34785.0,
+    "edge-10tops-strict": 1554865.0,
+    "pcie-80tops": 22817.0,
+    "tiny-1tops": 90674.0
+   },
+   "qat_epochs": 2,
+   "provenance": "measured+simulated",
+   "timestamp": "2026-09-07T07:13:17"
+  },
+  {
+   "part": "b",
+   "variant": "swap-relu-heal0",
+   "act": "relu",
+   "float_acc": 0.905,
+   "float_acc_after_swap": 0.5396,
+   "float_acc_after_heal": 0.5396,
+   "fake_acc": 0.5325,
+   "int_acc": 0.5318,
+   "cycles": {
+    "edge-10tops": 34417.0,
+    "edge-10tops-strict": 34417.0,
+    "pcie-80tops": 22791.0,
+    "tiny-1tops": 87730.0
+   },
+   "heal_epochs": 0,
+   "heal_log": null,
+   "provenance": "measured+simulated",
+   "timestamp": "2026-09-07T07:24:35"
   }
  ]
 }
