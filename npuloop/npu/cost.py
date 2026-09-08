@@ -153,7 +153,7 @@ def estimate(graph: StaticGraph, spec="edge-10tops") -> CostReport:
         if node.op == "input":
             resident[node.name] = False   # the input frame arrives from DRAM
             lc.kind = "input"; layers.append(lc); continue
-        if node.op in ("output", "flatten"):
+        if node.op in ("output", "flatten", "reshape"):
             resident[node.name] = resident.get(node.inputs[0], False)
             lc.kind = node.op; layers.append(lc); continue
         if node.op in ("conv", "linear"):
@@ -231,9 +231,70 @@ def estimate(graph: StaticGraph, spec="edge-10tops") -> CostReport:
                 lc.bound = "vector" if lc.vector_cycles >= lc.dram_cycles else "memory"
                 lc.note = f"{kind} via int8 LUT"
             layers.append(lc); continue
-        if node.op in ("add", "pool"):
+        if node.op == "const":
+            lc.kind = "const"; resident[node.name] = False      # constants live in DRAM until they are read
+            layers.append(lc); continue
+        if node.op == "matmul":
+            # Activation x activation: neither operand is a static weight, so the array reloads a tile for every
+            # head and every image -- the fill/drain cost that a conv amortizes over a whole batch is paid here.
+            a = node.attrs
+            per_group, split, tiles = gemm_cycles(a["m"], a["k"], a["n"], spec)
+            lc.kind = "matmul"; lc.m, lc.k, lc.n = a["m"], a["k"], a["n"]
+            lc.compute_cycles = per_group * a["batch"]; lc.split = split; lc.weight_tiles = tiles * a["batch"]
+            lc.on_array = True
+            lc.dram_bytes = in_traffic(node) + place_output(node)
+            lc.dram_cycles = lc.dram_bytes / spec.dram_bytes_per_cycle
+            lc.cycles = max(lc.compute_cycles, lc.dram_cycles)
+            lc.bound = "compute" if lc.compute_cycles >= lc.dram_cycles else "memory"
+            lc.array_util = node.macs / (lc.cycles * spec.macs_per_cycle) if lc.cycles else 0.0
+            lc.note = f"activation x activation, {a['batch']} groups (no weight reuse)"
+            layers.append(lc); continue
+        if node.op in ("softmax", "layernorm"):
+            elems = out_bytes[node.inputs[0]]
+            passes = spec.softmax_passes if node.op == "softmax" else spec.layernorm_passes
+            if node.op in spec.unsupported_ops:
+                lc.kind = f"{node.op}-fallback"
+                lc.dram_bytes = elems
+                lc.dram_cycles = lc.dram_bytes / spec.dram_bytes_per_cycle
+                lc.vector_cycles = elems * spec.fallback_cycles_per_elem
+                lc.cycles = lc.vector_cycles + lc.dram_cycles
+                lc.bound = "fallback"; resident[node.name] = False
+                lc.note = f"{node.op} unsupported -> host fallback"
+            else:
+                lc.kind = node.op
+                lc.vector_cycles = passes * math.ceil(elems / (spec.vector_lanes * spec.cores))
+                lc.dram_bytes = in_traffic(node) + place_output(node)
+                lc.dram_cycles = lc.dram_bytes / spec.dram_bytes_per_cycle
+                lc.cycles = max(lc.vector_cycles, lc.dram_cycles)
+                lc.bound = "vector" if lc.vector_cycles >= lc.dram_cycles else "memory"
+                lc.note = f"{passes} vector passes"
+            layers.append(lc); continue
+        if node.op == "transpose":
+            # A layout change the array cannot consume in place: the tensor is moved element by element.
+            elems = out_bytes[node.inputs[0]]
+            lc.kind = "transpose"
+            lc.vector_cycles = math.ceil(elems / (spec.vector_lanes * spec.cores))
+            lc.dram_bytes = in_traffic(node) + place_output(node)
+            lc.dram_cycles = lc.dram_bytes / spec.dram_bytes_per_cycle
+            lc.cycles = max(lc.vector_cycles, lc.dram_cycles)
+            lc.bound = "vector" if lc.vector_cycles >= lc.dram_cycles else "memory"
+            layers.append(lc); continue
+        if node.op == "mul":
+            if node.attrs.get("kind") == "scalar":
+                lc.kind = "mul-fused"; lc.cycles = 0.0; lc.bound = "none"
+                resident[node.name] = resident.get(node.inputs[0], False)
+                lc.note = "scalar folded into the requantization multiplier"
+            else:
+                lc.kind = "mul"
+                lc.vector_cycles = math.ceil(out_bytes[node.name] / (spec.vector_lanes * spec.cores))
+                lc.dram_bytes = in_traffic(node) + place_output(node)
+                lc.dram_cycles = lc.dram_bytes / spec.dram_bytes_per_cycle
+                lc.cycles = max(lc.vector_cycles, lc.dram_cycles)
+                lc.bound = "vector" if lc.vector_cycles >= lc.dram_cycles else "memory"
+            layers.append(lc); continue
+        if node.op in ("add", "pool", "concat"):
             lc.kind = node.op
-            elems = sum(out_bytes[s] for s in node.inputs) if node.op == "add" else out_bytes[node.inputs[0]]
+            elems = sum(out_bytes[s] for s in node.inputs) if node.op in ("add", "concat") else out_bytes[node.inputs[0]]
             lc.vector_cycles = math.ceil(elems / (spec.vector_lanes * spec.cores))
             lc.dram_bytes = in_traffic(node) + place_output(node)
             lc.dram_cycles = lc.dram_bytes / spec.dram_bytes_per_cycle

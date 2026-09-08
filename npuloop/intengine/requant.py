@@ -111,3 +111,23 @@ def saturate(x: np.ndarray, bits: int) -> np.ndarray:
 def requant_reference(x: np.ndarray, real_multiplier: float) -> np.ndarray:
     """Float reference (round half to even) — what a fake-quant model computes for the same tensor."""
     return np.rint(x.astype(np.float64) * real_multiplier).astype(np.int64)
+
+
+def isqrt64(x: np.ndarray) -> np.ndarray:
+    """Exact floor(sqrt(x)) for non-negative int64 (float64 sqrt then a bounded integer correction).
+
+    LayerNorm needs a reproducible square root: float sqrt alone can land one below or above the true
+    integer root, and the two engines must agree bit for bit.
+    """
+    x = np.asarray(x, dtype=np.int64)
+    r = np.maximum(np.sqrt(x.astype(np.float64)).astype(np.int64) - 2, 0)
+    for _ in range(4):
+        r = np.where((r + 1) * (r + 1) <= x, r + 1, r)
+    return r
+
+
+def round_div(num: np.ndarray, den: np.ndarray) -> np.ndarray:
+    """Integer division rounding halves away from zero (den > 0)."""
+    num = np.asarray(num, dtype=np.int64); den = np.asarray(den, dtype=np.int64)
+    half = den // 2
+    return np.where(num >= 0, (num + half) // den, -((-num + half) // den))

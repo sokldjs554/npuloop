@@ -10,7 +10,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from .graph import IntGraph, IntNode, QParams
-from .requant import multiply_by_quantized_multiplier, saturate, INT32_MIN, INT32_MAX
+from .requant import multiply_by_quantized_multiplier, saturate, isqrt64, round_div, INT32_MIN, INT32_MAX
 
 
 def quantize_input(x: np.ndarray, q: QParams) -> np.ndarray:
@@ -136,6 +136,60 @@ class NumpyEngine:
                 y = multiply_by_quantized_multiplier(raw, p["mo"][0], p["mo"][1], cfg.rounding) + n.out_q.zero_point
                 lo, hi = n.attrs.get("clamp", (n.out_q.qmin, n.out_q.qmax))
                 return np.clip(y, lo, hi)
+            elif n.op == "const":
+                return n.codes
+            elif n.op == "matmul":
+                q1, q2 = self.g[n.inputs[0]].out_q, self.g[n.inputs[1]].out_q
+                a = (vals[n.inputs[0]] - q1.zero_point).astype(np.float64)
+                b = (vals[n.inputs[1]] - q2.zero_point).astype(np.float64)
+                acc = (torch.from_numpy(a) @ torch.from_numpy(b)).numpy().astype(np.int64)
+                if cfg.acc_bits < 32:
+                    sat = saturate(acc, cfg.acc_bits); self.saturations[n.name] = int((sat != acc).sum()); acc = sat
+                else:
+                    self.saturations[n.name] = int(((acc < INT32_MIN) | (acc > INT32_MAX)).sum())
+                    acc = np.clip(acc, INT32_MIN, INT32_MAX)
+                y = multiply_by_quantized_multiplier(acc, n.mult[0], n.shift[0], cfg.rounding) + n.out_q.zero_point
+                lo, hi = n.attrs.get("clamp", (n.out_q.qmin, n.out_q.qmax))
+                return np.clip(y, lo, hi)
+            elif n.op == "concat":
+                parts = []
+                for i, name in enumerate(n.inputs):
+                    qi = self.g[name].out_q
+                    y = multiply_by_quantized_multiplier(vals[name] - qi.zero_point, n.in_mult[i], n.in_shift[i], cfg.rounding)
+                    parts.append(np.clip(y + n.out_q.zero_point, n.out_q.qmin, n.out_q.qmax))
+                return np.concatenate(parts, axis=n.attrs["dim"])
+            elif n.op == "softmax":
+                d = n.attrs["dim"]
+                x = vals[n.inputs[0]]
+                diff = x - x.max(axis=d, keepdims=True)              # in [-(qmax-qmin), 0]
+                e = n.lut[diff + n.attrs["lut_offset"]]              # Q15 exp table
+                total = e.sum(axis=d, keepdims=True)
+                v = round_div(e << 15, np.maximum(total, 1))         # Q15 probability
+                y = multiply_by_quantized_multiplier(v, n.mult[0], n.shift[0], cfg.rounding) + n.out_q.zero_point
+                return np.clip(y, n.out_q.qmin, n.out_q.qmax)
+            elif n.op == "layernorm":
+                in_q = self.g[n.inputs[0]].out_q
+                c = n.attrs["channels"]
+                d = vals[n.inputs[0]] - in_q.zero_point
+                ssum = d.sum(axis=-1, keepdims=True)
+                ssq = (d * d).sum(axis=-1, keepdims=True)
+                var_num = c * ssq - ssum * ssum                      # = C^2 * variance(d), always >= 0
+                denom = np.maximum(isqrt64(var_num + n.attrs["eps_int"]), 1)
+                t = round_div((d * c - ssum) << 15, denom)           # Q15 normalized value
+                y = multiply_by_quantized_multiplier(t, n.mult.reshape(1, -1), n.shift.reshape(1, -1), cfg.rounding)
+                y = y + n.bias_int.reshape(1, -1) + n.out_q.zero_point
+                return np.clip(y, n.out_q.qmin, n.out_q.qmax)
+            elif n.op == "transpose":
+                return np.transpose(vals[n.inputs[0]], n.attrs["perm"])
+            elif n.op == "reshape":
+                x = vals[n.inputs[0]]
+                return x.reshape((-1, *n.attrs["out_shape"]))
+            elif n.op == "pool" and n.attrs.get("kind") == "token_mean":
+                x = vals[n.inputs[0]]
+                cnt = x.shape[1]
+                s = x.sum(axis=1, keepdims=n.attrs.get("keepdim", False))
+                y = np.where(s >= 0, (s + cnt // 2) // cnt, -((-s + cnt // 2) // cnt))
+                return np.clip(y, n.out_q.qmin, n.out_q.qmax)
             elif n.op == "pool":
                 x = vals[n.inputs[0]]
                 cnt = x.shape[2] * x.shape[3]

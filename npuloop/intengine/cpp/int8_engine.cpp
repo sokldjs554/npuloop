@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <algorithm>
+#include <cmath>
 
 extern "C" {
 
@@ -147,6 +148,107 @@ void global_avgpool(const int32_t* x, int N, int C, int HW, int qmin, int qmax, 
 
 void lut_apply(const int32_t* x, int64_t n, const int32_t* table, int qmin_in, int32_t* out) {
     for (int64_t i = 0; i < n; ++i) out[i] = table[x[i] - qmin_in];
+}
+
+// Token mean over the second axis, TFLite average semantics (round half away from zero).
+void token_mean(const int32_t* x, int N, int T, int C, int qmin, int qmax, int32_t* out) {
+    for (int n = 0; n < N; ++n)
+        for (int c = 0; c < C; ++c) {
+            int64_t s = 0;
+            for (int t = 0; t < T; ++t) s += x[((int64_t)n * T + t) * C + c];
+            int64_t y = s >= 0 ? (s + T / 2) / T : -((-s + T / 2) / T);
+            out[(int64_t)n * C + c] = (int32_t)std::min<int64_t>(std::max<int64_t>(y, qmin), qmax);
+        }
+}
+
+// Activation x activation matmul: (batch, M, K) @ (batch, K, N). No weight reuse, both operands
+// carry a zero point, so the accumulator needs the full (a - za)(b - zb) product.
+void matmul_requant(const int32_t* a, const int32_t* b, int batch, int M, int K, int N,
+                    int zp_a, int zp_b, int32_t mult, int shift, int zp_out, int qmin, int qmax,
+                    int rounding, int acc_bits, int32_t* out, int64_t* n_saturated) {
+    int64_t nsat = 0;
+    for (int g = 0; g < batch; ++g) {
+        const int32_t* A = a + (int64_t)g * M * K;
+        const int32_t* B = b + (int64_t)g * K * N;
+        int32_t* O = out + (int64_t)g * M * N;
+        for (int i = 0; i < M; ++i)
+            for (int j = 0; j < N; ++j) {
+                int64_t acc = 0;
+                for (int k = 0; k < K; ++k)
+                    acc += (int64_t)(A[i * K + k] - zp_a) * (int64_t)(B[k * N + j] - zp_b);
+                int32_t s = sat(acc, acc_bits);
+                if ((int64_t)s != acc) ++nsat;
+                int32_t y = mbqm(s, mult, shift, rounding) + zp_out;
+                O[i * N + j] = std::min(std::max(y, qmin), qmax);
+            }
+    }
+    if (n_saturated) *n_saturated = nsat;
+}
+
+// One concat input rescaled into the shared output scale.
+void concat_requant(const int32_t* x, int64_t n, int zp_in, int32_t mult, int shift,
+                    int zp_out, int qmin, int qmax, int rounding, int32_t* out) {
+    for (int64_t i = 0; i < n; ++i) {
+        int32_t y = mbqm(x[i] - zp_in, mult, shift, rounding) + zp_out;
+        out[i] = std::min(std::max(y, qmin), qmax);
+    }
+}
+
+static inline int64_t round_div64(int64_t num, int64_t den) {
+    int64_t half = den / 2;
+    return num >= 0 ? (num + half) / den : -((-num + half) / den);
+}
+
+// exp from a Q15 table indexed by (q - rowmax), then an exact integer normalization.
+void softmax_int(const int32_t* x, int64_t outer, int D, int64_t inner, const int32_t* table, int offset,
+                 int32_t mult, int shift, int zp_out, int qmin, int qmax, int rounding, int32_t* out) {
+    for (int64_t o = 0; o < outer; ++o)
+        for (int64_t i = 0; i < inner; ++i) {
+            int32_t mx = INT32_MIN;
+            for (int j = 0; j < D; ++j) {
+                int32_t v = x[(o * D + j) * inner + i];
+                if (v > mx) mx = v;
+            }
+            int64_t total = 0;
+            for (int j = 0; j < D; ++j) total += table[x[(o * D + j) * inner + i] - mx + offset];
+            if (total < 1) total = 1;
+            for (int j = 0; j < D; ++j) {
+                int64_t e = table[x[(o * D + j) * inner + i] - mx + offset];
+                int64_t v = round_div64(e << 15, total);
+                int32_t y = mbqm(sat(v, 32), mult, shift, rounding) + zp_out;
+                out[(o * D + j) * inner + i] = std::min(std::max(y, qmin), qmax);
+            }
+        }
+}
+
+// floor(sqrt(x)) for x >= 0, exactly (double sqrt then an integer correction).
+static inline int64_t isqrt64c(int64_t x) {
+    int64_t r = (int64_t)std::sqrt((double)x) - 2;
+    if (r < 0) r = 0;
+    while ((r + 1) * (r + 1) <= x) ++r;
+    return r;
+}
+
+// LayerNorm over the last axis in integer arithmetic: int64 sums, exact integer sqrt, per-channel
+// requantization carrying gamma; beta is added in the output domain.
+void layernorm_int(const int32_t* x, int64_t rows, int C, int zp_in, int64_t eps_int,
+                   const int32_t* mult, const int32_t* shift, const int32_t* bias,
+                   int zp_out, int qmin, int qmax, int rounding, int32_t* out) {
+    for (int64_t r = 0; r < rows; ++r) {
+        const int32_t* px = x + r * C;
+        int32_t* po = out + r * C;
+        int64_t s = 0, sq = 0;
+        for (int c = 0; c < C; ++c) { int64_t d = px[c] - zp_in; s += d; sq += d * d; }
+        int64_t var_num = (int64_t)C * sq - s * s;
+        int64_t denom = isqrt64c(var_num + eps_int);
+        if (denom < 1) denom = 1;
+        for (int c = 0; c < C; ++c) {
+            int64_t centered = ((int64_t)px[c] - zp_in) * C - s;
+            int64_t t = round_div64(centered << 15, denom);
+            int32_t y = mbqm(sat(t, 32), mult[c], shift[c], rounding) + bias[c] + zp_out;
+            po[c] = std::min(std::max(y, qmin), qmax);
+        }
+    }
 }
 
 // Exposed for unit tests

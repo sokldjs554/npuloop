@@ -9,7 +9,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from .data import CIFAR10NPZ
-from .models import ResNetCIFAR, MobileNetV2CIFAR, count_params
+from .models import ResNetCIFAR, MobileNetV2CIFAR, build_model, count_params
 
 
 @torch.no_grad()
@@ -28,8 +28,8 @@ def evaluate(model: nn.Module, ds: CIFAR10NPZ, batch_size: int = 500, channels_l
 def fit(model: nn.Module, ds: CIFAR10NPZ, epochs: int, lr: float = 0.1, wd: float = 5e-4, bs: int = 128, seed: int = 0,
         out: str | None = None, resume: bool = False, channels_last: bool = True, warmup_pct: float = 0.15,
         div_factor: float = 10.0, final_div: float = 100.0, steps_per_epoch: int | None = None, log_prefix: str = "",
-        param_filter=None, eval_limit: int | None = None) -> dict:
-    """OneCycle SGD training loop. Returns the log dict (per-epoch records, final/best accuracy)."""
+        param_filter=None, eval_limit: int | None = None, optimizer: str = "sgd") -> dict:
+    """OneCycle training loop (SGD, or AdamW for transformers). Returns the log dict."""
     torch.manual_seed(seed)
     rng = np.random.default_rng(seed)
     if channels_last:
@@ -39,14 +39,16 @@ def fit(model: nn.Module, ds: CIFAR10NPZ, epochs: int, lr: float = 0.1, wd: floa
         params = [p for p in params if param_filter(p)]
     decay = [p for p in params if p.ndim > 1]
     no_decay = [p for p in params if p.ndim <= 1]
-    opt = torch.optim.SGD([{"params": decay, "weight_decay": wd}, {"params": no_decay, "weight_decay": 0.0}],
-                          lr=lr, momentum=0.9, nesterov=True)
+    groups = [{"params": decay, "weight_decay": wd}, {"params": no_decay, "weight_decay": 0.0}]
+    opt = (torch.optim.AdamW(groups, lr=lr) if optimizer == "adamw"
+           else torch.optim.SGD(groups, lr=lr, momentum=0.9, nesterov=True))
     spe = steps_per_epoch or len(ds.x_train) // bs
     total = spe * epochs
     warmup_pct = max(warmup_pct, 2.0 / total) if total > 4 else 0.5   # OneCycle needs >= 2 warm-up steps
     sched = torch.optim.lr_scheduler.OneCycleLR(opt, max_lr=lr, total_steps=total, pct_start=warmup_pct,
                                                 anneal_strategy="cos", div_factor=div_factor, final_div_factor=final_div)
-    log = {"config": getattr(model, "config", None), "epochs": [], "hparams": dict(epochs=epochs, lr=lr, wd=wd, bs=bs, seed=seed)}
+    log = {"config": getattr(model, "config", None), "epochs": [],
+           "hparams": dict(epochs=epochs, lr=lr, wd=wd, bs=bs, seed=seed, optimizer=optimizer)}
     best = 0.0; start_ep = 0
     state_path = os.path.join(out, "state.pt") if out else None
     if out:
@@ -106,11 +108,15 @@ def load_checkpoint(path: str) -> nn.Module:
 def main():
     p = argparse.ArgumentParser(description="train an FP32 CIFAR-10 baseline")
     p.add_argument("--data", default=os.environ.get("NPULOOP_DATA", "data/cifar10.npz"))
-    p.add_argument("--arch", default="resnet", choices=["resnet", "mobilenetv2"])
+    p.add_argument("--arch", default="resnet", choices=["resnet", "mobilenetv2", "vit", "inception"])
     p.add_argument("--depth", type=int, default=20)
     p.add_argument("--width", type=int, default=16)
     p.add_argument("--width-mult", type=float, default=0.5)
     p.add_argument("--act", default="relu")
+    p.add_argument("--dim", type=int, default=128)          # vit
+    p.add_argument("--heads", type=int, default=4)          # vit
+    p.add_argument("--patch", type=int, default=4)          # vit
+    p.add_argument("--mlp-ratio", type=int, default=2)      # vit
     p.add_argument("--epochs", type=int, default=30)
     p.add_argument("--bs", type=int, default=128)
     p.add_argument("--lr", type=float, default=0.1)
@@ -118,15 +124,25 @@ def main():
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--threads", type=int, default=4)
     p.add_argument("--out", required=True)
+    p.add_argument("--optimizer", default="sgd", choices=["sgd", "adamw"])
     p.add_argument("--resume", action="store_true")
     p.add_argument("--smoke", action="store_true")
     a = p.parse_args()
     torch.set_num_threads(a.threads)
     ds = CIFAR10NPZ(a.data)
-    model = ResNetCIFAR(depth=a.depth, width=a.width, act=a.act) if a.arch == "resnet" else MobileNetV2CIFAR(width_mult=a.width_mult, act=a.act)
+    cfg = dict(arch=a.arch, act=a.act)
+    if a.arch == "resnet":
+        cfg.update(depth=a.depth, width=a.width)
+    elif a.arch == "mobilenetv2":
+        cfg.update(width_mult=a.width_mult)
+    elif a.arch == "vit":
+        cfg.update(dim=a.dim, depth=a.depth, heads=a.heads, patch=a.patch, mlp_ratio=a.mlp_ratio)
+    else:
+        cfg.update(width=a.width)
+    model = build_model(cfg)
     print(f"model {model.config} params={count_params(model):,}", flush=True)
     log = fit(model, ds, epochs=1 if a.smoke else a.epochs, lr=a.lr, wd=a.wd, bs=a.bs, seed=a.seed, out=a.out, resume=a.resume,
-              steps_per_epoch=10 if a.smoke else None)
+              steps_per_epoch=10 if a.smoke else None, optimizer=a.optimizer)
     print(f"done: final={log['final_test_acc']:.4f} best={log['best_test_acc']:.4f} minutes={log['train_minutes']:.1f}")
 
 

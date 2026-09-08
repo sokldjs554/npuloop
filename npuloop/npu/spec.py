@@ -21,7 +21,9 @@ class NPUSpec:
     dw_lanes: int = 256          # MACs / cycle / core of the depthwise engine (0 => depthwise runs on the array)
     lut_acts: frozenset = frozenset({"silu", "gelu", "hswish", "hsigmoid", "sigmoid", "tanh", "lrelu"})
     fused_acts: frozenset = frozenset({"relu", "relu6"})   # folded into the requantization clamp (free)
-    unsupported_ops: frozenset = frozenset()              # op kinds that fall back to the host CPU
+    unsupported_ops: frozenset = frozenset()              # act kinds / ops ("softmax", "layernorm") run on the host
+    softmax_passes: int = 3                               # vector passes for softmax (max, exp+sum, normalize)
+    layernorm_passes: int = 4                             # vector passes for layernorm (sum, sumsq, normalize, affine)
     fallback_cycles_per_elem: float = 8.0                 # cost of a host-side elementwise op (very rough)
     fill_drain: bool = True                               # count systolic pipeline fill/drain per weight tile
 
@@ -60,7 +62,9 @@ PRESETS: dict[str, NPUSpec] = {
     # depthwise runs on the array and non-ReLU activations fall back to the host.
     "edge-10tops-strict": NPUSpec("edge-10tops-strict", pe_rows=64, pe_cols=64, cores=2, freq_mhz=600, sram_kb=2048,
                                   dram_gbps=12.8, vector_lanes=256, dw_lanes=0,
-                                  lut_acts=frozenset(), unsupported_ops=frozenset({"silu", "gelu", "hswish", "hsigmoid", "sigmoid", "tanh", "lrelu"})),
+                                  lut_acts=frozenset(),
+                                  unsupported_ops=frozenset({"silu", "gelu", "hswish", "hsigmoid", "sigmoid", "tanh", "lrelu",
+                                                             "softmax", "layernorm"})),
 }
 
 

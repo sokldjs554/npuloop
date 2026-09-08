@@ -38,6 +38,11 @@ def load_library():
         _lib.add_requant.argtypes = [i32p, i32p, ctypes.c_int64, c, c, c, ctypes.c_int32, c, ctypes.c_int32, c, ctypes.c_int32, c, c, c, c, c, i32p]
         _lib.global_avgpool.argtypes = [i32p, c, c, c, c, c, i32p]
         _lib.lut_apply.argtypes = [i32p, ctypes.c_int64, i32p, c, i32p]
+        _lib.token_mean.argtypes = [i32p, c, c, c, c, c, i32p]
+        _lib.matmul_requant.argtypes = [i32p, i32p, c, c, c, c, c, c, ctypes.c_int32, c, c, c, c, c, c, i32p, i64p]
+        _lib.concat_requant.argtypes = [i32p, ctypes.c_int64, c, ctypes.c_int32, c, c, c, c, c, i32p]
+        _lib.softmax_int.argtypes = [i32p, ctypes.c_int64, c, ctypes.c_int64, i32p, c, ctypes.c_int32, c, c, c, c, c, i32p]
+        _lib.layernorm_int.argtypes = [i32p, ctypes.c_int64, c, c, ctypes.c_int64, i32p, i32p, i32p, c, c, c, c, i32p]
         _lib.test_mbqm.argtypes = [ctypes.c_int32, ctypes.c_int32, c, c]; _lib.test_mbqm.restype = ctypes.c_int32
         _lib.test_srdhm.argtypes = [ctypes.c_int32, ctypes.c_int32]; _lib.test_srdhm.restype = ctypes.c_int32
         _lib.test_rdbpot.argtypes = [ctypes.c_int32, c, c]; _lib.test_rdbpot.restype = ctypes.c_int32
@@ -79,8 +84,69 @@ class CppEngine(NumpyEngine):
                              self.rounding, cfg.acc_bits, _ptr(out), Ho, Wo, _ptr(nsat, ctypes.c_int64))
             self.saturations[n.name] = int(nsat[0])
             return out.astype(np.int64)
+        if n.op == "matmul":
+            a = _i32(vals[n.inputs[0]]); b = _i32(vals[n.inputs[1]])
+            M, K = a.shape[-2], a.shape[-1]; N = b.shape[-1]
+            batch = int(np.prod(a.shape[:-2])) if a.ndim > 2 else 1
+            a3 = np.ascontiguousarray(a.reshape(batch, M, K)); b3 = np.ascontiguousarray(b.reshape(batch, K, N))
+            out = np.empty((batch, M, N), dtype=np.int32)
+            q1, q2 = self.g[n.inputs[0]].out_q, self.g[n.inputs[1]].out_q
+            nsat = np.zeros(1, dtype=np.int64)
+            lo, hi = n.attrs.get("clamp", (n.out_q.qmin, n.out_q.qmax))
+            lib.matmul_requant(_ptr(a3), _ptr(b3), batch, M, K, N, q1.zero_point, q2.zero_point,
+                               int(n.mult[0]), int(n.shift[0]), n.out_q.zero_point, lo, hi,
+                               self.rounding, cfg.acc_bits, _ptr(out), _ptr(nsat, ctypes.c_int64))
+            self.saturations[n.name] = int(nsat[0])
+            return out.astype(np.int64).reshape(*a.shape[:-2], M, N)
+        if n.op == "concat":
+            parts = []
+            for i, name in enumerate(n.inputs):
+                x = _i32(vals[name]); out = np.empty_like(x)
+                qi = self.g[name].out_q
+                lib.concat_requant(_ptr(x), x.size, qi.zero_point, int(n.in_mult[i]), int(n.in_shift[i]),
+                                   n.out_q.zero_point, n.out_q.qmin, n.out_q.qmax, self.rounding, _ptr(out))
+                parts.append(out.astype(np.int64))
+            return np.concatenate(parts, axis=n.attrs["dim"])
+        if n.op == "softmax":
+            x = _i32(vals[n.inputs[0]]); d = n.attrs["dim"]
+            outer = int(np.prod(x.shape[:d])) if d > 0 else 1
+            inner = int(np.prod(x.shape[d + 1:])) if d + 1 < x.ndim else 1
+            table = _i32(n.lut); out = np.empty_like(x)
+            lib.softmax_int(_ptr(x), outer, x.shape[d], inner, _ptr(table), n.attrs["lut_offset"],
+                            int(n.mult[0]), int(n.shift[0]), n.out_q.zero_point, n.out_q.qmin, n.out_q.qmax,
+                            self.rounding, _ptr(out))
+            return out.astype(np.int64)
+        if n.op == "layernorm":
+            x = _i32(vals[n.inputs[0]]); c = n.attrs["channels"]
+            rows = x.size // c
+            out = np.empty_like(x)
+            in_q = self.g[n.inputs[0]].out_q
+            mult, shift, bias = _i32(n.mult), _i32(n.shift), _i32(n.bias_int)
+            lib.layernorm_int(_ptr(x), rows, c, in_q.zero_point, int(n.attrs["eps_int"]),
+                              _ptr(mult), _ptr(shift), _ptr(bias), n.out_q.zero_point,
+                              n.out_q.qmin, n.out_q.qmax, self.rounding, _ptr(out))
+            return out.astype(np.int64)
+        if n.op == "pool" and n.attrs.get("kind") == "token_mean":
+            x = _i32(vals[n.inputs[0]]); N, T, C = x.shape
+            out = np.empty((N, C), dtype=np.int32)
+            lib.token_mean(_ptr(x), N, T, C, n.out_q.qmin, n.out_q.qmax, _ptr(out))
+            y = out.astype(np.int64)
+            return y.reshape(N, 1, C) if n.attrs.get("keepdim") else y
         if n.op == "linear":
-            x = _i32(vals[n.inputs[0]]); N, K = x.shape
+            x = _i32(vals[n.inputs[0]])
+            if x.ndim > 2:                       # token-wise linear: fold the token axis into rows
+                lead, K = x.shape[:-1], x.shape[-1]
+                x = np.ascontiguousarray(x.reshape(-1, K))
+                w = np.ascontiguousarray(n.w_int, dtype=np.int8); M = w.shape[0]
+                out = np.empty((x.shape[0], M), dtype=np.int32)
+                in_q = self.g[n.inputs[0]].out_q
+                bias, mult, shift = _i32(n.bias_int), _i32(n.mult), _i32(n.shift)
+                lo, hi = n.attrs.get("clamp", (n.out_q.qmin, n.out_q.qmax))
+                lib.linear_requant(_ptr(x), x.shape[0], K, _ptr(w, ctypes.c_int8), M, in_q.zero_point,
+                                   _ptr(bias), _ptr(mult), _ptr(shift), n.out_q.zero_point, lo, hi,
+                                   self.rounding, cfg.acc_bits, _ptr(out))
+                return out.astype(np.int64).reshape(*lead, M)
+            N, K = x.shape
             w = np.ascontiguousarray(n.w_int, dtype=np.int8); M = w.shape[0]
             out = np.empty((N, M), dtype=np.int32)
             in_q = self.g[n.inputs[0]].out_q
@@ -91,6 +157,9 @@ class CppEngine(NumpyEngine):
             return out.astype(np.int64)
         if n.op == "add":
             a, b = _i32(vals[n.inputs[0]]), _i32(vals[n.inputs[1]])
+            if a.shape != b.shape:               # a constant operand (e.g. a positional embedding) broadcasts
+                shape = np.broadcast_shapes(a.shape, b.shape)
+                a = np.ascontiguousarray(np.broadcast_to(a, shape)); b = np.ascontiguousarray(np.broadcast_to(b, shape))
             p = n.add_params; q1, q2 = self.g[n.inputs[0]].out_q, self.g[n.inputs[1]].out_q
             out = np.empty_like(a)
             lo, hi = n.attrs.get("clamp", (n.out_q.qmin, n.out_q.qmax))

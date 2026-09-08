@@ -8,6 +8,11 @@ Quantization points mirror an INT8 NPU datapath exactly:
       - otherwise: quantize the op output itself (pre-activation / residual-branch tensor)
   * every non-ReLU activation output (the int8 LUT result)
   * global average pool output, tied to its input's scale/zero-point (TFLite AveragePool semantics)
+  * concat output (each input is requantized into this one scale on the NPU)
+  * activation x activation matmul output, softmax output, layernorm output
+      - a scalar multiply right after a matmul (the 1/sqrt(d) in attention) is folded into that
+        matmul's requantization, so the quantizer goes after the multiply, like ReLU fusion
+  * constant tensors that are added to activations (learned positional embeddings)
 """
 from __future__ import annotations
 import operator
@@ -42,9 +47,28 @@ def prepare(model: nn.Module, scheme: QScheme = QScheme()) -> fx.GraphModule:
             return ACT_MODULE_KINDS[type(modules[node.target])]
         return None
 
+    MATMUL = (torch.matmul, operator.matmul)
+    CONCAT = (torch.cat, torch.concat)
+
     def is_compute(node: fx.Node):
         return (node.op == "call_module" and isinstance(modules[node.target], (QConv2d, QLinear))) or \
-               (node.op == "call_function" and node.target in (operator.add, torch.add))
+               (node.op == "call_function" and node.target in (operator.add, torch.add) + MATMUL + CONCAT)
+
+    def is_scalar_mul(node: fx.Node):
+        """x * c with a python scalar: the NPU folds c into the producer's requantization multiplier."""
+        return (node.op == "call_function" and node.target in (operator.mul, torch.mul)
+                and sum(isinstance(a, fx.Node) for a in node.args) == 1)
+
+    def is_softmax(node: fx.Node):
+        return ((node.op == "call_module" and isinstance(modules[node.target], nn.Softmax))
+                or (node.op == "call_method" and node.target == "softmax")
+                or (node.op == "call_function" and node.target is torch.nn.functional.softmax))
+
+    def is_layernorm(node: fx.Node):
+        return node.op == "call_module" and isinstance(modules[node.target], nn.LayerNorm)
+
+    def is_token_mean(node: fx.Node):
+        return node.op == "call_method" and node.target == "mean"
 
     def new_fq(name: str) -> str:
         fq = FakeQuantAct(scheme.a_bits, scheme.a_symmetric, scheme.a_observer, scheme.ema, scheme.learnable, scheme.pow2, name=name)
@@ -65,12 +89,16 @@ def prepare(model: nn.Module, scheme: QScheme = QScheme()) -> fx.GraphModule:
             insert_after(node, new_fq("input"))
         elif is_compute(node):
             users = list(node.users)
-            if len(users) == 1 and act_kind(users[0]) in RELU_FAMILY:
-                continue   # fused: the quantizer goes after the activation (handled below)
+            if len(users) == 1 and (act_kind(users[0]) in RELU_FAMILY or is_scalar_mul(users[0])):
+                continue   # fused into the requantization: the quantizer goes after that node instead
             insert_after(node, new_fq(node.name))
+        elif is_scalar_mul(node) or is_softmax(node) or is_layernorm(node):
+            insert_after(node, new_fq(node.name))
+        elif node.op == "get_attr" and any(u.target in (operator.add, torch.add) for u in node.users):
+            insert_after(node, new_fq(node.name))       # learned constant added to activations
         elif act_kind(node) is not None:
             insert_after(node, new_fq(node.name))
-        elif node.op == "call_module" and isinstance(modules[node.target], nn.AdaptiveAvgPool2d):
+        elif (node.op == "call_module" and isinstance(modules[node.target], nn.AdaptiveAvgPool2d)) or is_token_mean(node):
             src = node.args[0]
             while src.op == "call_module" and isinstance(gm.get_submodule(src.target), (nn.Identity, nn.Dropout)):
                 src = src.args[0]                       # look through pass-through modules

@@ -35,6 +35,17 @@ def cmd_lint(a):
         json.dump(r.to_dict(), open(a.json, "w"), indent=1, default=float)
 
 
+def cmd_intake(a):
+    from .intake import intake_report, render
+    from .zoo import CIFAR10NPZ
+    m = _load(a.ckpt)
+    calib = CIFAR10NPZ(a.data).calib_batch(a.calib).numpy() if a.data else None
+    rep = intake_report(m, a.spec, calib)
+    print(render(rep))
+    if a.json:
+        json.dump(rep, open(a.json, "w"), indent=1, default=float)
+
+
 def cmd_quantize(a):
     from .zoo import CIFAR10NPZ
     from .quant import prepare, calibrate, evaluate, PRESET_SCHEMES
@@ -66,6 +77,9 @@ def main(argv=None):
     sub = p.add_subparsers(dest="cmd", required=True)
     c = sub.add_parser("cost", help="analytical cycle/utilization estimate on a virtual NPU"); c.add_argument("ckpt"); c.add_argument("--spec", default="edge-10tops"); c.add_argument("--json"); c.set_defaults(fn=cmd_cost)
     l = sub.add_parser("lint", help="NPU readiness report"); l.add_argument("ckpt"); l.add_argument("--spec", default="edge-10tops"); l.add_argument("--data"); l.add_argument("--calib", type=int, default=64); l.add_argument("--json"); l.set_defaults(fn=cmd_lint)
+    i = sub.add_parser("intake", help="customer intake: can this model run here, what does it cost, what should change")
+    i.add_argument("ckpt"); i.add_argument("--spec", default="edge-10tops"); i.add_argument("--data")
+    i.add_argument("--calib", type=int, default=64); i.add_argument("--json"); i.set_defaults(fn=cmd_intake)
     q = sub.add_parser("quantize", help="PTQ + export + bit-exact verification"); q.add_argument("ckpt"); q.add_argument("--data", required=True)
     q.add_argument("--scheme", default="npu-default"); q.add_argument("--calib", type=int, default=512); q.add_argument("--verify", type=int, default=0)
     q.add_argument("--int-eval", type=int, default=0); q.add_argument("--out"); q.add_argument("--threads", type=int, default=4); q.set_defaults(fn=cmd_quantize)

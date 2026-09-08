@@ -60,6 +60,9 @@ class LintReport:
         eff -= 8.0 * min(1.0, frac("activation-support", "low") / n_act)
         eff -= 20.0 * min(1.0, frac("depthwise", "high") / n_compute) + 8.0 * min(1.0, frac("depthwise", "low") / n_compute)
         eff -= 3.0 * min(1.0, frac("stem-underutilization"))
+        eff -= 25.0 * min(1.0, frac("dynamic-op-support", "high"))          # softmax/layernorm on the host
+        eff -= 10.0 * min(1.0, frac("dynamic-matmul", "medium"))            # no weight reuse in attention
+        eff -= 4.0 * min(1.0, frac("layout-churn", "low"))
         qr = 100.0
         qr -= 35.0 * min(1.0, frac("weight-range-disparity", "high") / n_compute) + 15.0 * min(1.0, frac("weight-range-disparity", "medium") / n_compute)
         qr -= 15.0 * min(1.0, frac("activation-outliers", "medium") / n_tensors) + 6.0 * min(1.0, frac("activation-outliers", "low") / n_tensors)
@@ -67,6 +70,8 @@ class LintReport:
         qr -= 12.0 * min(1.0, frac("activation-support", "low") / n_act)      # LUT activation = extra quantization point
         qr -= 10.0 * min(1.0, frac("residual-scale-mismatch", "medium") / n_add) + 4.0 * min(1.0, frac("residual-scale-mismatch", "low") / n_add)
         qr -= 6.0 * min(1.0, frac("depthwise") / n_compute)
+        n_cat = max(self.stats.get("n_concat", 1), 1)
+        qr -= 20.0 * min(1.0, frac("concat-scale-mismatch", "high") / n_cat) + 8.0 * min(1.0, frac("concat-scale-mismatch", "medium") / n_cat)
         eff, qr = max(0.0, eff), max(0.0, qr)
         return dict(efficiency=round(eff, 1), quant_robustness=round(qr, 1), overall=round(min(eff, qr), 1))
 
@@ -272,6 +277,59 @@ def check_dynamic(graph: StaticGraph, stats: dict[str, dict]) -> list[Finding]:
     return out
 
 
+def check_concat(graph: StaticGraph, stats: dict[str, dict] | None = None) -> list[Finding]:
+    """Concat forces every input into one output scale. Branches with very different ranges lose resolution."""
+    out = []
+    for n in graph.nodes:
+        if n.op != "concat":
+            continue
+        rng = []
+        for src in n.inputs:
+            st = (stats or {}).get(src)
+            if st is not None:
+                rng.append(max(abs(st["min"]), abs(st["max"])))
+        if len(rng) == len(n.inputs) and min(rng) > 0:
+            ratio = max(rng) / min(rng)
+            sev = "high" if ratio > 16 else ("medium" if ratio > 4 else "info")
+            out.append(Finding("concat-scale-mismatch", sev, n.name,
+                               f"concat branch ranges differ by {ratio:.1f}x; the narrow branch keeps only "
+                               f"{255 / ratio:.0f} of 255 codes after requantization into the shared scale", ratio,
+                               "balance the branches (scale a branch's last conv) or give the narrow branch its own output tensor"))
+        else:
+            out.append(Finding("concat-scale-mismatch", "info", n.name,
+                               f"{len(n.inputs)} inputs are requantized into one output scale", float(len(n.inputs)),
+                               "calibrate to compare the branch ranges"))
+    return out
+
+
+def check_attention(graph: StaticGraph, spec: NPUSpec) -> list[Finding]:
+    """Attention costs an NPU differently from a conv: no static weights, plus softmax/layernorm/transposes."""
+    out = []
+    mm = [n for n in graph.nodes if n.op == "matmul"]
+    if mm:
+        groups = sum(n.attrs.get("batch", 1) for n in mm)
+        out.append(Finding("dynamic-matmul", "medium", mm[0].name,
+                           f"{len(mm)} activation x activation matmuls ({groups} head-groups): a weight-stationary array "
+                           "reloads a tile per group per image, so the fill/drain cost is not amortized", float(len(mm)),
+                           "prefer fewer, larger heads, or an NPU with a dedicated attention/batched-GEMM path"))
+    for op in ("softmax", "layernorm"):
+        nodes = [n for n in graph.nodes if n.op == op]
+        if nodes and op in spec.unsupported_ops:
+            out.append(Finding("dynamic-op-support", "high", nodes[0].name,
+                               f"{len(nodes)} {op} nodes are not executable on this NPU -> host fallback (DRAM round trip each)",
+                               float(len(nodes)), f"pick a preset with a vector unit, or replace {op} (e.g. RMSNorm / hard attention)"))
+        elif nodes:
+            out.append(Finding("dynamic-op-support", "low", nodes[0].name,
+                               f"{len(nodes)} {op} nodes run on the vector unit, not the MAC array", float(len(nodes)),
+                               "expect them to show up as vector-bound cycles, not array work"))
+    tr = [n for n in graph.nodes if n.op == "transpose"]
+    if len(tr) >= 8:
+        out.append(Finding("layout-churn", "low", tr[0].name,
+                           f"{len(tr)} transposes: attention reshapes the token layout for every head", float(len(tr)),
+                           "fuse the head split into the projection's output layout if the compiler allows it"))
+    return out
+
+
 def lint(graph: StaticGraph, spec="edge-10tops", calib: np.ndarray | None = None) -> LintReport:
     spec = get_spec(spec)
     findings: list[Finding] = []
@@ -281,11 +339,15 @@ def lint(graph: StaticGraph, spec="edge-10tops", calib: np.ndarray | None = None
     findings += check_array_alignment(graph, spec)
     findings += check_stem(graph, spec)
     findings += check_fc_head(graph)
+    findings += check_attention(graph, spec)
     stats: dict = {}
     if calib is not None:
         act_stats = collect_activation_stats(graph, calib)
         findings += check_dynamic(graph, act_stats)
+        findings += check_concat(graph, act_stats)
         stats["activations"] = act_stats
+    else:
+        findings += check_concat(graph)
     cost = estimate(graph, spec)
     stats["cost"] = dict(total_cycles=cost.total_cycles, latency_ms=cost.latency_ms, array_utilization=cost.array_utilization,
                          dram_bytes=cost.dram_bytes, breakdown=cost.breakdown())
@@ -293,6 +355,7 @@ def lint(graph: StaticGraph, spec="edge-10tops", calib: np.ndarray | None = None
     stats["n_act"] = sum(1 for n in graph.nodes if n.op == "act")
     stats["n_add"] = sum(1 for n in graph.nodes if n.op == "add")
     stats["n_tensors"] = sum(1 for n in graph.nodes if n.op in ("conv", "linear", "add", "act", "pool"))
+    stats["n_concat"] = sum(1 for n in graph.nodes if n.op == "concat")
     stats["alignment_util_weighted"] = alignment_util_weighted(graph, spec)
     stats["weights"] = {n.name: dict(ratio=float(weight_channel_ranges(n).max() / max(np.median(weight_channel_ranges(n)), 1e-12)))
                         for n in graph.compute_nodes()}

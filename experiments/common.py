@@ -17,6 +17,8 @@ BASELINES = {   # name -> run dir
     "resnet20_hswish": "resnet20_hswish",
     "resnet20_gelu": "resnet20_gelu",
     "mnv2_050_relu6": "mnv2_050_relu6",
+    "cust_vit": "cust_vit",                 # E9 customer A: attention / LayerNorm / GELU
+    "cust_inception": "cust_inception",     # E9 customer B: concat branches
 }
 
 

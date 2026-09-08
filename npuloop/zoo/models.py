@@ -7,6 +7,7 @@ Design rules (they matter for the analyzer / quantizer later):
   * conv -> bn -> act ordering everywhere (so BN folding is mechanical)
 """
 from __future__ import annotations
+import torch
 import torch.nn as nn
 
 ACTS = {
@@ -156,6 +157,130 @@ class MobileNetV2CIFAR(nn.Module):
         return self.fc(self.flatten(self.pool(x)))
 
 
+class Attention(nn.Module):
+    """Multi-head self-attention written so torch.fx sees every op the NPU has to run."""
+
+    def __init__(self, dim: int, heads: int, tokens: int):
+        super().__init__()
+        assert dim % heads == 0
+        self.h, self.d, self.n, self.c = heads, dim // heads, tokens, dim
+        self.q = nn.Linear(dim, dim)
+        self.k = nn.Linear(dim, dim)
+        self.v = nn.Linear(dim, dim)
+        self.proj = nn.Linear(dim, dim)
+        self.scale = (dim // heads) ** -0.5
+
+    def forward(self, x):                                   # (B, N, C)
+        q = self.q(x).reshape(-1, self.n, self.h, self.d).transpose(1, 2)    # (B, H, N, D)
+        k = self.k(x).reshape(-1, self.n, self.h, self.d).transpose(1, 2)
+        v = self.v(x).reshape(-1, self.n, self.h, self.d).transpose(1, 2)
+        attn = torch.matmul(q, k.transpose(-2, -1)) * self.scale             # (B, H, N, N)
+        attn = attn.softmax(dim=-1)
+        o = torch.matmul(attn, v).transpose(1, 2).reshape(-1, self.n, self.c)
+        return self.proj(o)
+
+
+class TransformerBlock(nn.Module):
+    def __init__(self, dim: int, heads: int, tokens: int, mlp_ratio: int, act: str):
+        super().__init__()
+        self.norm1 = nn.LayerNorm(dim)
+        self.attn = Attention(dim, heads, tokens)
+        self.norm2 = nn.LayerNorm(dim)
+        self.fc1 = nn.Linear(dim, dim * mlp_ratio)
+        self.act = make_act(act)
+        self.fc2 = nn.Linear(dim * mlp_ratio, dim)
+
+    def forward(self, x):
+        x = x + self.attn(self.norm1(x))
+        return x + self.fc2(self.act(self.fc1(self.norm2(x))))
+
+
+class ViTCIFAR(nn.Module):
+    """A small ViT for 32x32 inputs: patch embedding, learned positions, mean-pooled head.
+
+    Deliberately cls-token-free — mean pooling over tokens works as well at this scale and keeps
+    the graph free of the gather/expand ops an NPU compiler would have to special-case.
+    """
+
+    def __init__(self, dim: int = 128, depth: int = 6, heads: int = 4, patch: int = 4,
+                 mlp_ratio: int = 2, act: str = "gelu", num_classes: int = 10, img: int = 32):
+        super().__init__()
+        self.grid = img // patch
+        self.tokens = self.grid ** 2
+        self.patch_embed = nn.Conv2d(3, dim, patch, patch)
+        self.pos = nn.Parameter(torch.zeros(1, self.tokens, dim))
+        self.blocks = nn.Sequential(*[TransformerBlock(dim, heads, self.tokens, mlp_ratio, act) for _ in range(depth)])
+        self.norm = nn.LayerNorm(dim)
+        self.head = nn.Linear(dim, num_classes)
+        self.config = dict(arch="vit", dim=dim, depth=depth, heads=heads, patch=patch, mlp_ratio=mlp_ratio,
+                           act=act, num_classes=num_classes, img=img)
+        nn.init.trunc_normal_(self.pos, std=0.02)
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                nn.init.trunc_normal_(m.weight, std=0.02); nn.init.zeros_(m.bias)
+            elif isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu"); nn.init.zeros_(m.bias)
+
+    def forward(self, x):
+        x = self.patch_embed(x).flatten(2).transpose(1, 2)     # (B, N, C)
+        x = x + self.pos
+        x = self.blocks(x)
+        x = self.norm(x)
+        return self.head(x.mean(dim=1))
+
+
+class InceptionBlock(nn.Module):
+    """Three parallel branches concatenated on the channel axis (the classic concat pattern).
+
+    The branches see different receptive fields, so their activation ranges differ — which is
+    exactly what makes concat interesting for an INT8 NPU: every input has to be requantized
+    into one shared output scale.
+    """
+
+    def __init__(self, cin: int, b1: int, b3: int, b5: int, act: str):
+        super().__init__()
+        self.p1_conv = nn.Conv2d(cin, b1, 1, bias=False); self.p1_bn = nn.BatchNorm2d(b1); self.p1_act = make_act(act)
+        self.p3_conv = nn.Conv2d(cin, b3, 3, padding=1, bias=False); self.p3_bn = nn.BatchNorm2d(b3); self.p3_act = make_act(act)
+        self.p5_red = nn.Conv2d(cin, max(b5 // 2, 8), 1, bias=False); self.p5_red_bn = nn.BatchNorm2d(max(b5 // 2, 8)); self.p5_red_act = make_act(act)
+        self.p5_conv = nn.Conv2d(max(b5 // 2, 8), b5, 3, padding=1, bias=False); self.p5_bn = nn.BatchNorm2d(b5); self.p5_act = make_act(act)
+        self.out_channels = b1 + b3 + b5
+
+    def forward(self, x):
+        a = self.p1_act(self.p1_bn(self.p1_conv(x)))
+        b = self.p3_act(self.p3_bn(self.p3_conv(x)))
+        c = self.p5_act(self.p5_bn(self.p5_conv(self.p5_red_act(self.p5_red_bn(self.p5_red(x))))))
+        return torch.cat([a, b, c], dim=1)
+
+
+class InceptionCIFAR(nn.Module):
+    """Concat-heavy CIFAR classifier: stem, three concat stages with stride-2 transitions."""
+
+    def __init__(self, width: int = 32, act: str = "relu", num_classes: int = 10):
+        super().__init__()
+        w = width
+        self.stem_conv = nn.Conv2d(3, w, 3, 1, 1, bias=False); self.stem_bn = nn.BatchNorm2d(w); self.stem_act = make_act(act)
+        b1 = InceptionBlock(w, w // 2, w, w // 2, act)
+        d1 = nn.Sequential(nn.Conv2d(b1.out_channels, 2 * w, 3, 2, 1, bias=False), nn.BatchNorm2d(2 * w), make_act(act))
+        b2 = InceptionBlock(2 * w, w, 2 * w, w, act)
+        d2 = nn.Sequential(nn.Conv2d(b2.out_channels, 4 * w, 3, 2, 1, bias=False), nn.BatchNorm2d(4 * w), make_act(act))
+        b3 = InceptionBlock(4 * w, 2 * w, 4 * w, 2 * w, act)
+        self.blocks = nn.Sequential(b1, d1, b2, d2, b3)
+        self.pool = nn.AdaptiveAvgPool2d(1)
+        self.flatten = nn.Flatten()
+        self.fc = nn.Linear(b3.out_channels, num_classes)
+        self.config = dict(arch="inception", width=width, act=act, num_classes=num_classes)
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
+            elif isinstance(m, nn.BatchNorm2d):
+                nn.init.ones_(m.weight); nn.init.zeros_(m.bias)
+
+    def forward(self, x):
+        x = self.stem_act(self.stem_bn(self.stem_conv(x)))
+        x = self.blocks(x)
+        return self.fc(self.flatten(self.pool(x)))
+
+
 def build_model(config: dict) -> nn.Module:
     cfg = dict(config)
     arch = cfg.pop("arch")
@@ -164,6 +289,10 @@ def build_model(config: dict) -> nn.Module:
         return ResNetCIFAR(**cfg)
     if arch == "mobilenetv2":
         return MobileNetV2CIFAR(**cfg)
+    if arch == "vit":
+        return ViTCIFAR(**cfg)
+    if arch == "inception":
+        return InceptionCIFAR(**cfg)
     raise ValueError(arch)
 
 
