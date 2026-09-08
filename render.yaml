@@ -1,0 +1,18 @@
+# Render Blueprint: serve the pre-built demo page (docs/index.html) as a static site.
+# The page is self-contained — results/*.json are inlined by demo/build.py — so there is nothing to build.
+# Dashboard equivalent: New → Static Site → this repo → Publish directory: docs (build command empty).
+services:
+  - type: web
+    name: npuloop
+    runtime: static
+    staticPublishPath: ./docs
+    buildCommand: ""
+    pullRequestPreviewsEnabled: false
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: public, max-age=600
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
