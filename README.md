@@ -3,14 +3,17 @@
 [![tests](https://github.com/sokldjs554/npuloop/actions/workflows/ci.yml/badge.svg)](https://github.com/sokldjs554/npuloop/actions/workflows/ci.yml)
 [![license](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-> **"INT8 NPU에 올릴 모델의 양자화·프루닝·활성함수 선택을, FLOPs와 fake-quant가 아니라
-> 가상 NPU 비용 모델과 비트 정확(bit-exact) 정수 추론 엔진에 대고 검증한다."**
+> **고객이 체크포인트를 보내왔을 때 NPU 회사의 모델 팀이 하는 일을, 감이 아니라 숫자로 하는 툴킷입니다.**
 >
-> 해석적 systolic-array 비용 모델(`npu`) → 정적 준비도 lint(`lint`) → NPU 방식 양자화·QAT·CLE·활성함수 교체(`quant`)
-> → PE-array 정렬 구조적 프루닝(`prune`) → int8 가중치/int32 바이어스/고정소수점 requant로 export한 정수 그래프를
-> NumPy와 C++ 커널로 **비트 단위로 같게** 실행하고 fake-quant와 비교(`intengine`)하는 한 저장소입니다.
-> CIFAR-10에서 ResNet-20 2종(ReLU·SiLU)과 MobileNetV2-0.5로 8개 실험(E1–E8)을 돌려 결과를 JSON으로 남겼고, 그 JSON을 읽는
-> [인터랙티브 데모](#데모)가 있습니다.
+> `npuloop intake model.pt` 한 줄이면 세 가지가 나옵니다.
+> **① 우리 NPU에서 돌기는 하는가** — op별로 MAC 배열 / depthwise 엔진 / 벡터 유닛 / 호스트 폴백 중 어디로 가는지.
+> **② 얼마나 걸리는가** — 해석적 systolic-array 비용 모델(SCALE-Sim과 레이어당 0.5% 이내로 대조)이 낸 사이클과 병목.
+> **③ 무엇을 바꿔야 하는가** — 활성함수 교체·프루닝 후보를 각각 *변형된 그래프에 비용 모델을 다시 돌려* 가격표를 붙인 처방.
+>
+> 처방을 실제로 적용한 뒤에는 int8 가중치/int32 바이어스/고정소수점 requant로 export한 정수 그래프를 NumPy와 C++ 커널로
+> **비트 단위로 같게** 실행해서, fake-quant가 아니라 진짜 정수 결과로 정확도를 확인합니다.
+> CIFAR-10에서 CNN 3종 + 가상 고객 2곳(ViT · concat 분기 CNN)으로 9개 실험(E1–E9)을 돌린 결과가 JSON으로 있고,
+> 그 JSON을 읽는 [인터랙티브 데모](#데모)가 있습니다.
 
 
 ## 왜 이 프로젝트를 했나
@@ -46,6 +49,30 @@ flowchart LR
 
 숫자는 전부 `results/*.json`에서 `tools/readme_tables.py --inject README.md`로 생성한 것입니다. 정확도는 test 10,000장 기준이며,
 `simulated`로 표시한 사이클·활용률은 가상 NPU 비용 모델 값입니다.
+
+### E9. 고객 모델 인테이크 — 이 프로젝트가 답하는 질문
+
+가상 고객 두 곳이 체크포인트를 보내왔다고 가정했습니다. **고객 A는 ViT**(attention 12개, LayerNorm 13개, GELU),
+**고객 B는 concat 분기 CNN**(블록마다 1×1·3×3·5×5 세 갈래를 채널 축으로 이어 붙임). 둘 다 이 저장소가 원래 거부하던 구조라,
+`concat`·`matmul`·`softmax`·`layernorm`·`transpose`를 IR·양자화·정수 엔진(NumPy와 C++ 모두)·비용 모델·lint에 새로 넣었습니다.
+
+`npuloop intake <ckpt> --spec <npu>`가 내는 리포트는 세 부분입니다.
+
+1. **접수** — op별로 어디서 실행되는지(MAC 배열 / depthwise 엔진 / 벡터 유닛 / int8 LUT / requant에 융합 / **호스트 폴백**)와, 전부 온칩에서 도는지 여부.
+2. **진단** — 사이클·지연·배열 활용률·DRAM, 사이클 예산을 실행 유닛별로 나눈 비율, 병목 3개, lint 점수.
+3. **처방** — 후보 변경(활성함수 교체, 프루닝)을 **변형된 그래프에 비용 모델을 다시 돌려** 예상 사이클과 함께 제시하고, 같은 모델을 다른 프리셋에 올렸을 때의 사이클도 따로 보여 줍니다.
+
+<!-- TABLE:E9 -->
+**(a) 인테이크 요약** — `npuloop intake`가 낸 값 (사이클은 비용 모델, INT8은 정수 엔진 실측)
+
+| 모델 | 파라미터 | MACs | edge-10tops cycles (활용률) | strict cycles | 온칩 실행 | lint eff / q-rob |
+|---|---|---|---|---|---|---|
+| 기존 · MobileNetV2-0.5 | 700,490 | 28.0M | 87,056 (3.5%) | 569,619 | 예 / strict 예 | 77 / 98 |
+| 기존 · ResNet-20 ReLU | 272,474 | 40.8M | 34,417 (14.5%) | 34,417 | 예 / strict 예 | 80 / 97 |
+| 기존 · ResNet-20 SiLU | 272,474 | 40.8M | 34,785 (14.3%) | 1,554,865 | 예 / strict 아니오 | 72 / 76 |
+
+온칩 실행 = 모든 op가 NPU에서 실행됨(호스트 폴백 없음). strict = LUT·softmax·layernorm 지원이 없는 프리셋.
+<!-- /TABLE:E9 -->
 
 ### E1. 베이스라인과 정적 분석
 
@@ -367,7 +394,8 @@ print(NumpyEngine(ig).evaluate(ds, limit=2000), CppEngine(ig).evaluate(ds, limit
 
 * **CIFAR-10, 30 epoch, seed 1개.** 정확도 차이 0.2%p 이하는 잡음입니다(10k 이미지 표준오차 ≈ 0.3%p). 결론은 "방향"이지 소수점 둘째 자리가 아닙니다.
 * **가상 NPU.** 실제 칩의 컴파일러(fusion, 타일링, 메모리 스케줄링)와 다릅니다. 비용 모델은 연산 사이클은 검증했지만 DRAM/SRAM 모델은 1차 근사(roofline)입니다. 실제 NPU 보드가 생기면 같은 IntGraph를 올려 정확도·지연을 대조하는 것이 첫 번째 할 일입니다.
-* **지원 op가 좁습니다.** conv/dw-conv/linear/add/global-avgpool/elementwise 활성함수만. concat·upsample·attention은 `UnsupportedOpError`로 즉시 실패시킵니다(조용히 넘어가지 않기 위해). 검출 헤드(DFL, NMS)까지 정수로 옮기는 것이 다음 단계입니다.
+* **지원 op는 conv/dw-conv/grouped-conv · linear(토큰 단위 포함) · add · mul · concat · matmul · softmax · layernorm · transpose/reshape · pool · elementwise 활성함수**입니다. upsample·detection 헤드(DFL, NMS)·KV 캐시는 아직 `UnsupportedOpError`로 즉시 실패시킵니다(조용히 넘어가지 않기 위해).
+* **정수 LayerNorm의 β는 출력 도메인에서 더합니다.** 하드웨어 커널이 흔히 그렇게 하지만 최대 0.5 LSB의 반올림 오차가 생깁니다. softmax의 정규화도 정확한 정수 나눗셈으로 모델링했는데, 실제 NPU는 역수 근사를 쓰는 경우가 많습니다(그 차이는 E7식 ablation으로 재는 것이 다음 단계).
 * **프루닝 대상이 residual 밖의 내부 채널뿐**이라 절감 폭에 상한이 있습니다. residual stream 채널을 같이 자르려면 의존성 그래프가 필요합니다.
 * **혼합 정밀도 없음.** 이 프로젝트의 NPU는 INT8 고정이라 비트 폭 탐색 대신 정수 구현 세부(E7)에 집중했습니다.
 * **활성함수 베이스라인 2개를 학습하지 못했습니다.** 계획했던 ResNet-20 GELU·HardSwish 베이스라인은 CPU 시간 때문에 빠졌습니다(E4(b)의 HardSwish는 SiLU 모델을 교체·healing한 것). LUT 활성함수에 대한 결론은 SiLU 한 모델에 기댑니다.

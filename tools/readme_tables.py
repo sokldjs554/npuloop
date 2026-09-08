@@ -160,7 +160,33 @@ def e3():
     return "\n".join(out)
 
 
-TABLES = [("E1", e1), ("E2", e2), ("E3", e3), ("E4", e4), ("E5", e5), ("E6", e6), ("E7", e7), ("E8", e8)]
+def e9():
+    rs = load("e9_customer_intake")["records"]
+    if not rs: return ""
+    rs = sorted(rs, key=lambda r: (not r.get("customer"), r["model"]))
+    out = ["**(a) 인테이크 요약** — `npuloop intake`가 낸 값 (사이클은 비용 모델, INT8은 정수 엔진 실측)", "",
+           "| 모델 | 파라미터 | MACs | edge-10tops cycles (활용률) | strict cycles | 온칩 실행 | lint eff / q-rob |",
+           "|---|---|---|---|---|---|---|"]
+    for r in rs:
+        d = r["intake"]["diagnose"]; ds = r["intake_strict"]["diagnose"]
+        ok = "예" if r["intake"]["receive"]["runs_on_chip"] else "**아니오**"
+        out.append(f"| {r['label']} | {r['params']:,} | {r['macs']/1e6:.1f}M | {d['cycles']:,.0f} ({d['array_utilization']*100:.1f}%) | "
+                   f"{ds['cycles']:,.0f} | {ok} / strict {'예' if r['intake_strict']['receive']['runs_on_chip'] else '아니오'} | "
+                   f"{d['lint']['scores']['efficiency']:.0f} / {d['lint']['scores']['quant_robustness']:.0f} |")
+    done = [r for r in rs if r.get("after")]
+    if done:
+        out += ["", "**(b) 처방을 실제로 적용한 결과**", "",
+                "| 모델 | 처방 | FP32 | INT8 정수 엔진 | edge-10tops cycles | strict cycles |", "|---|---|---|---|---|---|"]
+        for r in done:
+            a = r["after"]; d = r["intake"]["diagnose"]; ds = r["intake_strict"]["diagnose"]
+            out.append(f"| {r['label']} | {a['action']} | {pct(r['float_acc'])} → {pct(a['float_acc'])} | "
+                       f"{pct(r['ptq']['int_acc'])} → {pct(a['int_acc'])} | {d['cycles']:,.0f} → {a['cycles']:,.0f} | "
+                       f"{ds['cycles']:,.0f} → {a['cycles_strict']:,.0f} |")
+    out.append("\n온칩 실행 = 모든 op가 NPU에서 실행됨(호스트 폴백 없음). strict = LUT·softmax·layernorm 지원이 없는 프리셋.")
+    return "\n".join(out)
+
+
+TABLES = [("E1", e1), ("E2", e2), ("E3", e3), ("E4", e4), ("E5", e5), ("E6", e6), ("E7", e7), ("E8", e8), ("E9", e9)]
 
 
 def inject(readme_path: str) -> int:

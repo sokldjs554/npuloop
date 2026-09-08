@@ -86,7 +86,64 @@ LUT[q] = clamp( round_half_away( f((q − z_in)·s_in) / s_out ) + z_out )
 
 즉 SiLU/GELU/HardSwish 앞의 텐서는 **int8로 한 번 더 양자화**되어야 합니다(pre-activation 양자화 지점). ReLU 모델보다 양자화 지점이 레이어당 하나 더 많고, 그래서 `quant.prepare`는 비-ReLU 활성함수 앞에 `FakeQuantAct`를 하나 더 넣습니다. 이것이 "ReLU 모델은 INT8에 더 강하다"는 통념의 정확한 기계적 이유입니다.
 
-## 6. 엔진이 일부러 틀리게 계산하는 방법 (E7 ablation)
+## 6. concat: 여러 스케일을 하나로
+
+concat은 값을 바꾸지 않지만 **스케일을 바꿉니다.** 입력 브랜치마다 `(s_i, z_i)`가 다르므로, 출력 스케일 `s_o` 하나로 모으려면
+입력마다 requant가 한 번씩 필요합니다.
+
+```
+q_o[i] = clamp( z_o + requant(q_i - z_i, M0_i, shift_i) ),   M_i = s_i / s_o
+```
+
+브랜치 범위가 크게 벌어져 있으면(예: 16배) 좁은 브랜치는 255단계 중 16단계만 쓰게 됩니다. lint의 `concat-scale-mismatch`가
+캘리브레이션 통계로 이 비율을 재서 경고합니다.
+
+## 7. attention: matmul · softmax · LayerNorm
+
+### 7.1 활성값 × 활성값 matmul
+
+conv/linear은 한쪽이 정적 가중치라 `Σ w(q - z)`로 끝나지만, `QK^T`와 `PV`는 **양쪽 다 활성값**이라 두 영점을 모두 펼쳐야 합니다.
+
+```
+acc = Σ_k (a_ik - z_a)(b_kj - z_b)          # int32 누산
+q_y = clamp( z_y + requant(acc, M0, shift) ),   M = s_a · s_b / s_y
+```
+
+`1/√d` 스케일은 별도 연산이 아니라 `M`에 곱해 넣습니다(그래프에서 `mul(scalar)` 노드는 사라지고 producer의 requant 배수에 접힙니다).
+비용 모델에서는 이 연산에 **가중치 재사용이 없다**는 점이 핵심입니다 — weight-stationary 배열은 헤드마다, 이미지마다 타일을 다시 채웁니다.
+
+### 7.2 softmax
+
+행 최댓값을 뺀 뒤(`d = q - max ≤ 0`) Q15 exp 테이블을 찾고, 정수 나눗셈으로 정규화합니다.
+
+```
+e_j   = exp_lut[d_j + offset]                  # round(exp(d·s_in) · 2^15)
+total = Σ_j e_j
+v_j   = round_div(e_j · 2^15, total)           # Q15 확률
+q_j   = clamp( z_o + requant(v_j, M0, shift) ),  M = 2^-15 / s_o
+```
+
+테이블은 입력 스케일에 의존하므로 export 시점에 만들어집니다(활성함수 LUT와 같은 방식). 정규화를 **정확한 정수 나눗셈**으로
+정의했기 때문에 NumPy 엔진과 C++ 커널이 비트 단위로 같습니다 — 실제 NPU는 역수 근사를 쓰는 경우가 많고, 그 차이는 E7식
+ablation으로 잴 수 있습니다.
+
+### 7.3 LayerNorm
+
+평균과 분산을 int64로 정확히 구하고, 나눗셈 대신 **정수 제곱근**을 씁니다.
+
+```
+d_i     = q_i - z_in
+S = Σ d_i,  Q = Σ d_i²
+var_num = C·Q - S²                             # = C² · var(d), 항상 ≥ 0
+denom   = isqrt64(var_num + eps_int),            eps_int = round(eps · C² / s_in²)
+t_i     = round_div((d_i·C - S) · 2^15, denom)   # Q15 정규화 값
+q_i     = clamp( z_o + requant(t_i, M0_c, shift_c) + β_q[c] ),   M_c = γ_c / (2^15 · s_o)
+```
+
+`isqrt64`는 float64 sqrt 뒤에 정수 보정을 넣어 **정확한 floor(√x)**를 냅니다. 두 엔진이 같은 알고리즘을 쓰므로 결과가 어긋날 수 없습니다.
+β는 출력 도메인에서 더하기 때문에 최대 0.5 LSB의 반올림 오차가 있습니다(하드웨어 커널이 흔히 쓰는 방식이고, 한계에 적어 두었습니다).
+
+## 8. 엔진이 일부러 틀리게 계산하는 방법 (E7 ablation)
 
 `RequantConfig`:
 
