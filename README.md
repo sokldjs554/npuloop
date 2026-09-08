@@ -1,4 +1,4 @@
-# npuloop — NPU 비용 모델과 비트 정확 정수 엔진으로 닫는 모델 압축 루프
+# npuloop — NPU에 올려보고 고르는 양자화·프루닝 툴킷
 
 [![tests](https://github.com/sokldjs554/npuloop/actions/workflows/ci.yml/badge.svg)](https://github.com/sokldjs554/npuloop/actions/workflows/ci.yml)
 [![license](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
