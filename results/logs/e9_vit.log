@@ -1,0 +1,7 @@
+[23:55:23] cust_vit: fp32=0.8171 fake=0.8155 int=0.8160 cycles=52,246 strict=2,503,878
+[23:55:23] cust_vit: swapped 6 activations {'gelu': 'relu'}, healing 3 epochs
+{"epoch": 1, "train_loss": 0.47426144832219835, "train_acc": 0.8325120192307692, "test_acc": 0.7771, "lr": 0.000466119496332774, "epoch_sec": 151.86304712295532}
+{"epoch": 2, "train_loss": 0.4651122300670697, "train_acc": 0.8344551282051282, "test_acc": 0.8018, "lr": 0.0001848006106715094, "epoch_sec": 162.40042972564697}
+{"epoch": 3, "train_loss": 0.3808879085840323, "train_acc": 0.8646834935897436, "test_acc": 0.8161, "lr": 5.014067701399945e-07, "epoch_sec": 159.94636011123657}
+[00:07:15] cust_vit: after surgery fp32=0.8161 int=0.8235 cycles=52,054 strict=1,708,230
+E9V_EXIT=0

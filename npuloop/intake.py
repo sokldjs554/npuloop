@@ -121,6 +121,7 @@ def prescriptions(model: nn.Module, spec, input_shape=(3, 32, 32)) -> list[dict]
     base = estimate(base_graph, spec).total_cycles
     kinds = {n.attrs["kind"] for n in base_graph.nodes if n.op == "act"}
     out: list[dict] = []
+    notes: list[str] = []
 
     for kind in sorted(kinds - RELU_FAMILY):
         if kind not in LUT_ACTS:
@@ -143,16 +144,24 @@ def prescriptions(model: nn.Module, spec, input_shape=(3, 32, 32)) -> list[dict]
 
     for ratio in (0.75, 0.5):
         try:
-            pruned, _ = prune(copy.deepcopy(model), ratio=ratio, strategy="uniform")
+            pruned, groups = prune(copy.deepcopy(model), ratio=ratio, strategy="uniform")
             cyc = _cycles(pruned, spec, input_shape)
-        except (UnsupportedOpError, ValueError, IndexError, RuntimeError):
+        except (UnsupportedOpError, ValueError, IndexError, RuntimeError) as e:
+            notes.append(f"structured pruning at ratio {ratio} failed: {type(e).__name__}: {e}")
             continue
+        if not groups:
+            notes.append("the structured pruner found no prunable group in this graph: it only cuts channels "
+                         "inside a block (conv -> conv), and every conv here feeds a concat or the residual stream")
+            break
         if cyc < base:
             out.append(dict(action=f"uniform structured pruning, ratio {ratio}", kind="pruning",
                             why="fewer channels per block", cycles=cyc, saving=1 - cyc / base,
                             risk="needs fine-tuning; E6 measured -1.1 to -2.4%p at these ratios"))
 
     out.sort(key=lambda r: -(r["saving"] or 0))
+    for note in notes:
+        out.append(dict(action="—", kind="note", why=note, cycles=None, saving=None,
+                        risk="the tool says what it cannot do rather than staying silent"))
     return out
 
 

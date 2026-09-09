@@ -63,8 +63,13 @@ def compare(gm, ig: IntGraph, x: torch.Tensor, engine: NumpyEngine | None = None
     fcodes, flogits = fake_codes(gm, ig, x)
     codes_in = quantize_input(x.numpy(), ig.input_q)
     ivals = engine.run(codes_in, return_all=True)
-    # teacher forcing: run every node on the fake-quant codes of its inputs
+    # teacher forcing: run every node on the fake-quant codes of its inputs. Shape-only nodes (transpose,
+    # reshape) carry no quantizer, so there is nothing to force them to — derive them from their own
+    # teacher-forced inputs, in graph order, before anything downstream asks for them.
     tf_vals = dict(fcodes); tf_vals["__input__"] = codes_in
+    for n in ig.nodes:
+        if n.name not in tf_vals and all(src in tf_vals for src in n.inputs):
+            tf_vals[n.name] = engine.exec_node(n, tf_vals)
     rows = []
     for n in ig.nodes:
         if n.name not in fcodes or n.name not in ivals:

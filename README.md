@@ -12,7 +12,7 @@
 >
 > 처방을 실제로 적용한 뒤에는 int8 가중치/int32 바이어스/고정소수점 requant로 export한 정수 그래프를 NumPy와 C++ 커널로
 > **비트 단위로 같게** 실행해서, fake-quant가 아니라 진짜 정수 결과로 정확도를 확인합니다.
-> CIFAR-10에서 CNN 3종 + 가상 고객 2곳(ViT · concat 분기 CNN)으로 9개 실험(E1–E9)을 돌린 결과가 JSON으로 있고,
+> CIFAR-10에서 CNN 3종 + 가상 고객 2곳(ViT 81.7% · concat 분기 CNN 90.1%)으로 9개 실험(E1–E9)을 돌린 결과가 JSON으로 있고,
 > 그 JSON을 읽는 [인터랙티브 데모](#데모)가 있습니다.
 
 
@@ -62,14 +62,30 @@ flowchart LR
 2. **진단** — 사이클·지연·배열 활용률·DRAM, 사이클 예산을 실행 유닛별로 나눈 비율, 병목 3개, lint 점수.
 3. **처방** — 후보 변경(활성함수 교체, 프루닝)을 **변형된 그래프에 비용 모델을 다시 돌려** 예상 사이클과 함께 제시하고, 같은 모델을 다른 프리셋에 올렸을 때의 사이클도 따로 보여 줍니다.
 
+관찰:
+
+* **같은 처방도 NPU가 다르면 값이 완전히 달라집니다.** 고객 A의 GELU 6개를 ReLU로 바꾸는 처방은 LUT가 있는 `edge-10tops`에서는 절감 **0%**(52,246 → 52,054 사이클)입니다 — GELU가 이미 싸게 돌고 있으니까요. LUT가 없는 `edge-10tops-strict`에서는 같은 처방이 **−32%**(2,503,878 → 1,708,230)입니다. 비용 모델을 루프 안에 두면 "이 칩에서는 이 수술이 의미가 없다"를 재학습 전에 알 수 있습니다.
+* **그리고 그 처방으로도 부족하다고 정직하게 말합니다.** 고객 A는 strict NPU에서 **사이클의 97%가 호스트 폴백**이고(layernorm 13개 · softmax 6개 · GELU 6개), 활성함수만 바꿔서는 layernorm과 softmax가 그대로 남습니다. lint 효율 점수는 30.9 → 85.9로 오르지만 여전히 온칩 실행 불가입니다. 리포트의 결론은 모델 수술이 아니라 **벡터 유닛이 있는 프리셋**(edge-10tops 52,246 · pcie-80tops 27,843)입니다.
+* **수술의 정확도 비용은 −0.10%p였습니다.** GELU→ReLU 교체 후 3 epoch healing으로 FP32 81.71% → 81.61%, INT8 정수 엔진은 오히려 82.35%(2,000장 기준). E4에서 SiLU→ReLU가 3 epoch로 회복된 것과 같은 패턴이 transformer에서도 재현됩니다.
+* **attention은 정수 엔진과 fake-quant를 훨씬 크게 갈라놓습니다.** 최종 출력 코드 불일치가 CNN의 46%에서 **71%**로 올라가는데도 top-1 일치는 96.9%입니다. 레이어별로 국소(teacher-forced) 불일치를 재면 원인이 분명합니다 — **LayerNorm이 24.9%(최대 26.5%)로 압도적**이고 pool 0.8%, softmax 0.4%, matmul 0.26%, linear 0.08% 순입니다. 정수 LayerNorm은 int64 합과 정확한 정수 제곱근으로 정규화하고 fake-quant는 float32로 계산한 뒤 격자에 올리기 때문에, 네 개 중 하나꼴로 반올림 경계의 반대편에 떨어집니다(모두 ±1 LSB). **"transformer를 INT8로 올릴 때 먼저 의심할 곳은 LayerNorm"**이라는 것이 이 실험의 결론입니다.
+* **고객 B는 고칠 게 없었습니다.** concat 세 곳의 브랜치 범위 차이가 1.1~1.8배뿐이라 공유 스케일로 합쳐도 손해가 없고(lint `concat-scale-mismatch` = info), 두 프리셋 모두 온칩에서 돌며(31,224 사이클, 활용률 21.1%) INT8 손실도 없습니다(FP32 90.08% → 정수 90.75%). 대신 리포트는 **도구의 한계를 명시**합니다 — 구조적 프루너가 이 그래프에서 자를 그룹을 하나도 못 찾습니다(모든 conv가 concat이나 residual로 들어가서, 블록 내부 채널만 자르는 현재 구현의 대상이 아님).
+
 <!-- TABLE:E9 -->
 **(a) 인테이크 요약** — `npuloop intake`가 낸 값 (사이클은 비용 모델, INT8은 정수 엔진 실측)
 
 | 모델 | 파라미터 | MACs | edge-10tops cycles (활용률) | strict cycles | 온칩 실행 | lint eff / q-rob |
 |---|---|---|---|---|---|---|
+| 고객 B · Inception-32 | 423,066 | 54.0M | 31,224 (21.1%) | 31,224 | 예 / strict 예 | 91 / 97 |
+| 고객 A · ViT-128/6 | 810,890 | 57.0M | 52,246 (13.3%) | 2,503,878 | 예 / strict 아니오 | 78 / 76 |
 | 기존 · MobileNetV2-0.5 | 700,490 | 28.0M | 87,056 (3.5%) | 569,619 | 예 / strict 예 | 77 / 98 |
 | 기존 · ResNet-20 ReLU | 272,474 | 40.8M | 34,417 (14.5%) | 34,417 | 예 / strict 예 | 80 / 97 |
 | 기존 · ResNet-20 SiLU | 272,474 | 40.8M | 34,785 (14.3%) | 1,554,865 | 예 / strict 아니오 | 72 / 76 |
+
+**(b) 처방을 실제로 적용한 결과**
+
+| 모델 | 처방 | FP32 | INT8 정수 엔진 | edge-10tops cycles | strict cycles |
+|---|---|---|---|---|---|
+| 고객 A · ViT-128/6 | swap {'gelu': 'relu'} + heal 3 epochs | 81.71% → 81.61% | 81.60% → 82.35% | 52,246 → 52,054 | 2,503,878 → 1,708,230 |
 
 온칩 실행 = 모든 op가 NPU에서 실행됨(호스트 폴백 없음). strict = LUT·softmax·layernorm 지원이 없는 프리셋.
 <!-- /TABLE:E9 -->
@@ -334,7 +350,7 @@ npuloop/
 experiments/             E1–E8 스크립트 (재개 가능, results/*.json에 provenance 라벨과 함께 저장)
 results/                 실험 결과 JSON
 demo/                    build.py + index.template.html → 인라인 JSON 데모 페이지 (docs/index.html)
-tests/                   pytest 57개 (참조 구현 대조, 비트 동일성, 정확성 회귀)
+tests/                   pytest 69개 (참조 구현 대조, 비트 동일성, 정확성 회귀)
 docs/                    DESIGN.md · INTEGER_DATAPATH.md · RELATED.md
 ```
 
@@ -342,7 +358,7 @@ docs/                    DESIGN.md · INTEGER_DATAPATH.md · RELATED.md
 
 ```bash
 pip install -e .[dev]           # torch(CPU), numpy, pytest
-python -m pytest -q             # 57 tests, ~15 s (C++ 커널은 첫 실행 때 g++로 컴파일되어 처음엔 더 걸립니다)
+python -m pytest -q             # 69 tests, ~20 s (C++ 커널은 첫 실행 때 g++로 컴파일되어 처음엔 더 걸립니다)
 
 # CIFAR-10 (npz 한 파일) 준비: tools/prepare_cifar10.py 참고
 python -m npuloop.zoo.train --arch resnet --act relu --epochs 30 --out runs/resnet20_relu --data data/cifar10.npz
@@ -352,7 +368,9 @@ npuloop lint runs/resnet20_relu/best.pt --spec edge-10tops --data data/cifar10.n
 npuloop quantize runs/resnet20_relu/best.pt --data data/cifar10.npz --scheme npu-default --verify 500 --int-eval 2000
 
 python examples/walkthrough.py --ckpt runs/resnet20_relu/best.pt --data data/cifar10.npz   # 1~2분짜리 전체 흐름 데모
+npuloop intake runs/cust_vit/best.pt --spec edge-10tops-strict --data data/cifar10.npz   # 고객 인테이크 리포트
 bash experiments/run_all.sh     # E1–E7 전부 (CPU 4코어 기준 수 시간), results/*.json
+python experiments/e9_customer_intake.py    # E9 고객 인테이크 (ViT healing 포함)
 python experiments/e8_scalesim.py   # 비용 모델 vs SCALE-Sim (pip install scalesim)
 python demo/build.py            # results → demo/index.html, docs/index.html
 ```

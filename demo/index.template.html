@@ -362,17 +362,27 @@ section('intake', function(){
       `<span>lint 효율 <b>${d.lint.scores.efficiency}</b></span><span>양자화 강건성 <b>${d.lint.scores.quant_robustness}</b></span></div>`;
     g+='<div class="tblwrap"><table><tr><th>병목</th><th>종류</th><th>사이클</th><th>비중</th></tr>'+
       d.bottlenecks.map(b=>`<tr><td>${b.name}</td><td>${b.kind}</td><td>${fmt.n(b.cycles)}</td><td>${fmt.pct(b.share,0)}</td></tr>`).join('')+'</table></div>';
+    if(rec.ptq && rec.ptq.per_op_agreement){
+      const po=Object.entries(rec.ptq.per_op_agreement).filter(([,v])=>v.local_mismatch_mean>0)
+        .sort((a,b)=>b[1].local_mismatch_mean-a[1].local_mismatch_mean).slice(0,5);
+      g+=`<div class="lbl" style="font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-top:12px">정수 엔진 vs fake-quant · 연산별 국소 불일치 (모두 ±1 LSB)</div>`+
+        '<div class="tblwrap"><table><tr><th>op</th><th>노드</th><th>국소</th><th>전파</th></tr>'+
+        po.map(([op,v])=>`<tr><td>${op}</td><td>${v.n}</td><td>${fmt.pct(v.local_mismatch_mean,2)}</td><td>${fmt.pct(v.propagated_mean,0)}</td></tr>`).join('')+
+        '</table></div>'+
+        `<div class="why" style="color:var(--muted);font-size:12.5px;margin-top:4px">최종 top-1 일치 <b>${fmt.pct(rec.ptq.agreement.top1_agreement,1)}</b> · 출력 코드 <b>${fmt.pct(rec.ptq.agreement.output_mismatch_frac,0)}</b> 불일치 · INT8 정확도 <b>${fmt.pct(rec.ptq.int_acc)}</b></div>`;
+    }
     $('ik-diagnose').innerHTML=g;
 
     // 3. prescribe (+ measured before/after when the surgery was actually run)
     const rx=(rep.prescribe||rec.intake.prescribe||[]);
-    let p=rx.length?rx.map(x=>`<div class="rx"><div class="head"><span class="act">${x.action}</span>`+
+    let p=rx.length?rx.map(x=>`<div class="rx"${x.kind==='note'?' style="border-style:dashed"':''}><div class="head"><span class="act">${x.kind==='note'?'도구의 한계':x.action}</span>`+
         `<span class="save">${x.saving!=null?'−'+fmt.pct(x.saving,0):''}</span></div>`+
         `<div class="why">${x.why}${x.cycles?` · 예상 ${fmt.n(x.cycles)} cycles`:''}</div>`+
         `<div class="why">위험: ${x.risk}</div></div>`).join('')
       :'<div class="rx"><div class="act">바꿀 것 없음</div><div class="why">후보 변경 중 기준 사이클을 이긴 것이 없습니다.</div></div>';
     if(rec.after){
-      const b=rec.intake.diagnose.cycles, a=rec.after.cycles;
+      const b=strict?rec.intake_strict.diagnose.cycles:rec.intake.diagnose.cycles;
+      const a=strict?rec.after.cycles_strict:rec.after.cycles;
       const bacc=rec.float_acc, aacc=rec.after.float_acc;
       p+=`<div style="margin-top:12px"><div class="lbl" style="font-size:11.5px;color:var(--muted);font-family:var(--mono)">실제로 적용하고 다시 측정한 결과 — ${rec.after.action}</div>`+
          `<div class="ba"><div class="cell"><div class="lbl">이전</div><div class="big" style="font-size:20px">${fmt.n(b)}</div>`+
@@ -380,8 +390,9 @@ section('intake', function(){
          `<div class="arrow">→</div>`+
          `<div class="cell"><div class="lbl">이후</div><div class="big" style="font-size:20px">${fmt.n(a)}</div>`+
          `<div class="why">FP32 ${fmt.pct(aacc)} · INT8 ${fmt.pct(rec.after.int_acc)}</div></div></div>`+
-         `<div class="why" style="margin-top:6px;color:var(--muted);font-size:12.5px">사이클 ${fmt.pct(1-a/b,0)} 감소, 정확도 ${fmt.pp(aacc-bacc,1)}`+
-         (rec.after.cycles_strict?` · LUT 없는 NPU에서는 ${fmt.n(rec.intake_strict.diagnose.cycles)} → ${fmt.n(rec.after.cycles_strict)}`:'')+'</div></div>';
+         `<div class="why" style="margin-top:6px;color:var(--muted);font-size:12.5px">이 NPU에서 사이클 <b>${fmt.pct(1-a/b,0)}</b> 감소, 정확도 ${fmt.pp(aacc-bacc,1)}`+
+         ` · 다른 프리셋에서는 ${strict?fmt.n(rec.intake.diagnose.cycles)+' → '+fmt.n(rec.after.cycles)+' (edge-10tops)':fmt.n(rec.intake_strict.diagnose.cycles)+' → '+fmt.n(rec.after.cycles_strict)+' (strict)'}`+
+         '</div></div>';
     }
     const alt=rep.alternatives||rec.alternatives||[];
     if(alt.length) p+='<div class="tblwrap" style="margin-top:12px"><table><tr><th>다른 프리셋</th><th>cycles</th><th>온칩</th></tr>'+

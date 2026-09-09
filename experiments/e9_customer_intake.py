@@ -53,7 +53,10 @@ def main():
     calib_np = calib[0].numpy()
     verify_batch = ds.calib_batch(64, seed=1)
     available = available_baselines()
+    only = os.environ.get("NPULOOP_E9_ONLY")
     for name, cfg in CUSTOMERS.items():
+        if only and name != only:
+            continue
         if name not in available:
             log(f"{name}: no checkpoint yet, skipping")
             continue
@@ -93,7 +96,8 @@ def main():
                      intake=before, intake_strict=before_strict,
                      alternatives=before["alternatives"], ptq=ptq, after=after,
                      minutes=(time.time() - t0) / 60), provenance="measured+simulated")
-    walk_ins(ds, calib_np)
+    if not only:
+        walk_ins(ds, calib_np)
 
 
 def walk_ins(ds, calib_np):
