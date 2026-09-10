@@ -1,0 +1,49 @@
+[07:45:55] cust_vit: no checkpoint yet, skipping
+[07:45:55] cust_inception: no checkpoint yet, skipping
+[07:48:33] cust_vit: no checkpoint yet, skipping
+[07:48:33] cust_inception: no checkpoint yet, skipping
+[07:51:10] cust_vit: no checkpoint yet, skipping
+[07:51:10] cust_inception: no checkpoint yet, skipping
+[07:53:48] cust_vit: no checkpoint yet, skipping
+[07:53:48] cust_inception: no checkpoint yet, skipping
+[07:56:25] cust_vit: no checkpoint yet, skipping
+[07:56:25] cust_inception: no checkpoint yet, skipping
+[07:59:07] cust_vit: no checkpoint yet, skipping
+[07:59:07] cust_inception: no checkpoint yet, skipping
+[08:01:45] cust_vit: no checkpoint yet, skipping
+[08:01:45] cust_inception: no checkpoint yet, skipping
+[08:04:28] cust_vit: no checkpoint yet, skipping
+[08:04:28] cust_inception: no checkpoint yet, skipping
+[08:07:02] cust_vit: no checkpoint yet, skipping
+[08:07:02] cust_inception: no checkpoint yet, skipping
+[08:09:42] cust_vit: no checkpoint yet, skipping
+[08:09:42] cust_inception: no checkpoint yet, skipping
+[08:12:23] cust_vit: no checkpoint yet, skipping
+[08:12:23] cust_inception: no checkpoint yet, skipping
+[08:15:03] cust_vit: no checkpoint yet, skipping
+[08:15:03] cust_inception: no checkpoint yet, skipping
+[08:17:44] cust_vit: no checkpoint yet, skipping
+[08:17:44] cust_inception: no checkpoint yet, skipping
+[08:20:19] cust_vit: no checkpoint yet, skipping
+[08:20:19] cust_inception: no checkpoint yet, skipping
+[08:22:59] cust_vit: no checkpoint yet, skipping
+[08:22:59] cust_inception: no checkpoint yet, skipping
+[08:25:40] cust_vit: no checkpoint yet, skipping
+[08:25:40] cust_inception: no checkpoint yet, skipping
+[08:28:21] cust_vit: no checkpoint yet, skipping
+[08:28:21] cust_inception: no checkpoint yet, skipping
+[08:30:59] cust_vit: no checkpoint yet, skipping
+[08:30:59] cust_inception: no checkpoint yet, skipping
+[08:33:39] cust_vit: no checkpoint yet, skipping
+[08:33:39] cust_inception: no checkpoint yet, skipping
+[13:13:01] cust_vit: no checkpoint yet, skipping
+[13:17:00] cust_inception: fp32=0.8959 fake=0.8955 int=0.9015 cycles=31,224 strict=31,224
+[13:17:07] resnet20_relu: intake only, cycles=34,417 strict=34,417 eff=80
+[13:17:15] resnet20_silu: intake only, cycles=34,785 strict=1,554,865 eff=72
+[16:03:46] cust_vit: fp32=0.8098 fake=0.8087 int=0.8080 cycles=52,246 strict=2,503,878
+[16:03:46] cust_vit: swapped 6 activations {'gelu': 'relu'}, healing 3 epochs
+{"epoch": 1, "train_loss": 0.49634859449843055, "train_acc": 0.8232282763532763, "val_acc": 0.783, "lr": 0.00046607264076847614, "epoch_sec": 273.5513048171997}
+{"epoch": 2, "train_loss": 0.47558166982441546, "train_acc": 0.8310630341880342, "val_acc": 0.805, "lr": 0.0001847107301498835, "epoch_sec": 271.4911332130432}
+{"epoch": 3, "train_loss": 0.39516254801016587, "train_acc": 0.8606659544159544, "val_acc": 0.815, "lr": 5.017367528768013e-07, "epoch_sec": 276.0377924442291}
+[16:21:54] cust_vit: after surgery fp32=0.8095 int=0.8100 cycles=52,054 strict=1,708,230
+[21:27:56] mnv2_050_relu6: intake only, cycles=87,056 strict=569,619 eff=77

@@ -5,6 +5,624 @@
  },
  "records": [
   {
+   "model": "cust_inception",
+   "label": "\uace0\uac1d B \u00b7 Inception-32",
+   "customer": true,
+   "float_acc": 0.8959,
+   "macs": 53971456,
+   "params": 423066,
+   "intake": {
+    "spec": "edge-10tops",
+    "model": {
+     "config": {
+      "arch": "inception",
+      "width": 32,
+      "act": "relu",
+      "num_classes": 10
+     },
+     "params": 423066,
+     "macs": 53971456,
+     "nodes": 38
+    },
+    "receive": {
+     "runs_on_chip": true,
+     "host_fallbacks": [],
+     "ops": [
+      {
+       "op": "conv",
+       "count": 15,
+       "unit": "mac-array",
+       "detail": ""
+      },
+      {
+       "op": "linear",
+       "count": 1,
+       "unit": "mac-array",
+       "detail": ""
+      },
+      {
+       "op": "concat",
+       "count": 3,
+       "unit": "vector",
+       "detail": ""
+      },
+      {
+       "op": "pool",
+       "count": 1,
+       "unit": "vector",
+       "detail": ""
+      },
+      {
+       "op": "act:relu",
+       "count": 15,
+       "unit": "fused",
+       "detail": "relu folded into the requantization clamp"
+      },
+      {
+       "op": "input",
+       "count": 1,
+       "unit": "free",
+       "detail": ""
+      },
+      {
+       "op": "flatten",
+       "count": 1,
+       "unit": "free",
+       "detail": ""
+      },
+      {
+       "op": "output",
+       "count": 1,
+       "unit": "free",
+       "detail": ""
+      }
+     ]
+    },
+    "diagnose": {
+     "cycles": 31224.0,
+     "latency_ms": 0.05204,
+     "array_utilization": 0.21100155329233922,
+     "dram_bytes": 427624,
+     "breakdown": {
+      "input": 0.0,
+      "conv": 30204.0,
+      "act-fused": 0.0,
+      "concat": 224.0,
+      "pool": 32.0,
+      "flatten": 0.0,
+      "linear": 764.0,
+      "output": 0.0
+     },
+     "by_unit": {
+      "mac-array": 30968.0,
+      "vector": 256.0
+     },
+     "bottlenecks": [
+      {
+       "name": "blocks_3_0",
+       "kind": "conv",
+       "cycles": 6936.0,
+       "share": 0.22213681783243658,
+       "bound": "memory",
+       "util": 0.16608996539792387,
+       "note": ""
+      },
+      {
+       "name": "blocks_4_p3_conv",
+       "kind": "conv",
+       "cycles": 6936.0,
+       "share": 0.22213681783243658,
+       "bound": "memory",
+       "util": 0.16608996539792387,
+       "note": ""
+      },
+      {
+       "name": "blocks_0_p3_conv",
+       "kind": "conv",
+       "cycles": 3510.0,
+       "share": 0.11241352805534205,
+       "bound": "compute",
+       "util": 0.3282051282051282,
+       "note": ""
+      }
+     ],
+     "lint": {
+      "scores": {
+       "efficiency": 91.1,
+       "quant_robustness": 96.8,
+       "overall": 91.1
+      },
+      "findings": [
+       {
+        "check": "array-alignment",
+        "severity": "high",
+        "layer": "stem_conv",
+        "message": "MAC-array tile utilization bound 21% (Cout=32, K=27, array 64x64)",
+        "metric": 0.2109375,
+        "suggestion": "Cout=32 fills 50% of 64 columns -> prune/pad Cout to a multiple of 64 (or pick a narrower array); K=27 fills 42% of 64 rows -> Cin*k*k should be a multiple of 64"
+       },
+       {
+        "check": "array-alignment",
+        "severity": "high",
+        "layer": "blocks_0_p1_conv",
+        "message": "MAC-array tile utilization bound 12% (Cout=16, K=32, array 64x64)",
+        "metric": 0.125,
+        "suggestion": "Cout=16 fills 25% of 64 columns -> prune/pad Cout to a multiple of 64 (or pick a narrower array); K=32 fills 50% of 64 rows -> Cin*k*k should be a multiple of 64"
+       },
+       {
+        "check": "array-alignment",
+        "severity": "medium",
+        "layer": "blocks_0_p3_conv",
+        "message": "MAC-array tile utilization bound 45% (Cout=32, K=288, array 64x64)",
+        "metric": 0.45,
+        "suggestion": "Cout=32 fills 50% of 64 columns -> prune/pad Cout to a multiple of 64 (or pick a narrower array)"
+       },
+       {
+        "check": "array-alignment",
+        "severity": "high",
+        "layer": "blocks_0_p5_red",
+        "message": "MAC-array tile utilization bound 6% (Cout=8, K=32, array 64x64)",
+        "metric": 0.0625,
+        "suggestion": "Cout=8 fills 12% of 64 columns -> prune/pad Cout to a multiple of 64 (or pick a narrower array); K=32 fills 50% of 64 rows -> Cin*k*k should be a multiple of 64"
+       },
+       {
+        "check": "array-alignment",
+        "severity": "high",
+        "layer": "blocks_0_p5_conv",
+        "message": "MAC-array tile utilization bound 14% (Cout=16, K=72, array 64x64)",
+        "metric": 0.140625,
+        "suggestion": "Cout=16 fills 25% of 64 columns -> prune/pad Cout to a multiple of 64 (or pick a narrower array); K=72 fills 56% of 64 rows -> Cin*k*k should be a multiple of 64"
+       },
+       {
+        "check": "array-alignment",
+        "severity": "medium",
+        "layer": "blocks_2_p1_conv",
+        "message": "MAC-array tile utilization bound 50% (Cout=32, K=64, array 64x64)",
+        "metric": 0.5,
+        "suggestion": "Cout=32 fills 50% of 64 columns -> prune/pad Cout to a multiple of 64 (or pick a narrower array)"
+       },
+       {
+        "check": "array-alignment",
+        "severity": "high",
+        "layer": "blocks_2_p5_red",
+        "message": "MAC-array tile utilization bound 25% (Cout=16, K=64, array 64x64)",
+        "metric": 0.25,
+        "suggestion": "Cout=16 fills 25% of 64 columns -> prune/pad Cout to a multiple of 64 (or pick a narrower array)"
+       },
+       {
+        "check": "array-alignment",
+        "severity": "medium",
+        "layer": "blocks_2_p5_conv",
+        "message": "MAC-array tile utilization bound 38% (Cout=32, K=144, array 64x64)",
+        "metric": 0.375,
+        "suggestion": "Cout=32 fills 50% of 64 columns -> prune/pad Cout to a multiple of 64 (or pick a narrower array); K=144 fills 75% of 64 rows -> Cin*k*k should be a multiple of 64"
+       },
+       {
+        "check": "array-alignment",
+        "severity": "medium",
+        "layer": "blocks_4_p5_red",
+        "message": "MAC-array tile utilization bound 50% (Cout=32, K=128, array 64x64)",
+        "metric": 0.5,
+        "suggestion": "Cout=32 fills 50% of 64 columns -> prune/pad Cout to a multiple of 64 (or pick a narrower array)"
+       },
+       {
+        "check": "array-alignment",
+        "severity": "high",
+        "layer": "fc",
+        "message": "MAC-array tile utilization bound 16% (Cout=10, K=256, array 64x64)",
+        "metric": 0.15625,
+        "suggestion": "Cout=10 fills 16% of 64 columns -> prune/pad Cout to a multiple of 64 (or pick a narrower array)"
+       },
+       {
+        "check": "stem-underutilization",
+        "severity": "low",
+        "layer": "stem_conv",
+        "message": "first conv has K=27 (Cin=3) -> only 42% of 64 array rows are busy",
+        "metric": 0.421875,
+        "suggestion": "space-to-depth the input (e.g. 2x2 -> Cin=12, K=108) or accept it: it is usually a small share of total cycles"
+       },
+       {
+        "check": "fc-head",
+        "severity": "info",
+        "layer": "fc",
+        "message": "batch-1 fully-connected layer is a GEMV: memory-bound on weights, array mostly idle",
+        "metric": 0.0,
+        "suggestion": "fine for small heads; for large heads keep weights on-chip or batch requests"
+       }
+      ],
+      "counts": {
+       "high": 6,
+       "medium": 6,
+       "low": 13,
+       "info": 4
+      }
+     }
+    },
+    "prescribe": [
+     {
+      "action": "\u2014",
+      "kind": "note",
+      "why": "the structured pruner found no prunable group in this graph: it only cuts channels inside a block (conv -> conv), and every conv here feeds a concat or the residual stream",
+      "cycles": null,
+      "saving": null,
+      "risk": "the tool says what it cannot do rather than staying silent"
+     }
+    ],
+    "alternatives": [
+     {
+      "preset": "pcie-80tops",
+      "cycles": 19992.0,
+      "runs_on_chip": true,
+      "vs_current": 0.6402767102229054,
+      "host_fallbacks": []
+     },
+     {
+      "preset": "edge-10tops-strict",
+      "cycles": 31224.0,
+      "runs_on_chip": true,
+      "vs_current": 1.0,
+      "host_fallbacks": []
+     },
+     {
+      "preset": "tiny-1tops",
+      "cycles": 99068.0,
+      "runs_on_chip": true,
+      "vs_current": 3.172815782731232,
+      "host_fallbacks": []
+     }
+    ],
+    "measured": null
+   },
+   "intake_strict": {
+    "spec": "edge-10tops-strict",
+    "model": {
+     "config": {
+      "arch": "inception",
+      "width": 32,
+      "act": "relu",
+      "num_classes": 10
+     },
+     "params": 423066,
+     "macs": 53971456,
+     "nodes": 38
+    },
+    "receive": {
+     "runs_on_chip": true,
+     "host_fallbacks": [],
+     "ops": [
+      {
+       "op": "conv",
+       "count": 15,
+       "unit": "mac-array",
+       "detail": ""
+      },
+      {
+       "op": "linear",
+       "count": 1,
+       "unit": "mac-array",
+       "detail": ""
+      },
+      {
+       "op": "concat",
+       "count": 3,
+       "unit": "vector",
+       "detail": ""
+      },
+      {
+       "op": "pool",
+       "count": 1,
+       "unit": "vector",
+       "detail": ""
+      },
+      {
+       "op": "act:relu",
+       "count": 15,
+       "unit": "fused",
+       "detail": "relu folded into the requantization clamp"
+      },
+      {
+       "op": "input",
+       "count": 1,
+       "unit": "free",
+       "detail": ""
+      },
+      {
+       "op": "flatten",
+       "count": 1,
+       "unit": "free",
+       "detail": ""
+      },
+      {
+       "op": "output",
+       "count": 1,
+       "unit": "free",
+       "detail": ""
+      }
+     ]
+    },
+    "diagnose": {
+     "cycles": 31224.0,
+     "latency_ms": 0.05204,
+     "array_utilization": 0.21100155329233922,
+     "dram_bytes": 427624,
+     "breakdown": {
+      "input": 0.0,
+      "conv": 30204.0,
+      "act-fused": 0.0,
+      "concat": 224.0,
+      "pool": 32.0,
+      "flatten": 0.0,
+      "linear": 764.0,
+      "output": 0.0
+     },
+     "by_unit": {
+      "mac-array": 30968.0,
+      "vector": 256.0
+     },
+     "bottlenecks": [
+      {
+       "name": "blocks_3_0",
+       "kind": "conv",
+       "cycles": 6936.0,
+       "share": 0.22213681783243658,
+       "bound": "memory",
+       "util": 0.16608996539792387,
+       "note": ""
+      },
+      {
+       "name": "blocks_4_p3_conv",
+       "kind": "conv",
+       "cycles": 6936.0,
+       "share": 0.22213681783243658,
+       "bound": "memory",
+       "util": 0.16608996539792387,
+       "note": ""
+      },
+      {
+       "name": "blocks_0_p3_conv",
+       "kind": "conv",
+       "cycles": 3510.0,
+       "share": 0.11241352805534205,
+       "bound": "compute",
+       "util": 0.3282051282051282,
+       "note": ""
+      }
+     ],
+     "lint": {
+      "scores": {
+       "efficiency": 91.1,
+       "quant_robustness": 96.8,
+       "overall": 91.1
+      },
+      "findings": [
+       {
+        "check": "array-alignment",
+        "severity": "high",
+        "layer": "stem_conv",
+        "message": "MAC-array tile utilization bound 21% (Cout=32, K=27, array 64x64)",
+        "metric": 0.2109375,
+        "suggestion": "Cout=32 fills 50% of 64 columns -> prune/pad Cout to a multiple of 64 (or pick a narrower array); K=27 fills 42% of 64 rows -> Cin*k*k should be a multiple of 64"
+       },
+       {
+        "check": "array-alignment",
+        "severity": "high",
+        "layer": "blocks_0_p1_conv",
+        "message": "MAC-array tile utilization bound 12% (Cout=16, K=32, array 64x64)",
+        "metric": 0.125,
+        "suggestion": "Cout=16 fills 25% of 64 columns -> prune/pad Cout to a multiple of 64 (or pick a narrower array); K=32 fills 50% of 64 rows -> Cin*k*k should be a multiple of 64"
+       },
+       {
+        "check": "array-alignment",
+        "severity": "medium",
+        "layer": "blocks_0_p3_conv",
+        "message": "MAC-array tile utilization bound 45% (Cout=32, K=288, array 64x64)",
+        "metric": 0.45,
+        "suggestion": "Cout=32 fills 50% of 64 columns -> prune/pad Cout to a multiple of 64 (or pick a narrower array)"
+       },
+       {
+        "check": "array-alignment",
+        "severity": "high",
+        "layer": "blocks_0_p5_red",
+        "message": "MAC-array tile utilization bound 6% (Cout=8, K=32, array 64x64)",
+        "metric": 0.0625,
+        "suggestion": "Cout=8 fills 12% of 64 columns -> prune/pad Cout to a multiple of 64 (or pick a narrower array); K=32 fills 50% of 64 rows -> Cin*k*k should be a multiple of 64"
+       },
+       {
+        "check": "array-alignment",
+        "severity": "high",
+        "layer": "blocks_0_p5_conv",
+        "message": "MAC-array tile utilization bound 14% (Cout=16, K=72, array 64x64)",
+        "metric": 0.140625,
+        "suggestion": "Cout=16 fills 25% of 64 columns -> prune/pad Cout to a multiple of 64 (or pick a narrower array); K=72 fills 56% of 64 rows -> Cin*k*k should be a multiple of 64"
+       },
+       {
+        "check": "array-alignment",
+        "severity": "medium",
+        "layer": "blocks_2_p1_conv",
+        "message": "MAC-array tile utilization bound 50% (Cout=32, K=64, array 64x64)",
+        "metric": 0.5,
+        "suggestion": "Cout=32 fills 50% of 64 columns -> prune/pad Cout to a multiple of 64 (or pick a narrower array)"
+       },
+       {
+        "check": "array-alignment",
+        "severity": "high",
+        "layer": "blocks_2_p5_red",
+        "message": "MAC-array tile utilization bound 25% (Cout=16, K=64, array 64x64)",
+        "metric": 0.25,
+        "suggestion": "Cout=16 fills 25% of 64 columns -> prune/pad Cout to a multiple of 64 (or pick a narrower array)"
+       },
+       {
+        "check": "array-alignment",
+        "severity": "medium",
+        "layer": "blocks_2_p5_conv",
+        "message": "MAC-array tile utilization bound 38% (Cout=32, K=144, array 64x64)",
+        "metric": 0.375,
+        "suggestion": "Cout=32 fills 50% of 64 columns -> prune/pad Cout to a multiple of 64 (or pick a narrower array); K=144 fills 75% of 64 rows -> Cin*k*k should be a multiple of 64"
+       },
+       {
+        "check": "array-alignment",
+        "severity": "medium",
+        "layer": "blocks_4_p5_red",
+        "message": "MAC-array tile utilization bound 50% (Cout=32, K=128, array 64x64)",
+        "metric": 0.5,
+        "suggestion": "Cout=32 fills 50% of 64 columns -> prune/pad Cout to a multiple of 64 (or pick a narrower array)"
+       },
+       {
+        "check": "array-alignment",
+        "severity": "high",
+        "layer": "fc",
+        "message": "MAC-array tile utilization bound 16% (Cout=10, K=256, array 64x64)",
+        "metric": 0.15625,
+        "suggestion": "Cout=10 fills 16% of 64 columns -> prune/pad Cout to a multiple of 64 (or pick a narrower array)"
+       },
+       {
+        "check": "stem-underutilization",
+        "severity": "low",
+        "layer": "stem_conv",
+        "message": "first conv has K=27 (Cin=3) -> only 42% of 64 array rows are busy",
+        "metric": 0.421875,
+        "suggestion": "space-to-depth the input (e.g. 2x2 -> Cin=12, K=108) or accept it: it is usually a small share of total cycles"
+       },
+       {
+        "check": "fc-head",
+        "severity": "info",
+        "layer": "fc",
+        "message": "batch-1 fully-connected layer is a GEMV: memory-bound on weights, array mostly idle",
+        "metric": 0.0,
+        "suggestion": "fine for small heads; for large heads keep weights on-chip or batch requests"
+       }
+      ],
+      "counts": {
+       "high": 6,
+       "medium": 6,
+       "low": 13,
+       "info": 4
+      }
+     }
+    },
+    "prescribe": [
+     {
+      "action": "\u2014",
+      "kind": "note",
+      "why": "the structured pruner found no prunable group in this graph: it only cuts channels inside a block (conv -> conv), and every conv here feeds a concat or the residual stream",
+      "cycles": null,
+      "saving": null,
+      "risk": "the tool says what it cannot do rather than staying silent"
+     }
+    ],
+    "alternatives": [
+     {
+      "preset": "pcie-80tops",
+      "cycles": 19992.0,
+      "runs_on_chip": true,
+      "vs_current": 0.6402767102229054,
+      "host_fallbacks": []
+     },
+     {
+      "preset": "edge-10tops",
+      "cycles": 31224.0,
+      "runs_on_chip": true,
+      "vs_current": 1.0,
+      "host_fallbacks": []
+     },
+     {
+      "preset": "tiny-1tops",
+      "cycles": 99068.0,
+      "runs_on_chip": true,
+      "vs_current": 3.172815782731232,
+      "host_fallbacks": []
+     }
+    ],
+    "measured": null
+   },
+   "alternatives": [
+    {
+     "preset": "pcie-80tops",
+     "cycles": 19992.0,
+     "runs_on_chip": true,
+     "vs_current": 0.6402767102229054,
+     "host_fallbacks": []
+    },
+    {
+     "preset": "edge-10tops-strict",
+     "cycles": 31224.0,
+     "runs_on_chip": true,
+     "vs_current": 1.0,
+     "host_fallbacks": []
+    },
+    {
+     "preset": "tiny-1tops",
+     "cycles": 99068.0,
+     "runs_on_chip": true,
+     "vs_current": 3.172815782731232,
+     "host_fallbacks": []
+    }
+   ],
+   "ptq": {
+    "fake_acc": 0.8955,
+    "fake_acc_on_int_subset": 0.9015,
+    "int_acc": 0.9015,
+    "int_eval_images": 2000,
+    "agreement": {
+     "top1_agreement": 1.0,
+     "output_mismatch_frac": 0.3046875,
+     "first_divergence": "stem_conv"
+    },
+    "per_op_agreement": {
+     "input": {
+      "n": 1,
+      "local_mismatch_mean": 0.0,
+      "local_mismatch_max": 0.0,
+      "propagated_mean": 0.0
+     },
+     "conv": {
+      "n": 15,
+      "local_mismatch_mean": 0.0009722391764322917,
+      "local_mismatch_max": 0.0037832260131835938,
+      "propagated_mean": 0.06264025370279948
+     },
+     "concat": {
+      "n": 3,
+      "local_mismatch_mean": 0.0,
+      "local_mismatch_max": 0.0,
+      "propagated_mean": 0.05545894304911295
+     },
+     "pool": {
+      "n": 1,
+      "local_mismatch_mean": 0.0072021484375,
+      "local_mismatch_max": 0.0072021484375,
+      "propagated_mean": 0.044677734375
+     },
+     "flatten": {
+      "n": 1,
+      "local_mismatch_mean": 0.0,
+      "local_mismatch_max": 0.0,
+      "propagated_mean": 0.044677734375
+     },
+     "linear": {
+      "n": 1,
+      "local_mismatch_mean": 0.0015625,
+      "local_mismatch_max": 0.0015625,
+      "propagated_mean": 0.3046875
+     },
+     "output": {
+      "n": 1,
+      "local_mismatch_mean": 0.0,
+      "local_mismatch_max": 0.0,
+      "propagated_mean": 0.3046875
+     }
+    },
+    "agreement_check": {
+     "top1_agreement": 1.0,
+     "output_mismatch_frac": 0.3046875
+    }
+   },
+   "after": null,
+   "minutes": 3.9732303579648334,
+   "provenance": "measured+simulated",
+   "timestamp": "2026-09-10T13:17:00"
+  },
+  {
    "model": "resnet20_relu",
    "label": "\uae30\uc874 \u00b7 ResNet-20 ReLU",
    "customer": false,
@@ -134,7 +752,7 @@
      "lint": {
       "scores": {
        "efficiency": 80.3,
-       "quant_robustness": 96.9,
+       "quant_robustness": 97.1,
        "overall": 80.3
       },
       "findings": [
@@ -237,8 +855,8 @@
       ],
       "counts": {
        "high": 9,
-       "medium": 9,
-       "low": 22,
+       "medium": 8,
+       "low": 23,
        "info": 1
       }
      }
@@ -283,7 +901,8 @@
       "vs_current": 2.549031002121045,
       "host_fallbacks": []
      }
-    ]
+    ],
+    "measured": null
    },
    "intake_strict": {
     "spec": "edge-10tops-strict",
@@ -409,7 +1028,7 @@
      "lint": {
       "scores": {
        "efficiency": 80.3,
-       "quant_robustness": 96.9,
+       "quant_robustness": 97.1,
        "overall": 80.3
       },
       "findings": [
@@ -512,8 +1131,8 @@
       ],
       "counts": {
        "high": 9,
-       "medium": 9,
-       "low": 22,
+       "medium": 8,
+       "low": 23,
        "info": 1
       }
      }
@@ -558,7 +1177,8 @@
       "vs_current": 2.549031002121045,
       "host_fallbacks": []
      }
-    ]
+    ],
+    "measured": null
    },
    "alternatives": [
     {
@@ -586,7 +1206,7 @@
    "ptq": null,
    "after": null,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-08T12:16:23"
+   "timestamp": "2026-09-10T13:17:07"
   },
   {
    "model": "resnet20_silu",
@@ -718,7 +1338,7 @@
      "lint": {
       "scores": {
        "efficiency": 72.3,
-       "quant_robustness": 75.7,
+       "quant_robustness": 75.2,
        "overall": 72.3
       },
       "findings": [
@@ -821,8 +1441,8 @@
       ],
       "counts": {
        "high": 9,
-       "medium": 8,
-       "low": 56,
+       "medium": 9,
+       "low": 55,
        "info": 1
       }
      }
@@ -877,7 +1497,8 @@
        "19x act:silu (silu has no int8 LUT on this NPU)"
       ]
      }
-    ]
+    ],
+    "measured": null
    },
    "intake_strict": {
     "spec": "edge-10tops-strict",
@@ -1006,7 +1627,7 @@
      "lint": {
       "scores": {
        "efficiency": 50.3,
-       "quant_robustness": 87.7,
+       "quant_robustness": 87.2,
        "overall": 50.3
       },
       "findings": [
@@ -1109,8 +1730,8 @@
       ],
       "counts": {
        "high": 28,
-       "medium": 8,
-       "low": 37,
+       "medium": 9,
+       "low": 36,
        "info": 1
       }
      }
@@ -1163,7 +1784,8 @@
       "vs_current": 0.05831631685065906,
       "host_fallbacks": []
      }
-    ]
+    ],
+    "measured": null
    },
    "alternatives": [
     {
@@ -1193,7 +1815,792 @@
    "ptq": null,
    "after": null,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-08T12:16:30"
+   "timestamp": "2026-09-10T13:17:15"
+  },
+  {
+   "model": "cust_vit",
+   "label": "\uace0\uac1d A \u00b7 ViT-128/6",
+   "customer": true,
+   "float_acc": 0.8098,
+   "macs": 57017600,
+   "params": 810890,
+   "intake": {
+    "spec": "edge-10tops",
+    "model": {
+     "config": {
+      "arch": "vit",
+      "dim": 128,
+      "depth": 6,
+      "heads": 4,
+      "patch": 4,
+      "mlp_ratio": 2,
+      "act": "gelu",
+      "num_classes": 10,
+      "img": 32
+     },
+     "params": 810890,
+     "macs": 57017600,
+     "nodes": 154
+    },
+    "receive": {
+     "runs_on_chip": true,
+     "host_fallbacks": [],
+     "ops": [
+      {
+       "op": "linear",
+       "count": 37,
+       "unit": "mac-array",
+       "detail": ""
+      },
+      {
+       "op": "matmul",
+       "count": 12,
+       "unit": "mac-array",
+       "detail": "activation x activation: no static weights to reuse"
+      },
+      {
+       "op": "conv",
+       "count": 1,
+       "unit": "mac-array",
+       "detail": ""
+      },
+      {
+       "op": "act:gelu",
+       "count": 6,
+       "unit": "lut",
+       "detail": "gelu via a 256-entry int8 LUT"
+      },
+      {
+       "op": "transpose",
+       "count": 31,
+       "unit": "vector",
+       "detail": ""
+      },
+      {
+       "op": "add",
+       "count": 13,
+       "unit": "vector",
+       "detail": ""
+      },
+      {
+       "op": "layernorm",
+       "count": 13,
+       "unit": "vector",
+       "detail": "4 vector passes"
+      },
+      {
+       "op": "softmax",
+       "count": 6,
+       "unit": "vector",
+       "detail": "3 vector passes"
+      },
+      {
+       "op": "pool",
+       "count": 1,
+       "unit": "vector",
+       "detail": ""
+      },
+      {
+       "op": "mul",
+       "count": 6,
+       "unit": "fused",
+       "detail": "scalar folded into the requantization multiplier"
+      },
+      {
+       "op": "reshape",
+       "count": 25,
+       "unit": "free",
+       "detail": ""
+      },
+      {
+       "op": "input",
+       "count": 1,
+       "unit": "free",
+       "detail": ""
+      },
+      {
+       "op": "const",
+       "count": 1,
+       "unit": "free",
+       "detail": ""
+      },
+      {
+       "op": "output",
+       "count": 1,
+       "unit": "free",
+       "detail": ""
+      }
+     ]
+    },
+    "diagnose": {
+     "cycles": 52246.0,
+     "latency_ms": 0.08707666666666666,
+     "array_utilization": 0.13321893063583815,
+     "dram_bytes": 827176,
+     "breakdown": {
+      "input": 0.0,
+      "conv": 456.0,
+      "reshape": 0.0,
+      "transpose": 496.0,
+      "const": 0.0,
+      "add": 768.0,
+      "layernorm": 832.0,
+      "linear": 38254.0,
+      "matmul": 10656.0,
+      "mul-fused": 0.0,
+      "softmax": 576.0,
+      "act-lut": 192.0,
+      "pool": 16.0,
+      "output": 0.0
+     },
+     "by_unit": {
+      "mac-array": 49366.0,
+      "vector": 2880.0
+     },
+     "bottlenecks": [
+      {
+       "name": "blocks_0_fc1",
+       "kind": "linear",
+       "cycles": 1584.0,
+       "share": 0.030318110477357118,
+       "bound": "memory",
+       "util": 0.16161616161616163,
+       "note": ""
+      },
+      {
+       "name": "blocks_1_fc1",
+       "kind": "linear",
+       "cycles": 1584.0,
+       "share": 0.030318110477357118,
+       "bound": "memory",
+       "util": 0.16161616161616163,
+       "note": ""
+      },
+      {
+       "name": "blocks_2_fc1",
+       "kind": "linear",
+       "cycles": 1584.0,
+       "share": 0.030318110477357118,
+       "bound": "memory",
+       "util": 0.16161616161616163,
+       "note": ""
+      }
+     ],
+     "lint": {
+      "scores": {
+       "efficiency": 77.9,
+       "quant_robustness": 75.4,
+       "overall": 75.4
+      },
+      "findings": [
+       {
+        "check": "activation-support",
+        "severity": "low",
+        "layer": "blocks_0_act",
+        "message": "gelu runs as an int8 LUT: the pre-activation must be materialised as int8 first (extra quantization point)",
+        "metric": 1.0,
+        "suggestion": "expect a larger fake-quant vs integer gap than for ReLU; consider ReLU/ReLU6 if accuracy allows"
+       },
+       {
+        "check": "activation-support",
+        "severity": "low",
+        "layer": "blocks_1_act",
+        "message": "gelu runs as an int8 LUT: the pre-activation must be materialised as int8 first (extra quantization point)",
+        "metric": 1.0,
+        "suggestion": "expect a larger fake-quant vs integer gap than for ReLU; consider ReLU/ReLU6 if accuracy allows"
+       },
+       {
+        "check": "activation-support",
+        "severity": "low",
+        "layer": "blocks_2_act",
+        "message": "gelu runs as an int8 LUT: the pre-activation must be materialised as int8 first (extra quantization point)",
+        "metric": 1.0,
+        "suggestion": "expect a larger fake-quant vs integer gap than for ReLU; consider ReLU/ReLU6 if accuracy allows"
+       },
+       {
+        "check": "activation-support",
+        "severity": "low",
+        "layer": "blocks_3_act",
+        "message": "gelu runs as an int8 LUT: the pre-activation must be materialised as int8 first (extra quantization point)",
+        "metric": 1.0,
+        "suggestion": "expect a larger fake-quant vs integer gap than for ReLU; consider ReLU/ReLU6 if accuracy allows"
+       },
+       {
+        "check": "activation-support",
+        "severity": "low",
+        "layer": "blocks_4_act",
+        "message": "gelu runs as an int8 LUT: the pre-activation must be materialised as int8 first (extra quantization point)",
+        "metric": 1.0,
+        "suggestion": "expect a larger fake-quant vs integer gap than for ReLU; consider ReLU/ReLU6 if accuracy allows"
+       },
+       {
+        "check": "activation-support",
+        "severity": "low",
+        "layer": "blocks_5_act",
+        "message": "gelu runs as an int8 LUT: the pre-activation must be materialised as int8 first (extra quantization point)",
+        "metric": 1.0,
+        "suggestion": "expect a larger fake-quant vs integer gap than for ReLU; consider ReLU/ReLU6 if accuracy allows"
+       },
+       {
+        "check": "array-alignment",
+        "severity": "low",
+        "layer": "patch_embed",
+        "message": "MAC-array tile utilization bound 75% (Cout=128, K=48, array 64x64)",
+        "metric": 0.75,
+        "suggestion": "K=48 fills 75% of 64 rows -> Cin*k*k should be a multiple of 64"
+       },
+       {
+        "check": "array-alignment",
+        "severity": "high",
+        "layer": "head",
+        "message": "MAC-array tile utilization bound 16% (Cout=10, K=128, array 64x64)",
+        "metric": 0.15625,
+        "suggestion": "Cout=10 fills 16% of 64 columns -> prune/pad Cout to a multiple of 64 (or pick a narrower array)"
+       },
+       {
+        "check": "fc-head",
+        "severity": "info",
+        "layer": "blocks_0_attn_q",
+        "message": "batch-1 fully-connected layer is a GEMV: memory-bound on weights, array mostly idle",
+        "metric": 0.0,
+        "suggestion": "fine for small heads; for large heads keep weights on-chip or batch requests"
+       },
+       {
+        "check": "fc-head",
+        "severity": "info",
+        "layer": "blocks_0_attn_k",
+        "message": "batch-1 fully-connected layer is a GEMV: memory-bound on weights, array mostly idle",
+        "metric": 0.0,
+        "suggestion": "fine for small heads; for large heads keep weights on-chip or batch requests"
+       },
+       {
+        "check": "fc-head",
+        "severity": "info",
+        "layer": "blocks_0_attn_v",
+        "message": "batch-1 fully-connected layer is a GEMV: memory-bound on weights, array mostly idle",
+        "metric": 0.0,
+        "suggestion": "fine for small heads; for large heads keep weights on-chip or batch requests"
+       },
+       {
+        "check": "fc-head",
+        "severity": "info",
+        "layer": "blocks_0_attn_proj",
+        "message": "batch-1 fully-connected layer is a GEMV: memory-bound on weights, array mostly idle",
+        "metric": 0.0,
+        "suggestion": "fine for small heads; for large heads keep weights on-chip or batch requests"
+       }
+      ],
+      "counts": {
+       "high": 1,
+       "medium": 2,
+       "low": 26,
+       "info": 37
+      }
+     }
+    },
+    "prescribe": [
+     {
+      "action": "swap gelu -> relu",
+      "kind": "activation-surgery",
+      "why": "one int8 LUT pass per activation disappears",
+      "cycles": 52054.0,
+      "saving": 0.0036749224821038817,
+      "risk": "needs a short healing fine-tune (E4: 3 epochs recovered the drop)"
+     },
+     {
+      "action": "\u2014",
+      "kind": "note",
+      "why": "the structured pruner found no prunable group in this graph: it only cuts channels inside a block (conv -> conv), and every conv here feeds a concat or the residual stream",
+      "cycles": null,
+      "saving": null,
+      "risk": "the tool says what it cannot do rather than staying silent"
+     }
+    ],
+    "alternatives": [
+     {
+      "preset": "pcie-80tops",
+      "cycles": 32379.094452773617,
+      "runs_on_chip": true,
+      "vs_current": 0.6197430320555376,
+      "host_fallbacks": []
+     },
+     {
+      "preset": "tiny-1tops",
+      "cycles": 164556.0,
+      "runs_on_chip": true,
+      "vs_current": 3.149638249818168,
+      "host_fallbacks": []
+     },
+     {
+      "preset": "edge-10tops-strict",
+      "cycles": 2503878.0,
+      "runs_on_chip": false,
+      "vs_current": 47.92477893044443,
+      "host_fallbacks": [
+       "13x layernorm (layernorm needs exp/rsqrt this NPU does not have)",
+       "6x softmax (softmax needs exp/rsqrt this NPU does not have)",
+       "6x act:gelu (gelu has no int8 LUT on this NPU)"
+      ]
+     }
+    ],
+    "measured": null
+   },
+   "intake_strict": {
+    "spec": "edge-10tops-strict",
+    "model": {
+     "config": {
+      "arch": "vit",
+      "dim": 128,
+      "depth": 6,
+      "heads": 4,
+      "patch": 4,
+      "mlp_ratio": 2,
+      "act": "gelu",
+      "num_classes": 10,
+      "img": 32
+     },
+     "params": 810890,
+     "macs": 57017600,
+     "nodes": 154
+    },
+    "receive": {
+     "runs_on_chip": false,
+     "host_fallbacks": [
+      "13x layernorm (layernorm needs exp/rsqrt this NPU does not have)",
+      "6x softmax (softmax needs exp/rsqrt this NPU does not have)",
+      "6x act:gelu (gelu has no int8 LUT on this NPU)"
+     ],
+     "ops": [
+      {
+       "op": "layernorm",
+       "count": 13,
+       "unit": "host",
+       "detail": "layernorm needs exp/rsqrt this NPU does not have"
+      },
+      {
+       "op": "softmax",
+       "count": 6,
+       "unit": "host",
+       "detail": "softmax needs exp/rsqrt this NPU does not have"
+      },
+      {
+       "op": "act:gelu",
+       "count": 6,
+       "unit": "host",
+       "detail": "gelu has no int8 LUT on this NPU"
+      },
+      {
+       "op": "linear",
+       "count": 37,
+       "unit": "mac-array",
+       "detail": ""
+      },
+      {
+       "op": "matmul",
+       "count": 12,
+       "unit": "mac-array",
+       "detail": "activation x activation: no static weights to reuse"
+      },
+      {
+       "op": "conv",
+       "count": 1,
+       "unit": "mac-array",
+       "detail": ""
+      },
+      {
+       "op": "transpose",
+       "count": 31,
+       "unit": "vector",
+       "detail": ""
+      },
+      {
+       "op": "add",
+       "count": 13,
+       "unit": "vector",
+       "detail": ""
+      },
+      {
+       "op": "pool",
+       "count": 1,
+       "unit": "vector",
+       "detail": ""
+      },
+      {
+       "op": "mul",
+       "count": 6,
+       "unit": "fused",
+       "detail": "scalar folded into the requantization multiplier"
+      },
+      {
+       "op": "reshape",
+       "count": 25,
+       "unit": "free",
+       "detail": ""
+      },
+      {
+       "op": "input",
+       "count": 1,
+       "unit": "free",
+       "detail": ""
+      },
+      {
+       "op": "const",
+       "count": 1,
+       "unit": "free",
+       "detail": ""
+      },
+      {
+       "op": "output",
+       "count": 1,
+       "unit": "free",
+       "detail": ""
+      }
+     ]
+    },
+    "diagnose": {
+     "cycles": 2503878.0,
+     "latency_ms": 4.17313,
+     "array_utilization": 0.0027797505509453736,
+     "dram_bytes": 1531688,
+     "breakdown": {
+      "input": 0.0,
+      "conv": 456.0,
+      "reshape": 0.0,
+      "transpose": 496.0,
+      "const": 0.0,
+      "add": 768.0,
+      "layernorm-fallback": 856960.0,
+      "linear": 52078.0,
+      "matmul": 10656.0,
+      "mul-fused": 0.0,
+      "softmax-fallback": 791040.0,
+      "act-fallback": 791040.0,
+      "pool": 384.0,
+      "output": 0.0
+     },
+     "by_unit": {
+      "mac-array": 63190.0,
+      "vector": 1648.0,
+      "host": 2439040.0
+     },
+     "bottlenecks": [
+      {
+       "name": "softmax",
+       "kind": "softmax-fallback",
+       "cycles": 131840.0,
+       "share": 0.05265432261475998,
+       "bound": "fallback",
+       "util": 0.0,
+       "note": "softmax unsupported -> host fallback"
+      },
+      {
+       "name": "blocks_0_act",
+       "kind": "act-fallback",
+       "cycles": 131840.0,
+       "share": 0.05265432261475998,
+       "bound": "fallback",
+       "util": 0.0,
+       "note": "gelu unsupported -> host fallback"
+      },
+      {
+       "name": "softmax_1",
+       "kind": "softmax-fallback",
+       "cycles": 131840.0,
+       "share": 0.05265432261475998,
+       "bound": "fallback",
+       "util": 0.0,
+       "note": "softmax unsupported -> host fallback"
+      }
+     ],
+     "lint": {
+      "scores": {
+       "efficiency": 30.9,
+       "quant_robustness": 87.4,
+       "overall": 30.9
+      },
+      "findings": [
+       {
+        "check": "activation-support",
+        "severity": "high",
+        "layer": "blocks_0_act",
+        "message": "gelu is not executable on the NPU -> host fallback (DRAM round trip)",
+        "metric": 0.0,
+        "suggestion": "replace with ReLU/ReLU6 (fused) or a LUT-able activation, then heal with a short fine-tune"
+       },
+       {
+        "check": "activation-support",
+        "severity": "high",
+        "layer": "blocks_1_act",
+        "message": "gelu is not executable on the NPU -> host fallback (DRAM round trip)",
+        "metric": 0.0,
+        "suggestion": "replace with ReLU/ReLU6 (fused) or a LUT-able activation, then heal with a short fine-tune"
+       },
+       {
+        "check": "activation-support",
+        "severity": "high",
+        "layer": "blocks_2_act",
+        "message": "gelu is not executable on the NPU -> host fallback (DRAM round trip)",
+        "metric": 0.0,
+        "suggestion": "replace with ReLU/ReLU6 (fused) or a LUT-able activation, then heal with a short fine-tune"
+       },
+       {
+        "check": "activation-support",
+        "severity": "high",
+        "layer": "blocks_3_act",
+        "message": "gelu is not executable on the NPU -> host fallback (DRAM round trip)",
+        "metric": 0.0,
+        "suggestion": "replace with ReLU/ReLU6 (fused) or a LUT-able activation, then heal with a short fine-tune"
+       },
+       {
+        "check": "activation-support",
+        "severity": "high",
+        "layer": "blocks_4_act",
+        "message": "gelu is not executable on the NPU -> host fallback (DRAM round trip)",
+        "metric": 0.0,
+        "suggestion": "replace with ReLU/ReLU6 (fused) or a LUT-able activation, then heal with a short fine-tune"
+       },
+       {
+        "check": "activation-support",
+        "severity": "high",
+        "layer": "blocks_5_act",
+        "message": "gelu is not executable on the NPU -> host fallback (DRAM round trip)",
+        "metric": 0.0,
+        "suggestion": "replace with ReLU/ReLU6 (fused) or a LUT-able activation, then heal with a short fine-tune"
+       },
+       {
+        "check": "array-alignment",
+        "severity": "low",
+        "layer": "patch_embed",
+        "message": "MAC-array tile utilization bound 75% (Cout=128, K=48, array 64x64)",
+        "metric": 0.75,
+        "suggestion": "K=48 fills 75% of 64 rows -> Cin*k*k should be a multiple of 64"
+       },
+       {
+        "check": "array-alignment",
+        "severity": "high",
+        "layer": "head",
+        "message": "MAC-array tile utilization bound 16% (Cout=10, K=128, array 64x64)",
+        "metric": 0.15625,
+        "suggestion": "Cout=10 fills 16% of 64 columns -> prune/pad Cout to a multiple of 64 (or pick a narrower array)"
+       },
+       {
+        "check": "fc-head",
+        "severity": "info",
+        "layer": "blocks_0_attn_q",
+        "message": "batch-1 fully-connected layer is a GEMV: memory-bound on weights, array mostly idle",
+        "metric": 0.0,
+        "suggestion": "fine for small heads; for large heads keep weights on-chip or batch requests"
+       },
+       {
+        "check": "fc-head",
+        "severity": "info",
+        "layer": "blocks_0_attn_k",
+        "message": "batch-1 fully-connected layer is a GEMV: memory-bound on weights, array mostly idle",
+        "metric": 0.0,
+        "suggestion": "fine for small heads; for large heads keep weights on-chip or batch requests"
+       },
+       {
+        "check": "fc-head",
+        "severity": "info",
+        "layer": "blocks_0_attn_v",
+        "message": "batch-1 fully-connected layer is a GEMV: memory-bound on weights, array mostly idle",
+        "metric": 0.0,
+        "suggestion": "fine for small heads; for large heads keep weights on-chip or batch requests"
+       },
+       {
+        "check": "fc-head",
+        "severity": "info",
+        "layer": "blocks_0_attn_proj",
+        "message": "batch-1 fully-connected layer is a GEMV: memory-bound on weights, array mostly idle",
+        "metric": 0.0,
+        "suggestion": "fine for small heads; for large heads keep weights on-chip or batch requests"
+       }
+      ],
+      "counts": {
+       "high": 9,
+       "medium": 2,
+       "low": 18,
+       "info": 37
+      }
+     }
+    },
+    "prescribe": [
+     {
+      "action": "swap gelu -> relu",
+      "kind": "activation-surgery",
+      "why": "the host fallback disappears",
+      "cycles": 1708230.0,
+      "saving": 0.31776628094499815,
+      "risk": "needs a short healing fine-tune (E4: 3 epochs recovered the drop)"
+     },
+     {
+      "action": "\u2014",
+      "kind": "note",
+      "why": "the structured pruner found no prunable group in this graph: it only cuts channels inside a block (conv -> conv), and every conv here feeds a concat or the residual stream",
+      "cycles": null,
+      "saving": null,
+      "risk": "the tool says what it cannot do rather than staying silent"
+     }
+    ],
+    "alternatives": [
+     {
+      "preset": "pcie-80tops",
+      "cycles": 32379.094452773617,
+      "runs_on_chip": true,
+      "vs_current": 0.012931578316824389,
+      "host_fallbacks": []
+     },
+     {
+      "preset": "edge-10tops",
+      "cycles": 52246.0,
+      "runs_on_chip": true,
+      "vs_current": 0.020866032610215034,
+      "host_fallbacks": []
+     },
+     {
+      "preset": "tiny-1tops",
+      "cycles": 164556.0,
+      "runs_on_chip": true,
+      "vs_current": 0.0657204544310865,
+      "host_fallbacks": []
+     }
+    ],
+    "measured": null
+   },
+   "alternatives": [
+    {
+     "preset": "pcie-80tops",
+     "cycles": 32379.094452773617,
+     "runs_on_chip": true,
+     "vs_current": 0.6197430320555376,
+     "host_fallbacks": []
+    },
+    {
+     "preset": "tiny-1tops",
+     "cycles": 164556.0,
+     "runs_on_chip": true,
+     "vs_current": 3.149638249818168,
+     "host_fallbacks": []
+    },
+    {
+     "preset": "edge-10tops-strict",
+     "cycles": 2503878.0,
+     "runs_on_chip": false,
+     "vs_current": 47.92477893044443,
+     "host_fallbacks": [
+      "13x layernorm (layernorm needs exp/rsqrt this NPU does not have)",
+      "6x softmax (softmax needs exp/rsqrt this NPU does not have)",
+      "6x act:gelu (gelu has no int8 LUT on this NPU)"
+     ]
+    }
+   ],
+   "ptq": {
+    "fake_acc": 0.8087,
+    "fake_acc_on_int_subset": 0.8065,
+    "int_acc": 0.808,
+    "int_eval_images": 2000,
+    "agreement": {
+     "top1_agreement": 0.96875,
+     "output_mismatch_frac": 0.74375,
+     "first_divergence": "patch_embed"
+    },
+    "per_op_agreement": {
+     "input": {
+      "n": 1,
+      "local_mismatch_mean": 0.0,
+      "local_mismatch_max": 0.0,
+      "propagated_mean": 0.0
+     },
+     "conv": {
+      "n": 1,
+      "local_mismatch_mean": 0.000408172607421875,
+      "local_mismatch_max": 0.000408172607421875,
+      "propagated_mean": 0.000408172607421875
+     },
+     "const": {
+      "n": 1,
+      "local_mismatch_mean": 0.0,
+      "local_mismatch_max": 0.0,
+      "propagated_mean": 0.0
+     },
+     "add": {
+      "n": 13,
+      "local_mismatch_mean": 7.335956280048077e-07,
+      "local_mismatch_max": 9.5367431640625e-06,
+      "propagated_mean": 0.4853310218224159
+     },
+     "layernorm": {
+      "n": 13,
+      "local_mismatch_mean": 0.24738707909217247,
+      "local_mismatch_max": 0.2610607147216797,
+      "propagated_mean": 0.6177481137789212
+     },
+     "linear": {
+      "n": 37,
+      "local_mismatch_mean": 0.0007880030451594172,
+      "local_mismatch_max": 0.0015625,
+      "propagated_mean": 0.5725181270290065
+     },
+     "matmul": {
+      "n": 12,
+      "local_mismatch_mean": 0.002724329630533854,
+      "local_mismatch_max": 0.00431060791015625,
+      "propagated_mean": 0.5705388387044271
+     },
+     "softmax": {
+      "n": 6,
+      "local_mismatch_mean": 0.0049482981363932295,
+      "local_mismatch_max": 0.008087158203125,
+      "propagated_mean": 0.20806233088175455
+     },
+     "lut": {
+      "n": 6,
+      "local_mismatch_mean": 0.0,
+      "local_mismatch_max": 0.0,
+      "propagated_mean": 0.30006710688273114
+     },
+     "pool": {
+      "n": 1,
+      "local_mismatch_mean": 0.007568359375,
+      "local_mismatch_max": 0.007568359375,
+      "propagated_mean": 0.5733642578125
+     },
+     "output": {
+      "n": 1,
+      "local_mismatch_mean": 0.0,
+      "local_mismatch_max": 0.0,
+      "propagated_mean": 0.74375
+     }
+    },
+    "agreement_check": {
+     "top1_agreement": 0.96875,
+     "output_mismatch_frac": 0.74375
+    }
+   },
+   "after": {
+    "action": "swap {'gelu': 'relu'} + heal 3 epochs",
+    "float_acc": 0.8095,
+    "cycles": 52054.0,
+    "cycles_strict": 1708230.0,
+    "array_utilization": 0.13371030564413877,
+    "lint": {
+     "efficiency": 85.9,
+     "quant_robustness": 97.1,
+     "overall": 85.9
+    },
+    "fake_acc": 0.8096,
+    "fake_acc_on_int_subset": 0.8095,
+    "int_acc": 0.81,
+    "int_eval_images": 2000,
+    "agreement": {
+     "top1_agreement": 0.984375,
+     "output_mismatch_frac": 0.728125,
+     "first_divergence": "patch_embed"
+    }
+   },
+   "minutes": 22.404146818319955,
+   "provenance": "measured+simulated",
+   "timestamp": "2026-09-10T16:21:54"
   },
   {
    "model": "mnv2_050_relu6",
@@ -1521,7 +2928,8 @@
       "vs_current": 6.5431331556699135,
       "host_fallbacks": []
      }
-    ]
+    ],
+    "measured": null
    },
    "intake_strict": {
     "spec": "edge-10tops-strict",
@@ -1843,7 +3251,8 @@
       "vs_current": 0.3520528634051884,
       "host_fallbacks": []
      }
-    ]
+    ],
+    "measured": null
    },
    "alternatives": [
     {
@@ -1871,1416 +3280,7 @@
    "ptq": null,
    "after": null,
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-08T12:17:01"
-  },
-  {
-   "model": "cust_inception",
-   "label": "\uace0\uac1d B \u00b7 Inception-32",
-   "customer": true,
-   "float_acc": 0.9008,
-   "macs": 53971456,
-   "params": 423066,
-   "intake": {
-    "spec": "edge-10tops",
-    "model": {
-     "config": {
-      "arch": "inception",
-      "width": 32,
-      "act": "relu",
-      "num_classes": 10
-     },
-     "params": 423066,
-     "macs": 53971456,
-     "nodes": 38
-    },
-    "receive": {
-     "runs_on_chip": true,
-     "host_fallbacks": [],
-     "ops": [
-      {
-       "op": "conv",
-       "count": 15,
-       "unit": "mac-array",
-       "detail": ""
-      },
-      {
-       "op": "linear",
-       "count": 1,
-       "unit": "mac-array",
-       "detail": ""
-      },
-      {
-       "op": "concat",
-       "count": 3,
-       "unit": "vector",
-       "detail": ""
-      },
-      {
-       "op": "pool",
-       "count": 1,
-       "unit": "vector",
-       "detail": ""
-      },
-      {
-       "op": "act:relu",
-       "count": 15,
-       "unit": "fused",
-       "detail": "relu folded into the requantization clamp"
-      },
-      {
-       "op": "input",
-       "count": 1,
-       "unit": "free",
-       "detail": ""
-      },
-      {
-       "op": "flatten",
-       "count": 1,
-       "unit": "free",
-       "detail": ""
-      },
-      {
-       "op": "output",
-       "count": 1,
-       "unit": "free",
-       "detail": ""
-      }
-     ]
-    },
-    "diagnose": {
-     "cycles": 31224.0,
-     "latency_ms": 0.05204,
-     "array_utilization": 0.21100155329233922,
-     "dram_bytes": 427624,
-     "breakdown": {
-      "input": 0.0,
-      "conv": 30204.0,
-      "act-fused": 0.0,
-      "concat": 224.0,
-      "pool": 32.0,
-      "flatten": 0.0,
-      "linear": 764.0,
-      "output": 0.0
-     },
-     "by_unit": {
-      "mac-array": 30968.0,
-      "vector": 256.0
-     },
-     "bottlenecks": [
-      {
-       "name": "blocks_3_0",
-       "kind": "conv",
-       "cycles": 6936.0,
-       "share": 0.22213681783243658,
-       "bound": "memory",
-       "util": 0.16608996539792387,
-       "note": ""
-      },
-      {
-       "name": "blocks_4_p3_conv",
-       "kind": "conv",
-       "cycles": 6936.0,
-       "share": 0.22213681783243658,
-       "bound": "memory",
-       "util": 0.16608996539792387,
-       "note": ""
-      },
-      {
-       "name": "blocks_0_p3_conv",
-       "kind": "conv",
-       "cycles": 3510.0,
-       "share": 0.11241352805534205,
-       "bound": "compute",
-       "util": 0.3282051282051282,
-       "note": ""
-      }
-     ],
-     "lint": {
-      "scores": {
-       "efficiency": 91.1,
-       "quant_robustness": 96.8,
-       "overall": 91.1
-      },
-      "findings": [
-       {
-        "check": "array-alignment",
-        "severity": "high",
-        "layer": "stem_conv",
-        "message": "MAC-array tile utilization bound 21% (Cout=32, K=27, array 64x64)",
-        "metric": 0.2109375,
-        "suggestion": "Cout=32 fills 50% of 64 columns -> prune/pad Cout to a multiple of 64 (or pick a narrower array); K=27 fills 42% of 64 rows -> Cin*k*k should be a multiple of 64"
-       },
-       {
-        "check": "array-alignment",
-        "severity": "high",
-        "layer": "blocks_0_p1_conv",
-        "message": "MAC-array tile utilization bound 12% (Cout=16, K=32, array 64x64)",
-        "metric": 0.125,
-        "suggestion": "Cout=16 fills 25% of 64 columns -> prune/pad Cout to a multiple of 64 (or pick a narrower array); K=32 fills 50% of 64 rows -> Cin*k*k should be a multiple of 64"
-       },
-       {
-        "check": "array-alignment",
-        "severity": "medium",
-        "layer": "blocks_0_p3_conv",
-        "message": "MAC-array tile utilization bound 45% (Cout=32, K=288, array 64x64)",
-        "metric": 0.45,
-        "suggestion": "Cout=32 fills 50% of 64 columns -> prune/pad Cout to a multiple of 64 (or pick a narrower array)"
-       },
-       {
-        "check": "array-alignment",
-        "severity": "high",
-        "layer": "blocks_0_p5_red",
-        "message": "MAC-array tile utilization bound 6% (Cout=8, K=32, array 64x64)",
-        "metric": 0.0625,
-        "suggestion": "Cout=8 fills 12% of 64 columns -> prune/pad Cout to a multiple of 64 (or pick a narrower array); K=32 fills 50% of 64 rows -> Cin*k*k should be a multiple of 64"
-       },
-       {
-        "check": "array-alignment",
-        "severity": "high",
-        "layer": "blocks_0_p5_conv",
-        "message": "MAC-array tile utilization bound 14% (Cout=16, K=72, array 64x64)",
-        "metric": 0.140625,
-        "suggestion": "Cout=16 fills 25% of 64 columns -> prune/pad Cout to a multiple of 64 (or pick a narrower array); K=72 fills 56% of 64 rows -> Cin*k*k should be a multiple of 64"
-       },
-       {
-        "check": "array-alignment",
-        "severity": "medium",
-        "layer": "blocks_2_p1_conv",
-        "message": "MAC-array tile utilization bound 50% (Cout=32, K=64, array 64x64)",
-        "metric": 0.5,
-        "suggestion": "Cout=32 fills 50% of 64 columns -> prune/pad Cout to a multiple of 64 (or pick a narrower array)"
-       },
-       {
-        "check": "array-alignment",
-        "severity": "high",
-        "layer": "blocks_2_p5_red",
-        "message": "MAC-array tile utilization bound 25% (Cout=16, K=64, array 64x64)",
-        "metric": 0.25,
-        "suggestion": "Cout=16 fills 25% of 64 columns -> prune/pad Cout to a multiple of 64 (or pick a narrower array)"
-       },
-       {
-        "check": "array-alignment",
-        "severity": "medium",
-        "layer": "blocks_2_p5_conv",
-        "message": "MAC-array tile utilization bound 38% (Cout=32, K=144, array 64x64)",
-        "metric": 0.375,
-        "suggestion": "Cout=32 fills 50% of 64 columns -> prune/pad Cout to a multiple of 64 (or pick a narrower array); K=144 fills 75% of 64 rows -> Cin*k*k should be a multiple of 64"
-       },
-       {
-        "check": "array-alignment",
-        "severity": "medium",
-        "layer": "blocks_4_p5_red",
-        "message": "MAC-array tile utilization bound 50% (Cout=32, K=128, array 64x64)",
-        "metric": 0.5,
-        "suggestion": "Cout=32 fills 50% of 64 columns -> prune/pad Cout to a multiple of 64 (or pick a narrower array)"
-       },
-       {
-        "check": "array-alignment",
-        "severity": "high",
-        "layer": "fc",
-        "message": "MAC-array tile utilization bound 16% (Cout=10, K=256, array 64x64)",
-        "metric": 0.15625,
-        "suggestion": "Cout=10 fills 16% of 64 columns -> prune/pad Cout to a multiple of 64 (or pick a narrower array)"
-       },
-       {
-        "check": "stem-underutilization",
-        "severity": "low",
-        "layer": "stem_conv",
-        "message": "first conv has K=27 (Cin=3) -> only 42% of 64 array rows are busy",
-        "metric": 0.421875,
-        "suggestion": "space-to-depth the input (e.g. 2x2 -> Cin=12, K=108) or accept it: it is usually a small share of total cycles"
-       },
-       {
-        "check": "fc-head",
-        "severity": "info",
-        "layer": "fc",
-        "message": "batch-1 fully-connected layer is a GEMV: memory-bound on weights, array mostly idle",
-        "metric": 0.0,
-        "suggestion": "fine for small heads; for large heads keep weights on-chip or batch requests"
-       }
-      ],
-      "counts": {
-       "high": 6,
-       "medium": 6,
-       "low": 13,
-       "info": 4
-      }
-     }
-    },
-    "prescribe": [
-     {
-      "action": "\u2014",
-      "kind": "note",
-      "why": "the structured pruner found no prunable group in this graph: it only cuts channels inside a block (conv -> conv), and every conv here feeds a concat or the residual stream",
-      "cycles": null,
-      "saving": null,
-      "risk": "the tool says what it cannot do rather than staying silent"
-     }
-    ],
-    "alternatives": [
-     {
-      "preset": "pcie-80tops",
-      "cycles": 19992.0,
-      "runs_on_chip": true,
-      "vs_current": 0.6402767102229054,
-      "host_fallbacks": []
-     },
-     {
-      "preset": "edge-10tops-strict",
-      "cycles": 31224.0,
-      "runs_on_chip": true,
-      "vs_current": 1.0,
-      "host_fallbacks": []
-     },
-     {
-      "preset": "tiny-1tops",
-      "cycles": 99068.0,
-      "runs_on_chip": true,
-      "vs_current": 3.172815782731232,
-      "host_fallbacks": []
-     }
-    ]
-   },
-   "intake_strict": {
-    "spec": "edge-10tops-strict",
-    "model": {
-     "config": {
-      "arch": "inception",
-      "width": 32,
-      "act": "relu",
-      "num_classes": 10
-     },
-     "params": 423066,
-     "macs": 53971456,
-     "nodes": 38
-    },
-    "receive": {
-     "runs_on_chip": true,
-     "host_fallbacks": [],
-     "ops": [
-      {
-       "op": "conv",
-       "count": 15,
-       "unit": "mac-array",
-       "detail": ""
-      },
-      {
-       "op": "linear",
-       "count": 1,
-       "unit": "mac-array",
-       "detail": ""
-      },
-      {
-       "op": "concat",
-       "count": 3,
-       "unit": "vector",
-       "detail": ""
-      },
-      {
-       "op": "pool",
-       "count": 1,
-       "unit": "vector",
-       "detail": ""
-      },
-      {
-       "op": "act:relu",
-       "count": 15,
-       "unit": "fused",
-       "detail": "relu folded into the requantization clamp"
-      },
-      {
-       "op": "input",
-       "count": 1,
-       "unit": "free",
-       "detail": ""
-      },
-      {
-       "op": "flatten",
-       "count": 1,
-       "unit": "free",
-       "detail": ""
-      },
-      {
-       "op": "output",
-       "count": 1,
-       "unit": "free",
-       "detail": ""
-      }
-     ]
-    },
-    "diagnose": {
-     "cycles": 31224.0,
-     "latency_ms": 0.05204,
-     "array_utilization": 0.21100155329233922,
-     "dram_bytes": 427624,
-     "breakdown": {
-      "input": 0.0,
-      "conv": 30204.0,
-      "act-fused": 0.0,
-      "concat": 224.0,
-      "pool": 32.0,
-      "flatten": 0.0,
-      "linear": 764.0,
-      "output": 0.0
-     },
-     "by_unit": {
-      "mac-array": 30968.0,
-      "vector": 256.0
-     },
-     "bottlenecks": [
-      {
-       "name": "blocks_3_0",
-       "kind": "conv",
-       "cycles": 6936.0,
-       "share": 0.22213681783243658,
-       "bound": "memory",
-       "util": 0.16608996539792387,
-       "note": ""
-      },
-      {
-       "name": "blocks_4_p3_conv",
-       "kind": "conv",
-       "cycles": 6936.0,
-       "share": 0.22213681783243658,
-       "bound": "memory",
-       "util": 0.16608996539792387,
-       "note": ""
-      },
-      {
-       "name": "blocks_0_p3_conv",
-       "kind": "conv",
-       "cycles": 3510.0,
-       "share": 0.11241352805534205,
-       "bound": "compute",
-       "util": 0.3282051282051282,
-       "note": ""
-      }
-     ],
-     "lint": {
-      "scores": {
-       "efficiency": 91.1,
-       "quant_robustness": 96.8,
-       "overall": 91.1
-      },
-      "findings": [
-       {
-        "check": "array-alignment",
-        "severity": "high",
-        "layer": "stem_conv",
-        "message": "MAC-array tile utilization bound 21% (Cout=32, K=27, array 64x64)",
-        "metric": 0.2109375,
-        "suggestion": "Cout=32 fills 50% of 64 columns -> prune/pad Cout to a multiple of 64 (or pick a narrower array); K=27 fills 42% of 64 rows -> Cin*k*k should be a multiple of 64"
-       },
-       {
-        "check": "array-alignment",
-        "severity": "high",
-        "layer": "blocks_0_p1_conv",
-        "message": "MAC-array tile utilization bound 12% (Cout=16, K=32, array 64x64)",
-        "metric": 0.125,
-        "suggestion": "Cout=16 fills 25% of 64 columns -> prune/pad Cout to a multiple of 64 (or pick a narrower array); K=32 fills 50% of 64 rows -> Cin*k*k should be a multiple of 64"
-       },
-       {
-        "check": "array-alignment",
-        "severity": "medium",
-        "layer": "blocks_0_p3_conv",
-        "message": "MAC-array tile utilization bound 45% (Cout=32, K=288, array 64x64)",
-        "metric": 0.45,
-        "suggestion": "Cout=32 fills 50% of 64 columns -> prune/pad Cout to a multiple of 64 (or pick a narrower array)"
-       },
-       {
-        "check": "array-alignment",
-        "severity": "high",
-        "layer": "blocks_0_p5_red",
-        "message": "MAC-array tile utilization bound 6% (Cout=8, K=32, array 64x64)",
-        "metric": 0.0625,
-        "suggestion": "Cout=8 fills 12% of 64 columns -> prune/pad Cout to a multiple of 64 (or pick a narrower array); K=32 fills 50% of 64 rows -> Cin*k*k should be a multiple of 64"
-       },
-       {
-        "check": "array-alignment",
-        "severity": "high",
-        "layer": "blocks_0_p5_conv",
-        "message": "MAC-array tile utilization bound 14% (Cout=16, K=72, array 64x64)",
-        "metric": 0.140625,
-        "suggestion": "Cout=16 fills 25% of 64 columns -> prune/pad Cout to a multiple of 64 (or pick a narrower array); K=72 fills 56% of 64 rows -> Cin*k*k should be a multiple of 64"
-       },
-       {
-        "check": "array-alignment",
-        "severity": "medium",
-        "layer": "blocks_2_p1_conv",
-        "message": "MAC-array tile utilization bound 50% (Cout=32, K=64, array 64x64)",
-        "metric": 0.5,
-        "suggestion": "Cout=32 fills 50% of 64 columns -> prune/pad Cout to a multiple of 64 (or pick a narrower array)"
-       },
-       {
-        "check": "array-alignment",
-        "severity": "high",
-        "layer": "blocks_2_p5_red",
-        "message": "MAC-array tile utilization bound 25% (Cout=16, K=64, array 64x64)",
-        "metric": 0.25,
-        "suggestion": "Cout=16 fills 25% of 64 columns -> prune/pad Cout to a multiple of 64 (or pick a narrower array)"
-       },
-       {
-        "check": "array-alignment",
-        "severity": "medium",
-        "layer": "blocks_2_p5_conv",
-        "message": "MAC-array tile utilization bound 38% (Cout=32, K=144, array 64x64)",
-        "metric": 0.375,
-        "suggestion": "Cout=32 fills 50% of 64 columns -> prune/pad Cout to a multiple of 64 (or pick a narrower array); K=144 fills 75% of 64 rows -> Cin*k*k should be a multiple of 64"
-       },
-       {
-        "check": "array-alignment",
-        "severity": "medium",
-        "layer": "blocks_4_p5_red",
-        "message": "MAC-array tile utilization bound 50% (Cout=32, K=128, array 64x64)",
-        "metric": 0.5,
-        "suggestion": "Cout=32 fills 50% of 64 columns -> prune/pad Cout to a multiple of 64 (or pick a narrower array)"
-       },
-       {
-        "check": "array-alignment",
-        "severity": "high",
-        "layer": "fc",
-        "message": "MAC-array tile utilization bound 16% (Cout=10, K=256, array 64x64)",
-        "metric": 0.15625,
-        "suggestion": "Cout=10 fills 16% of 64 columns -> prune/pad Cout to a multiple of 64 (or pick a narrower array)"
-       },
-       {
-        "check": "stem-underutilization",
-        "severity": "low",
-        "layer": "stem_conv",
-        "message": "first conv has K=27 (Cin=3) -> only 42% of 64 array rows are busy",
-        "metric": 0.421875,
-        "suggestion": "space-to-depth the input (e.g. 2x2 -> Cin=12, K=108) or accept it: it is usually a small share of total cycles"
-       },
-       {
-        "check": "fc-head",
-        "severity": "info",
-        "layer": "fc",
-        "message": "batch-1 fully-connected layer is a GEMV: memory-bound on weights, array mostly idle",
-        "metric": 0.0,
-        "suggestion": "fine for small heads; for large heads keep weights on-chip or batch requests"
-       }
-      ],
-      "counts": {
-       "high": 6,
-       "medium": 6,
-       "low": 13,
-       "info": 4
-      }
-     }
-    },
-    "prescribe": [
-     {
-      "action": "\u2014",
-      "kind": "note",
-      "why": "the structured pruner found no prunable group in this graph: it only cuts channels inside a block (conv -> conv), and every conv here feeds a concat or the residual stream",
-      "cycles": null,
-      "saving": null,
-      "risk": "the tool says what it cannot do rather than staying silent"
-     }
-    ],
-    "alternatives": [
-     {
-      "preset": "pcie-80tops",
-      "cycles": 19992.0,
-      "runs_on_chip": true,
-      "vs_current": 0.6402767102229054,
-      "host_fallbacks": []
-     },
-     {
-      "preset": "edge-10tops",
-      "cycles": 31224.0,
-      "runs_on_chip": true,
-      "vs_current": 1.0,
-      "host_fallbacks": []
-     },
-     {
-      "preset": "tiny-1tops",
-      "cycles": 99068.0,
-      "runs_on_chip": true,
-      "vs_current": 3.172815782731232,
-      "host_fallbacks": []
-     }
-    ]
-   },
-   "alternatives": [
-    {
-     "preset": "pcie-80tops",
-     "cycles": 19992.0,
-     "runs_on_chip": true,
-     "vs_current": 0.6402767102229054,
-     "host_fallbacks": []
-    },
-    {
-     "preset": "edge-10tops-strict",
-     "cycles": 31224.0,
-     "runs_on_chip": true,
-     "vs_current": 1.0,
-     "host_fallbacks": []
-    },
-    {
-     "preset": "tiny-1tops",
-     "cycles": 99068.0,
-     "runs_on_chip": true,
-     "vs_current": 3.172815782731232,
-     "host_fallbacks": []
-    }
-   ],
-   "ptq": {
-    "fake_acc": 0.9004,
-    "fake_acc_on_int_subset": 0.9065,
-    "int_acc": 0.9075,
-    "int_eval_images": 2000,
-    "agreement": {
-     "top1_agreement": 1.0,
-     "output_mismatch_frac": 0.3046875,
-     "first_divergence": "stem_conv"
-    },
-    "per_op_agreement": {
-     "input": {
-      "n": 1,
-      "local_mismatch_mean": 0.0,
-      "local_mismatch_max": 0.0,
-      "propagated_mean": 0.0,
-      "local_max_abs": 0
-     },
-     "conv": {
-      "n": 15,
-      "local_mismatch_mean": 0.0008331616719563802,
-      "local_mismatch_max": 0.002696990966796875,
-      "propagated_mean": 0.05929632186889648,
-      "local_max_abs": 1
-     },
-     "concat": {
-      "n": 3,
-      "local_mismatch_mean": 0.008648236592610678,
-      "local_mismatch_max": 0.02594470977783203,
-      "propagated_mean": 0.04978783925374349,
-      "local_max_abs": 1
-     },
-     "pool": {
-      "n": 1,
-      "local_mismatch_mean": 0.00677490234375,
-      "local_mismatch_max": 0.00677490234375,
-      "propagated_mean": 0.06005859375,
-      "local_max_abs": 1
-     },
-     "flatten": {
-      "n": 1,
-      "local_mismatch_mean": 0.0,
-      "local_mismatch_max": 0.0,
-      "propagated_mean": 0.06005859375,
-      "local_max_abs": 0
-     },
-     "linear": {
-      "n": 1,
-      "local_mismatch_mean": 0.0015625,
-      "local_mismatch_max": 0.0015625,
-      "propagated_mean": 0.3046875,
-      "local_max_abs": 1
-     },
-     "output": {
-      "n": 1,
-      "local_mismatch_mean": 0.0,
-      "local_mismatch_max": 0.0,
-      "propagated_mean": 0.3046875,
-      "local_max_abs": 0
-     }
-    }
-   },
-   "after": null,
-   "minutes": 3.6389805396397907,
-   "provenance": "measured+simulated",
-   "timestamp": "2026-09-08T23:17:51"
-  },
-  {
-   "model": "cust_vit",
-   "label": "\uace0\uac1d A \u00b7 ViT-128/6",
-   "customer": true,
-   "float_acc": 0.8171,
-   "macs": 57017600,
-   "params": 810890,
-   "intake": {
-    "spec": "edge-10tops",
-    "model": {
-     "config": {
-      "arch": "vit",
-      "dim": 128,
-      "depth": 6,
-      "heads": 4,
-      "patch": 4,
-      "mlp_ratio": 2,
-      "act": "gelu",
-      "num_classes": 10,
-      "img": 32
-     },
-     "params": 810890,
-     "macs": 57017600,
-     "nodes": 154
-    },
-    "receive": {
-     "runs_on_chip": true,
-     "host_fallbacks": [],
-     "ops": [
-      {
-       "op": "linear",
-       "count": 37,
-       "unit": "mac-array",
-       "detail": ""
-      },
-      {
-       "op": "matmul",
-       "count": 12,
-       "unit": "mac-array",
-       "detail": "activation x activation: no static weights to reuse"
-      },
-      {
-       "op": "conv",
-       "count": 1,
-       "unit": "mac-array",
-       "detail": ""
-      },
-      {
-       "op": "act:gelu",
-       "count": 6,
-       "unit": "lut",
-       "detail": "gelu via a 256-entry int8 LUT"
-      },
-      {
-       "op": "transpose",
-       "count": 31,
-       "unit": "vector",
-       "detail": ""
-      },
-      {
-       "op": "add",
-       "count": 13,
-       "unit": "vector",
-       "detail": ""
-      },
-      {
-       "op": "layernorm",
-       "count": 13,
-       "unit": "vector",
-       "detail": "4 vector passes"
-      },
-      {
-       "op": "softmax",
-       "count": 6,
-       "unit": "vector",
-       "detail": "3 vector passes"
-      },
-      {
-       "op": "pool",
-       "count": 1,
-       "unit": "vector",
-       "detail": ""
-      },
-      {
-       "op": "mul",
-       "count": 6,
-       "unit": "fused",
-       "detail": "scalar folded into the requantization multiplier"
-      },
-      {
-       "op": "reshape",
-       "count": 25,
-       "unit": "free",
-       "detail": ""
-      },
-      {
-       "op": "input",
-       "count": 1,
-       "unit": "free",
-       "detail": ""
-      },
-      {
-       "op": "const",
-       "count": 1,
-       "unit": "free",
-       "detail": ""
-      },
-      {
-       "op": "output",
-       "count": 1,
-       "unit": "free",
-       "detail": ""
-      }
-     ]
-    },
-    "diagnose": {
-     "cycles": 52246.0,
-     "latency_ms": 0.08707666666666666,
-     "array_utilization": 0.13321893063583815,
-     "dram_bytes": 827176,
-     "breakdown": {
-      "input": 0.0,
-      "conv": 456.0,
-      "reshape": 0.0,
-      "transpose": 496.0,
-      "const": 0.0,
-      "add": 768.0,
-      "layernorm": 832.0,
-      "linear": 38254.0,
-      "matmul": 10656.0,
-      "mul-fused": 0.0,
-      "softmax": 576.0,
-      "act-lut": 192.0,
-      "pool": 16.0,
-      "output": 0.0
-     },
-     "by_unit": {
-      "mac-array": 49366.0,
-      "vector": 2880.0
-     },
-     "bottlenecks": [
-      {
-       "name": "blocks_0_fc1",
-       "kind": "linear",
-       "cycles": 1584.0,
-       "share": 0.030318110477357118,
-       "bound": "memory",
-       "util": 0.16161616161616163,
-       "note": ""
-      },
-      {
-       "name": "blocks_1_fc1",
-       "kind": "linear",
-       "cycles": 1584.0,
-       "share": 0.030318110477357118,
-       "bound": "memory",
-       "util": 0.16161616161616163,
-       "note": ""
-      },
-      {
-       "name": "blocks_2_fc1",
-       "kind": "linear",
-       "cycles": 1584.0,
-       "share": 0.030318110477357118,
-       "bound": "memory",
-       "util": 0.16161616161616163,
-       "note": ""
-      }
-     ],
-     "lint": {
-      "scores": {
-       "efficiency": 77.9,
-       "quant_robustness": 76.1,
-       "overall": 76.1
-      },
-      "findings": [
-       {
-        "check": "activation-support",
-        "severity": "low",
-        "layer": "blocks_0_act",
-        "message": "gelu runs as an int8 LUT: the pre-activation must be materialised as int8 first (extra quantization point)",
-        "metric": 1.0,
-        "suggestion": "expect a larger fake-quant vs integer gap than for ReLU; consider ReLU/ReLU6 if accuracy allows"
-       },
-       {
-        "check": "activation-support",
-        "severity": "low",
-        "layer": "blocks_1_act",
-        "message": "gelu runs as an int8 LUT: the pre-activation must be materialised as int8 first (extra quantization point)",
-        "metric": 1.0,
-        "suggestion": "expect a larger fake-quant vs integer gap than for ReLU; consider ReLU/ReLU6 if accuracy allows"
-       },
-       {
-        "check": "activation-support",
-        "severity": "low",
-        "layer": "blocks_2_act",
-        "message": "gelu runs as an int8 LUT: the pre-activation must be materialised as int8 first (extra quantization point)",
-        "metric": 1.0,
-        "suggestion": "expect a larger fake-quant vs integer gap than for ReLU; consider ReLU/ReLU6 if accuracy allows"
-       },
-       {
-        "check": "activation-support",
-        "severity": "low",
-        "layer": "blocks_3_act",
-        "message": "gelu runs as an int8 LUT: the pre-activation must be materialised as int8 first (extra quantization point)",
-        "metric": 1.0,
-        "suggestion": "expect a larger fake-quant vs integer gap than for ReLU; consider ReLU/ReLU6 if accuracy allows"
-       },
-       {
-        "check": "activation-support",
-        "severity": "low",
-        "layer": "blocks_4_act",
-        "message": "gelu runs as an int8 LUT: the pre-activation must be materialised as int8 first (extra quantization point)",
-        "metric": 1.0,
-        "suggestion": "expect a larger fake-quant vs integer gap than for ReLU; consider ReLU/ReLU6 if accuracy allows"
-       },
-       {
-        "check": "activation-support",
-        "severity": "low",
-        "layer": "blocks_5_act",
-        "message": "gelu runs as an int8 LUT: the pre-activation must be materialised as int8 first (extra quantization point)",
-        "metric": 1.0,
-        "suggestion": "expect a larger fake-quant vs integer gap than for ReLU; consider ReLU/ReLU6 if accuracy allows"
-       },
-       {
-        "check": "array-alignment",
-        "severity": "low",
-        "layer": "patch_embed",
-        "message": "MAC-array tile utilization bound 75% (Cout=128, K=48, array 64x64)",
-        "metric": 0.75,
-        "suggestion": "K=48 fills 75% of 64 rows -> Cin*k*k should be a multiple of 64"
-       },
-       {
-        "check": "array-alignment",
-        "severity": "high",
-        "layer": "head",
-        "message": "MAC-array tile utilization bound 16% (Cout=10, K=128, array 64x64)",
-        "metric": 0.15625,
-        "suggestion": "Cout=10 fills 16% of 64 columns -> prune/pad Cout to a multiple of 64 (or pick a narrower array)"
-       },
-       {
-        "check": "fc-head",
-        "severity": "info",
-        "layer": "blocks_0_attn_q",
-        "message": "batch-1 fully-connected layer is a GEMV: memory-bound on weights, array mostly idle",
-        "metric": 0.0,
-        "suggestion": "fine for small heads; for large heads keep weights on-chip or batch requests"
-       },
-       {
-        "check": "fc-head",
-        "severity": "info",
-        "layer": "blocks_0_attn_k",
-        "message": "batch-1 fully-connected layer is a GEMV: memory-bound on weights, array mostly idle",
-        "metric": 0.0,
-        "suggestion": "fine for small heads; for large heads keep weights on-chip or batch requests"
-       },
-       {
-        "check": "fc-head",
-        "severity": "info",
-        "layer": "blocks_0_attn_v",
-        "message": "batch-1 fully-connected layer is a GEMV: memory-bound on weights, array mostly idle",
-        "metric": 0.0,
-        "suggestion": "fine for small heads; for large heads keep weights on-chip or batch requests"
-       },
-       {
-        "check": "fc-head",
-        "severity": "info",
-        "layer": "blocks_0_attn_proj",
-        "message": "batch-1 fully-connected layer is a GEMV: memory-bound on weights, array mostly idle",
-        "metric": 0.0,
-        "suggestion": "fine for small heads; for large heads keep weights on-chip or batch requests"
-       }
-      ],
-      "counts": {
-       "high": 1,
-       "medium": 1,
-       "low": 26,
-       "info": 37
-      }
-     }
-    },
-    "prescribe": [
-     {
-      "action": "swap gelu -> relu",
-      "kind": "activation-surgery",
-      "why": "one int8 LUT pass per activation disappears",
-      "cycles": 52054.0,
-      "saving": 0.0036749224821038817,
-      "risk": "needs a short healing fine-tune (E4: 3 epochs recovered the drop)"
-     },
-     {
-      "action": "\u2014",
-      "kind": "note",
-      "why": "the structured pruner found no prunable group in this graph: it only cuts channels inside a block (conv -> conv), and every conv here feeds a concat or the residual stream",
-      "cycles": null,
-      "saving": null,
-      "risk": "the tool says what it cannot do rather than staying silent"
-     }
-    ],
-    "alternatives": [
-     {
-      "preset": "pcie-80tops",
-      "cycles": 27843.094452773617,
-      "runs_on_chip": true,
-      "vs_current": 0.5329229884158331,
-      "host_fallbacks": []
-     },
-     {
-      "preset": "tiny-1tops",
-      "cycles": 164556.0,
-      "runs_on_chip": true,
-      "vs_current": 3.149638249818168,
-      "host_fallbacks": []
-     },
-     {
-      "preset": "edge-10tops-strict",
-      "cycles": 2503878.0,
-      "runs_on_chip": false,
-      "vs_current": 47.92477893044443,
-      "host_fallbacks": [
-       "13x layernorm (layernorm needs exp/rsqrt this NPU does not have)",
-       "6x softmax (softmax needs exp/rsqrt this NPU does not have)",
-       "6x act:gelu (gelu has no int8 LUT on this NPU)"
-      ]
-     }
-    ]
-   },
-   "intake_strict": {
-    "spec": "edge-10tops-strict",
-    "model": {
-     "config": {
-      "arch": "vit",
-      "dim": 128,
-      "depth": 6,
-      "heads": 4,
-      "patch": 4,
-      "mlp_ratio": 2,
-      "act": "gelu",
-      "num_classes": 10,
-      "img": 32
-     },
-     "params": 810890,
-     "macs": 57017600,
-     "nodes": 154
-    },
-    "receive": {
-     "runs_on_chip": false,
-     "host_fallbacks": [
-      "13x layernorm (layernorm needs exp/rsqrt this NPU does not have)",
-      "6x softmax (softmax needs exp/rsqrt this NPU does not have)",
-      "6x act:gelu (gelu has no int8 LUT on this NPU)"
-     ],
-     "ops": [
-      {
-       "op": "layernorm",
-       "count": 13,
-       "unit": "host",
-       "detail": "layernorm needs exp/rsqrt this NPU does not have"
-      },
-      {
-       "op": "softmax",
-       "count": 6,
-       "unit": "host",
-       "detail": "softmax needs exp/rsqrt this NPU does not have"
-      },
-      {
-       "op": "act:gelu",
-       "count": 6,
-       "unit": "host",
-       "detail": "gelu has no int8 LUT on this NPU"
-      },
-      {
-       "op": "linear",
-       "count": 37,
-       "unit": "mac-array",
-       "detail": ""
-      },
-      {
-       "op": "matmul",
-       "count": 12,
-       "unit": "mac-array",
-       "detail": "activation x activation: no static weights to reuse"
-      },
-      {
-       "op": "conv",
-       "count": 1,
-       "unit": "mac-array",
-       "detail": ""
-      },
-      {
-       "op": "transpose",
-       "count": 31,
-       "unit": "vector",
-       "detail": ""
-      },
-      {
-       "op": "add",
-       "count": 13,
-       "unit": "vector",
-       "detail": ""
-      },
-      {
-       "op": "pool",
-       "count": 1,
-       "unit": "vector",
-       "detail": ""
-      },
-      {
-       "op": "mul",
-       "count": 6,
-       "unit": "fused",
-       "detail": "scalar folded into the requantization multiplier"
-      },
-      {
-       "op": "reshape",
-       "count": 25,
-       "unit": "free",
-       "detail": ""
-      },
-      {
-       "op": "input",
-       "count": 1,
-       "unit": "free",
-       "detail": ""
-      },
-      {
-       "op": "const",
-       "count": 1,
-       "unit": "free",
-       "detail": ""
-      },
-      {
-       "op": "output",
-       "count": 1,
-       "unit": "free",
-       "detail": ""
-      }
-     ]
-    },
-    "diagnose": {
-     "cycles": 2503878.0,
-     "latency_ms": 4.17313,
-     "array_utilization": 0.0027797505509453736,
-     "dram_bytes": 1531688,
-     "breakdown": {
-      "input": 0.0,
-      "conv": 456.0,
-      "reshape": 0.0,
-      "transpose": 496.0,
-      "const": 0.0,
-      "add": 768.0,
-      "layernorm-fallback": 856960.0,
-      "linear": 52078.0,
-      "matmul": 10656.0,
-      "mul-fused": 0.0,
-      "softmax-fallback": 791040.0,
-      "act-fallback": 791040.0,
-      "pool": 384.0,
-      "output": 0.0
-     },
-     "by_unit": {
-      "mac-array": 63190.0,
-      "vector": 1648.0,
-      "host": 2439040.0
-     },
-     "bottlenecks": [
-      {
-       "name": "softmax",
-       "kind": "softmax-fallback",
-       "cycles": 131840.0,
-       "share": 0.05265432261475998,
-       "bound": "fallback",
-       "util": 0.0,
-       "note": "softmax unsupported -> host fallback"
-      },
-      {
-       "name": "blocks_0_act",
-       "kind": "act-fallback",
-       "cycles": 131840.0,
-       "share": 0.05265432261475998,
-       "bound": "fallback",
-       "util": 0.0,
-       "note": "gelu unsupported -> host fallback"
-      },
-      {
-       "name": "softmax_1",
-       "kind": "softmax-fallback",
-       "cycles": 131840.0,
-       "share": 0.05265432261475998,
-       "bound": "fallback",
-       "util": 0.0,
-       "note": "softmax unsupported -> host fallback"
-      }
-     ],
-     "lint": {
-      "scores": {
-       "efficiency": 30.9,
-       "quant_robustness": 88.1,
-       "overall": 30.9
-      },
-      "findings": [
-       {
-        "check": "activation-support",
-        "severity": "high",
-        "layer": "blocks_0_act",
-        "message": "gelu is not executable on the NPU -> host fallback (DRAM round trip)",
-        "metric": 0.0,
-        "suggestion": "replace with ReLU/ReLU6 (fused) or a LUT-able activation, then heal with a short fine-tune"
-       },
-       {
-        "check": "activation-support",
-        "severity": "high",
-        "layer": "blocks_1_act",
-        "message": "gelu is not executable on the NPU -> host fallback (DRAM round trip)",
-        "metric": 0.0,
-        "suggestion": "replace with ReLU/ReLU6 (fused) or a LUT-able activation, then heal with a short fine-tune"
-       },
-       {
-        "check": "activation-support",
-        "severity": "high",
-        "layer": "blocks_2_act",
-        "message": "gelu is not executable on the NPU -> host fallback (DRAM round trip)",
-        "metric": 0.0,
-        "suggestion": "replace with ReLU/ReLU6 (fused) or a LUT-able activation, then heal with a short fine-tune"
-       },
-       {
-        "check": "activation-support",
-        "severity": "high",
-        "layer": "blocks_3_act",
-        "message": "gelu is not executable on the NPU -> host fallback (DRAM round trip)",
-        "metric": 0.0,
-        "suggestion": "replace with ReLU/ReLU6 (fused) or a LUT-able activation, then heal with a short fine-tune"
-       },
-       {
-        "check": "activation-support",
-        "severity": "high",
-        "layer": "blocks_4_act",
-        "message": "gelu is not executable on the NPU -> host fallback (DRAM round trip)",
-        "metric": 0.0,
-        "suggestion": "replace with ReLU/ReLU6 (fused) or a LUT-able activation, then heal with a short fine-tune"
-       },
-       {
-        "check": "activation-support",
-        "severity": "high",
-        "layer": "blocks_5_act",
-        "message": "gelu is not executable on the NPU -> host fallback (DRAM round trip)",
-        "metric": 0.0,
-        "suggestion": "replace with ReLU/ReLU6 (fused) or a LUT-able activation, then heal with a short fine-tune"
-       },
-       {
-        "check": "array-alignment",
-        "severity": "low",
-        "layer": "patch_embed",
-        "message": "MAC-array tile utilization bound 75% (Cout=128, K=48, array 64x64)",
-        "metric": 0.75,
-        "suggestion": "K=48 fills 75% of 64 rows -> Cin*k*k should be a multiple of 64"
-       },
-       {
-        "check": "array-alignment",
-        "severity": "high",
-        "layer": "head",
-        "message": "MAC-array tile utilization bound 16% (Cout=10, K=128, array 64x64)",
-        "metric": 0.15625,
-        "suggestion": "Cout=10 fills 16% of 64 columns -> prune/pad Cout to a multiple of 64 (or pick a narrower array)"
-       },
-       {
-        "check": "fc-head",
-        "severity": "info",
-        "layer": "blocks_0_attn_q",
-        "message": "batch-1 fully-connected layer is a GEMV: memory-bound on weights, array mostly idle",
-        "metric": 0.0,
-        "suggestion": "fine for small heads; for large heads keep weights on-chip or batch requests"
-       },
-       {
-        "check": "fc-head",
-        "severity": "info",
-        "layer": "blocks_0_attn_k",
-        "message": "batch-1 fully-connected layer is a GEMV: memory-bound on weights, array mostly idle",
-        "metric": 0.0,
-        "suggestion": "fine for small heads; for large heads keep weights on-chip or batch requests"
-       },
-       {
-        "check": "fc-head",
-        "severity": "info",
-        "layer": "blocks_0_attn_v",
-        "message": "batch-1 fully-connected layer is a GEMV: memory-bound on weights, array mostly idle",
-        "metric": 0.0,
-        "suggestion": "fine for small heads; for large heads keep weights on-chip or batch requests"
-       },
-       {
-        "check": "fc-head",
-        "severity": "info",
-        "layer": "blocks_0_attn_proj",
-        "message": "batch-1 fully-connected layer is a GEMV: memory-bound on weights, array mostly idle",
-        "metric": 0.0,
-        "suggestion": "fine for small heads; for large heads keep weights on-chip or batch requests"
-       }
-      ],
-      "counts": {
-       "high": 9,
-       "medium": 1,
-       "low": 18,
-       "info": 37
-      }
-     }
-    },
-    "prescribe": [
-     {
-      "action": "swap gelu -> relu",
-      "kind": "activation-surgery",
-      "why": "the host fallback disappears",
-      "cycles": 1708230.0,
-      "saving": 0.31776628094499815,
-      "risk": "needs a short healing fine-tune (E4: 3 epochs recovered the drop)"
-     },
-     {
-      "action": "\u2014",
-      "kind": "note",
-      "why": "the structured pruner found no prunable group in this graph: it only cuts channels inside a block (conv -> conv), and every conv here feeds a concat or the residual stream",
-      "cycles": null,
-      "saving": null,
-      "risk": "the tool says what it cannot do rather than staying silent"
-     }
-    ],
-    "alternatives": [
-     {
-      "preset": "pcie-80tops",
-      "cycles": 27843.094452773617,
-      "runs_on_chip": true,
-      "vs_current": 0.011119988455018022,
-      "host_fallbacks": []
-     },
-     {
-      "preset": "edge-10tops",
-      "cycles": 52246.0,
-      "runs_on_chip": true,
-      "vs_current": 0.020866032610215034,
-      "host_fallbacks": []
-     },
-     {
-      "preset": "tiny-1tops",
-      "cycles": 164556.0,
-      "runs_on_chip": true,
-      "vs_current": 0.0657204544310865,
-      "host_fallbacks": []
-     }
-    ]
-   },
-   "alternatives": [
-    {
-     "preset": "pcie-80tops",
-     "cycles": 27843.094452773617,
-     "runs_on_chip": true,
-     "vs_current": 0.5329229884158331,
-     "host_fallbacks": []
-    },
-    {
-     "preset": "tiny-1tops",
-     "cycles": 164556.0,
-     "runs_on_chip": true,
-     "vs_current": 3.149638249818168,
-     "host_fallbacks": []
-    },
-    {
-     "preset": "edge-10tops-strict",
-     "cycles": 2503878.0,
-     "runs_on_chip": false,
-     "vs_current": 47.92477893044443,
-     "host_fallbacks": [
-      "13x layernorm (layernorm needs exp/rsqrt this NPU does not have)",
-      "6x softmax (softmax needs exp/rsqrt this NPU does not have)",
-      "6x act:gelu (gelu has no int8 LUT on this NPU)"
-     ]
-    }
-   ],
-   "ptq": {
-    "fake_acc": 0.8155,
-    "fake_acc_on_int_subset": 0.8155,
-    "int_acc": 0.816,
-    "int_eval_images": 2000,
-    "agreement": {
-     "top1_agreement": 0.96875,
-     "output_mismatch_frac": 0.7140625,
-     "first_divergence": "patch_embed"
-    },
-    "per_op_agreement": {
-     "input": {
-      "n": 1,
-      "local_mismatch_mean": 0.0,
-      "local_mismatch_max": 0.0,
-      "propagated_mean": 0.0,
-      "local_max_abs": 0
-     },
-     "conv": {
-      "n": 1,
-      "local_mismatch_mean": 0.000576019287109375,
-      "local_mismatch_max": 0.000576019287109375,
-      "propagated_mean": 0.000576019287109375,
-      "local_max_abs": 1
-     },
-     "const": {
-      "n": 1,
-      "local_mismatch_mean": 0.0,
-      "local_mismatch_max": 0.0,
-      "propagated_mean": 0.0,
-      "local_max_abs": 0
-     },
-     "add": {
-      "n": 13,
-      "local_mismatch_mean": 0.0,
-      "local_mismatch_max": 0.0,
-      "propagated_mean": 0.4926464374248798,
-      "local_max_abs": 0
-     },
-     "layernorm": {
-      "n": 13,
-      "local_mismatch_mean": 0.24883549030010516,
-      "local_mismatch_max": 0.26515960693359375,
-      "propagated_mean": 0.6310945657583383,
-      "local_max_abs": 1
-     },
-     "linear": {
-      "n": 37,
-      "local_mismatch_mean": 0.0007604908298801731,
-      "local_mismatch_max": 0.0011463165283203125,
-      "propagated_mean": 0.5780600161165804,
-      "local_max_abs": 1
-     },
-     "matmul": {
-      "n": 12,
-      "local_mismatch_mean": 0.0025803248087565103,
-      "local_mismatch_max": 0.004058837890625,
-      "propagated_mean": 0.569602886835734,
-      "local_max_abs": 1
-     },
-     "softmax": {
-      "n": 6,
-      "local_mismatch_mean": 0.003867626190185547,
-      "local_mismatch_max": 0.0059757232666015625,
-      "propagated_mean": 0.22178872426350912,
-      "local_max_abs": 1
-     },
-     "lut": {
-      "n": 6,
-      "local_mismatch_mean": 0.0,
-      "local_mismatch_max": 0.0,
-      "propagated_mean": 0.30281639099121094,
-      "local_max_abs": 0
-     },
-     "pool": {
-      "n": 1,
-      "local_mismatch_mean": 0.007568359375,
-      "local_mismatch_max": 0.007568359375,
-      "propagated_mean": 0.57373046875,
-      "local_max_abs": 1
-     },
-     "output": {
-      "n": 1,
-      "local_mismatch_mean": 0.0,
-      "local_mismatch_max": 0.0,
-      "propagated_mean": 0.7140625,
-      "local_max_abs": 0
-     }
-    }
-   },
-   "after": {
-    "action": "swap {'gelu': 'relu'} + heal 3 epochs",
-    "float_acc": 0.8161,
-    "cycles": 52054.0,
-    "cycles_strict": 1708230.0,
-    "array_utilization": 0.13371030564413877,
-    "lint": {
-     "efficiency": 85.9,
-     "quant_robustness": 98.1,
-     "overall": 85.9
-    },
-    "fake_acc": 0.8168,
-    "fake_acc_on_int_subset": 0.8215,
-    "int_acc": 0.8235,
-    "int_eval_images": 2000,
-    "agreement": {
-     "top1_agreement": 0.984375,
-     "output_mismatch_frac": 0.696875,
-     "first_divergence": "patch_embed"
-    }
-   },
-   "minutes": 15.842678940296173,
-   "provenance": "measured+simulated",
-   "timestamp": "2026-09-09T00:07:15"
+   "timestamp": "2026-09-10T21:27:56"
   }
  ]
 }

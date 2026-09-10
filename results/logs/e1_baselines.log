@@ -1,3 +1,5 @@
-[23:33:24] resnet20_relu: acc=0.9047 MACs=40.8M tiny-1tops:85210cyc edge-10tops:29793cyc pcie-80tops:16591cyc edge-10tops-strict:29793cyc
-[23:46:14] resnet20_relu: acc=0.9047 MACs=40.8M tiny-1tops:87730cyc edge-10tops:34417cyc pcie-80tops:22791cyc edge-10tops-strict:34417cyc
-[13:33:39] mnv2_050_relu6: acc=0.9097 MACs=28.0M tiny-1tops:200536cyc edge-10tops:87056cyc pcie-80tops:67351cyc edge-10tops-strict:569619cyc
+[08:36:25] resnet20_relu: acc=0.8959 MACs=40.8M tiny-1tops:87730cyc edge-10tops:34417cyc pcie-80tops:22791cyc edge-10tops-strict:34417cyc
+[13:19:59] resnet20_silu: acc=0.9034 MACs=40.8M tiny-1tops:90674cyc edge-10tops:34785cyc pcie-80tops:22817cyc edge-10tops-strict:1554865cyc
+[13:20:40] cust_inception: acc=0.8959 MACs=54.0M tiny-1tops:99068cyc edge-10tops:31224cyc pcie-80tops:19992cyc edge-10tops-strict:31224cyc
+[14:35:09] cust_vit: acc=0.8098 MACs=57.0M tiny-1tops:164556cyc edge-10tops:52246cyc pcie-80tops:32379cyc edge-10tops-strict:2503878cyc
+[17:15:54] mnv2_050_relu6: acc=0.9023 MACs=28.0M tiny-1tops:200536cyc edge-10tops:87056cyc pcie-80tops:67351cyc edge-10tops-strict:569619cyc

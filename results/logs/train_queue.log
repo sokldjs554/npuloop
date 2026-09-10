@@ -1,0 +1,11 @@
+=== train resnet20_relu 07:45:17
+=== train resnet20_silu 08:34:39
+=== train cust_inception 10:00:50
+=== train cust_vit 11:34:24
+=== train mnv2_050_relu6 14:11:46
+skip resnet20_relu
+skip resnet20_silu
+skip cust_inception
+skip cust_vit
+=== train mnv2_050_relu6 14:33:47
+=== queue done 17:14:36

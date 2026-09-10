@@ -1,2 +1,10 @@
-{}
-{}
+{
+ "layer_spearman_range_vs_dloss_per-tensor": 0.025280585569884977,
+ "layer_spearman_range_vs_sqnr_per-tensor": 0.4094353433252003,
+ "n_layers_per-tensor": 151,
+ "model_spearman_robustness_vs_drop_per-tensor": 0.8720815992723809,
+ "layer_spearman_range_vs_dloss_npu-default": 0.07676542349250609,
+ "layer_spearman_range_vs_sqnr_npu-default": -0.256392471244336,
+ "n_layers_npu-default": 151,
+ "model_spearman_robustness_vs_drop_npu-default": 0.46169025843831935
+}

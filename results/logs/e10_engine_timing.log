@@ -3,3 +3,8 @@
 [07:39:29] mnv2_050_relu6: numpy 122.96 ms/img, cpp 21.45 ms/img (5.7x), modelled 0.145 ms on edge-10tops
 [07:40:04] cust_vit: numpy 65.24 ms/img, cpp 21.55 ms/img (3.0x), modelled 0.087 ms on edge-10tops
 [07:40:19] cust_inception: numpy 17.83 ms/img, cpp 12.00 ms/img (1.5x), modelled 0.052 ms on edge-10tops
+[21:31:24] resnet20_relu: numpy 20.37 ms/img, cpp 10.46 ms/img (1.9x), modelled 0.057 ms on edge-10tops; output codes differ on 0/2000 images
+[21:33:00] resnet20_silu: numpy 25.88 ms/img, cpp 10.82 ms/img (2.4x), modelled 0.058 ms on edge-10tops; output codes differ on 0/2000 images
+[21:36:43] mnv2_050_relu6: numpy 66.52 ms/img, cpp 20.46 ms/img (3.3x), modelled 0.145 ms on edge-10tops; output codes differ on 0/2000 images
+[21:40:42] cust_vit: numpy 70.82 ms/img, cpp 22.48 ms/img (3.2x), modelled 0.087 ms on edge-10tops; output codes differ on 0/2000 images
+[21:41:56] cust_inception: numpy 18.88 ms/img, cpp 10.67 ms/img (1.8x), modelled 0.052 ms on edge-10tops; output codes differ on 0/2000 images

@@ -12,3 +12,5 @@ data/
 !results/**/*.json
 runs
 data
+results/ALL_DONE
+results/logs/run_v2.out
