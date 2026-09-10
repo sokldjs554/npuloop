@@ -15,6 +15,65 @@ def test_test_split_prefix_is_class_mixed():
     assert np.bincount(ds.y_test).tolist() == [1000] * 10
 
 
+@pytest.mark.skipif(not os.path.exists(DATA), reason="CIFAR-10 npz not available")
+def test_validation_split_is_stratified_disjoint_and_fixed():
+    from npuloop.zoo import CIFAR10NPZ
+    ds = CIFAR10NPZ(DATA)
+    assert len(ds.x_train) == 45000 and len(ds.x_val) == 5000 and len(ds.x_test) == 10000
+    assert np.bincount(ds.y_val).tolist() == [500] * 10                    # 500 held-out images per class
+    assert np.bincount(ds.y_train).tolist() == [4500] * 10
+    assert len(set(ds.y_val[:200].tolist())) == 10                          # prefix is class-mixed
+    again = CIFAR10NPZ(DATA)
+    assert np.array_equal(again.val_idx, ds.val_idx)                       # same hold-out every time
+    # disjoint: no validation image appears in the training split (compare raw bytes of a sample)
+    train_keys = {ds.x_train[i].tobytes() for i in range(0, 45000, 9)}
+    assert sum(ds.x_val[i].tobytes() in train_keys for i in range(500)) == 0
+    val_batches = list(ds.val_batches(1000))
+    assert len(val_batches) == 5 and val_batches[0][0].shape == (1000, 3, 32, 32)
+
+
+class _TinyDataset:
+    """A CIFAR10NPZ look-alike with random uint8 images, small enough for a trainer test to run in seconds."""
+
+    def __init__(self, n_train=256, n_val=64, n_test=64, seed=0):
+        from npuloop.zoo import CIFAR10NPZ
+        rng = np.random.default_rng(seed)
+        mk = lambda n: (rng.integers(0, 255, (n, 32, 32, 3), dtype=np.uint8), rng.integers(0, 10, n))
+        self.x_train, self.y_train = mk(n_train)
+        self.x_val, self.y_val = mk(n_val)
+        self.x_test, self.y_test = mk(n_test)
+        self.to_tensor = CIFAR10NPZ.to_tensor
+        self.batches = CIFAR10NPZ.batches.__get__(self)
+        self.train_batches = CIFAR10NPZ.train_batches.__get__(self)
+        self.test_batches = CIFAR10NPZ.test_batches.__get__(self)
+        self.val_batches = CIFAR10NPZ.val_batches.__get__(self)
+
+
+def test_fit_selects_best_checkpoint_on_validation_split(tmp_path):
+    import json, torch
+    from npuloop.zoo import fit, build_model, load_checkpoint
+    from npuloop.zoo.train import evaluate
+    ds = _TinyDataset()
+    model = build_model(dict(arch="resnet", depth=8, width=4, act="relu"))
+    log = fit(model, ds, epochs=3, lr=0.05, bs=32, seed=0, out=str(tmp_path))
+    assert [e["epoch"] for e in log["epochs"]] == [1, 2, 3]
+    assert all("val_acc" in e and "test_acc" not in e for e in log["epochs"])      # test never scored per epoch
+    vals = [e["val_acc"] for e in log["epochs"]]
+    sel = log["selected_epoch"]
+    assert log["best_val_acc"] == max(vals) and vals[sel - 1] == max(vals)
+    assert sel == max(i + 1 for i, v in enumerate(vals) if v == max(vals))        # ties -> later epoch
+    assert log["splits"] == dict(train=256, val=64, test=64)
+    # best.pt really is the selected epoch: its test accuracy is what the log reports for it
+    best = load_checkpoint(str(tmp_path / "best.pt"))
+    assert evaluate(best, ds) == log["test_acc"]
+    last = load_checkpoint(str(tmp_path / "last.pt"))
+    assert evaluate(last, ds) == log["final_test_acc"]
+    assert json.load(open(tmp_path / "log.json"))["selection"].startswith("best.pt = highest val_acc")
+    # and the caller keeps the final-epoch weights
+    for (k, a), (_, b) in zip(model.state_dict().items(), last.state_dict().items()):
+        assert torch.equal(a.contiguous(), b.contiguous()), k
+
+
 def test_augment_batch_shapes_and_flip():
     from npuloop.zoo import augment_batch
     rng = np.random.default_rng(0)

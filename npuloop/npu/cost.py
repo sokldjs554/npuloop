@@ -163,7 +163,7 @@ def estimate(graph: StaticGraph, spec="edge-10tops") -> CostReport:
                 m, k, n = ho * wo, cin_g * kh * kw, cout
                 groups = node.attrs["groups"]
             else:
-                n, k = node.weight.shape; m = 1; groups = 1
+                n, k = node.weight.shape; m = int(node.attrs.get("tokens", 1)); groups = 1   # token-wise linear = (tokens x k) GEMM
             lc.m, lc.k, lc.n = m, k, n
             live_in = sum(out_bytes[s] for s in node.inputs)
             if node.op == "conv" and node.attrs.get("depthwise"):

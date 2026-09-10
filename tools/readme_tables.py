@@ -3,7 +3,8 @@ import json, os, sys, statistics
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 R = os.path.join(ROOT, "results")
 LABEL = {"resnet20_relu": "ResNet-20 ReLU", "resnet20_silu": "ResNet-20 SiLU", "resnet20_hswish": "ResNet-20 HardSwish",
-         "resnet20_gelu": "ResNet-20 GELU", "mnv2_050_relu6": "MobileNetV2-0.5 ReLU6"}
+         "resnet20_gelu": "ResNet-20 GELU", "mnv2_050_relu6": "MobileNetV2-0.5 ReLU6",
+         "cust_vit": "고객 A · ViT-128/6", "cust_inception": "고객 B · Inception-32"}
 
 
 def load(name):
@@ -23,11 +24,12 @@ def e1():
     rs = load("e1_baselines")["records"]
     if not rs: return ""
     specs = ["tiny-1tops", "edge-10tops", "pcie-80tops"]
-    out = ["| 모델 | 파라미터 | MACs | FP32 acc | " + " | ".join(f"{s} cycles (util)" for s in specs) + " | lint eff / q-rob |", "|---|---|---|---|" + "---|" * len(specs) + "---|"]
+    out = ["| 모델 | 파라미터 | MACs | val acc (선택 epoch) | test acc | " + " | ".join(f"{s} cycles (util)" for s in specs) + " | lint eff / q-rob |", "|---|---|---|---|---|" + "---|" * len(specs) + "---|"]
     for r in rs:
         cells = [f"{r['cost'][s]['total_cycles']:,.0f} ({r['cost'][s]['array_utilization']*100:.0f}%)" for s in specs]
         sc = r["lint"]["edge-10tops"]["scores"]
-        out.append(f"| {LABEL.get(r['model'], r['model'])} | {r['params']:,} | {r['macs']/1e6:.1f}M | {pct(r['float_acc'])} | " + " | ".join(cells) + f" | {sc['efficiency']:.0f} / {sc['quant_robustness']:.0f} |")
+        val = f"{pct(r['val_acc'])} (ep {r['selected_epoch']})" if "val_acc" in r else "—"
+        out.append(f"| {LABEL.get(r['model'], r['model'])} | {r['params']:,} | {r['macs']/1e6:.1f}M | {val} | {pct(r['float_acc'])} | " + " | ".join(cells) + f" | {sc['efficiency']:.0f} / {sc['quant_robustness']:.0f} |")
     return "\n".join(out)
 
 
@@ -186,7 +188,23 @@ def e9():
     return "\n".join(out)
 
 
-TABLES = [("E1", e1), ("E2", e2), ("E3", e3), ("E4", e4), ("E5", e5), ("E6", e6), ("E7", e7), ("E8", e8), ("E9", e9)]
+def e10():
+    rs = load("e10_engine_timing")["records"]
+    if not rs: return ""
+    meta = load("e10_engine_timing").get("meta", {})
+    out = [f"이 호스트({rs[0]['cpu']}, 스레드 1개)에서 {meta.get('batch', 64)}장 배치를 {meta.get('repeats', 5)}회 돌린 중앙값입니다. "
+           "**검증 엔진의 실측이지 NPU 지연이 아닙니다** — 마지막 열은 같은 모델의 비용 모델 값이며 둘은 다른 질문에 답합니다.", "",
+           "| 모델 | 노드 | NumPy 엔진 ms/장 | C++ 엔진 ms/장 | C++/NumPy | 가장 비싼 op (C++ 기준) | 비용 모델 edge-10tops (simulated) |",
+           "|---|---|---|---|---|---|---|"]
+    for r in rs:
+        top = sorted(r["by_op"].items(), key=lambda kv: -kv[1]["cpp_ms"])[:2]
+        top_txt = " · ".join(f"{op} {v['cpp_ms'] / r['cpp']['total_ms'] * 100:.0f}%" for op, v in top)
+        out.append(f"| {LABEL.get(r['model'], r['model'])} | {r['nodes']} | {r['numpy']['per_image_ms']:.1f} | {r['cpp']['per_image_ms']:.1f} | "
+                   f"{r['speedup']:.1f}× | {top_txt} | {r['modelled_cycles']:,.0f} cycles ({r['modelled_latency_ms']:.3f} ms) |")
+    return "\n".join(out)
+
+
+TABLES = [("E1", e1), ("E2", e2), ("E3", e3), ("E4", e4), ("E5", e5), ("E6", e6), ("E7", e7), ("E8", e8), ("E9", e9), ("E10", e10)]
 
 
 def inject(readme_path: str) -> int:

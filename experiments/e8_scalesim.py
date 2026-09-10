@@ -1,7 +1,12 @@
 """E8: validate the analytical compute-cycle model against SCALE-Sim (cycle-accurate systolic simulator, WS dataflow).
 
-For every conv/linear layer of a model, SCALE-Sim's 'Total Cycles' (with CALC bandwidth, i.e. no memory stalls)
+For every dense conv/linear layer of a model, SCALE-Sim's 'Total Cycles' (with CALC bandwidth, i.e. no memory stalls)
 is compared with npuloop's gemm_cycles() for a single-core array of the same size.
+
+Scope: this validates the systolic GEMM cycle model only — dense conv and (token-wise) linear on one core with no
+memory stalls. Depthwise conv goes to the separate depthwise engine in npuloop and has no SCALE-Sim counterpart
+(its conv format has no groups), activation-x-activation matmul, softmax/LayerNorm/add/pool vector passes and the
+DRAM roofline are analytical and not validated here.
 """
 import configparser, csv, os, sys, tempfile, time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -10,7 +15,7 @@ from npuloop.graph import trace
 from npuloop.npu import gemm_cycles, NPUSpec
 
 ARRAYS = [(32, 32), (64, 64), (16, 16)]
-MODELS = os.environ.get("NPULOOP_MODELS", "resnet20_relu,mnv2_050_relu6").split(",")
+MODELS = os.environ.get("NPULOOP_MODELS", "resnet20_relu,mnv2_050_relu6,cust_inception,cust_vit").split(",")
 
 
 def write_config(path, rows, cols, run_name):
@@ -44,7 +49,8 @@ def layers_of(model):
             out.append(dict(name=n.name, ifh=(ho - 1) * s + kh, ifw=(wo - 1) * s + kw, kh=kh, kw=kw, cin=cin, cout=cout, stride=s, m=ho * wo, k=cin * kh * kw, n=cout))
         else:
             cout, k = n.weight.shape
-            out.append(dict(name=n.name, ifh=1, ifw=1, kh=1, kw=1, cin=k, cout=cout, stride=1, m=1, k=k, n=cout))
+            tokens = int(n.attrs.get("tokens", 1))     # a token-wise linear is a (tokens x k) GEMM: ifmap tokens x 1, 1x1 filter
+            out.append(dict(name=n.name, ifh=tokens, ifw=1, kh=1, kw=1, cin=k, cout=cout, stride=1, m=tokens, k=k, n=cout))
     return out
 
 

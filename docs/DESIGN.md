@@ -49,7 +49,7 @@ model ─►│ graph.trace (fx IR)  │─────────────�
 * global avgpool: int32 합 → 반올림 나눗셈(round half away), 스케일 유지.
 * 입력: 호스트가 float → uint8 (round half to even).
 
-## 실험 계획 (E1–E9)
+## 실험 계획 (E1–E10)
 
 | # | 질문 | 방법 |
 |---|---|---|
@@ -62,6 +62,7 @@ model ─►│ graph.trace (fx IR)  │─────────────�
 | E7 | 정수 구현 선택의 정확도 비용 | RequantConfig ablation: 반올림 모드, 곱셈기 비트, 누산기/바이어스 폭 |
 | E8 | 비용 모델은 믿을 만한가 | SCALE-Sim v3(weight-stationary, 사이클 정확) 대조: 총 사이클과 레이어별 오차 |
 | E9 | 고객 모델 인테이크 | 가상 고객 2곳(ViT, concat 분기 CNN)을 접수 → 진단 → 처방 → 적용까지 돌려 예측 절감과 실측 정확도를 나란히 |
+| E10 | 검증 엔진은 얼마나 걸리는가 | NumPy·C++ 비트 정확 엔진의 노드별 wall-clock을 호스트 CPU에서 실측해 같은 노드의 비용 모델 사이클 옆에 둠(실측 vs 모델을 섞지 않기 위해) |
 
 ## 검증 원칙
 

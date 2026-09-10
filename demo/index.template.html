@@ -113,7 +113,7 @@ footer{padding:30px 0 50px;color:var(--muted);font-size:13px;border-top:1px soli
 <header class="top"><div class="wrap">
   <div class="brand">npu<b>loop</b></div>
   <nav>
-    <a href="#intake">Intake</a><a href="#loop">Loop</a><a href="#baselines">Baselines</a><a href="#cost">Cost model</a><a href="#scalesim">vs SCALE-Sim</a><a href="#lint">Lint</a><a href="#ptq">PTQ &amp; bit-exact</a>
+    <a href="#intake">Intake</a><a href="#loop">Loop</a><a href="#baselines">Baselines</a><a href="#cost">Cost model</a><a href="#scalesim">vs SCALE-Sim</a><a href="#timing">Measured</a><a href="#lint">Lint</a><a href="#ptq">PTQ &amp; bit-exact</a>
     <a href="#requant">Requant</a><a href="#surgery">Surgery</a><a href="#calib">Calibration</a><a href="#prune">Pruning</a><a href="#lintvsdrop">Lint vs drop</a><a href="#method">Method</a>
   </nav>
 </div></header>
@@ -190,6 +190,17 @@ footer{padding:30px 0 50px;color:var(--muted);font-size:13px;border-top:1px soli
   <h2><span class="num">E8</span>비용 모델 검증 — SCALE-Sim 대조</h2>
   <p class="sub">해석적 모델의 연산 사이클을 SCALE-Sim v3(사이클 정확 systolic-array 시뮬레이터, weight-stationary, 대역폭 제한 없음)와 레이어별로 비교했습니다. 타일당 <code>M + 2R + C − 2</code> 모델은 세 배열 크기 모두에서 합계 0.03% 이내입니다. 오른쪽 열은 fill/drain 항을 빼면 얼마나 낙관적이 되는지 보여줍니다.</p>
   <div class="panel"><div class="tblwrap" id="ss-table"></div><div id="ss-chart"></div></div>
+  <p class="sub" style="margin-top:10px">검증 범위는 <b>dense conv·linear의 systolic GEMM 사이클</b>(단일 코어, 메모리 스톨 없음)뿐입니다. depthwise 엔진, activation×activation matmul, softmax·LayerNorm·add·pool 벡터 패스, 멀티코어 분할, DRAM roofline은 해석적 값이며 여기서 검증되지 않았습니다.</p>
+</section>
+
+<section id="timing">
+  <h2><span class="num">E10</span>실측 vs 모델 — 검증 엔진의 wall-clock</h2>
+  <p class="sub">이 저장소에서 <b>실측</b>한 시간은 비트 정확 검증 엔진 두 개(NumPy int64 워크, C++ 커널)가 호스트 CPU에서 도는 시간뿐이고, NPU 사이클은 전부 <b>모델</b> 값입니다. 둘을 섞어 읽지 않도록 같은 모델·같은 노드에 대해 나란히 둡니다. 처음 잰 C++ 엔진은 순진한 7중 루프라 NumPy(내부는 torch conv2d)보다 3배 느렸고, im2col + int32 GEMM으로 고친 뒤의 값입니다.</p>
+  <div class="panel">
+    <div class="tblwrap" id="tm-table"></div>
+    <div class="row" style="margin-top:12px"><label class="ctrl">model<select id="tm-model"></select></label><div class="stats" id="tm-stats" style="margin:0"></div></div>
+    <div class="tblwrap" id="tm-nodes"></div>
+  </div>
 </section>
 
 <section id="lint">
@@ -371,6 +382,8 @@ section('intake', function(){
         '</table></div>'+
         `<div class="why" style="color:var(--muted);font-size:12.5px;margin-top:4px">최종 top-1 일치 <b>${fmt.pct(rec.ptq.agreement.top1_agreement,1)}</b> · 출력 코드 <b>${fmt.pct(rec.ptq.agreement.output_mismatch_frac,0)}</b> 불일치 · INT8 정확도 <b>${fmt.pct(rec.ptq.int_acc)}</b></div>`;
     }
+    const tm=((R.e10_engine_timing||{}).records||[]).find(x=>x.model===rec.model);
+    if(tm) g+=`<div class="why" style="color:var(--muted);font-size:12.5px;margin-top:8px">이 호스트에서 실측(검증 엔진, NPU 지연 아님): NumPy <b>${tm.numpy.per_image_ms.toFixed(1)} ms/장</b> · C++ <b>${tm.cpp.per_image_ms.toFixed(1)} ms/장</b> · 위 사이클은 모델 값 → <a href="#timing">E10</a></div>`;
     $('ik-diagnose').innerHTML=g;
 
     // 3. prescribe (+ measured before/after when the surgery was actually run)
@@ -443,6 +456,21 @@ section('scalesim', function(){ const e8=(R.e8_scalesim||{}).records||[]; if(!e8
   [0,.5,1].forEach(tt=>{ sv(s,'line',{x1:left,x2:w-right,y1:ys(maxv*tt),y2:ys(maxv*tt),class:'grid'}); sv(s,'text',{x:left-6,y:ys(maxv*tt)+4,'text-anchor':'end'},fmt.n(maxv*tt)); });
   rows.forEach((x,i)=>{ const cx=left+i*bw; const g=sv(s,'g',{}); sv(g,'rect',{x:cx+1,y:ys(x.scalesim_cycles),width:bw*0.45,height:Math.max(0,ys(0)-ys(x.scalesim_cycles)),fill:'var(--c5)'}); sv(g,'rect',{x:cx+1+bw*0.47,y:ys(x.ours_cycles),width:bw*0.45,height:Math.max(0,ys(0)-ys(x.ours_cycles)),fill:'var(--c1)'}); sv(g,'title',{},`${x.layer}: SCALE-Sim ${fmt.n(x.scalesim_cycles)} · npuloop ${fmt.n(x.ours_cycles)} (ratio ${x.ratio.toFixed(3)}) M=${x.m} K=${x.k} N=${x.n}`); sv(s,'text',{x:cx+bw/2,y:h-bottom+8,'text-anchor':'end',transform:`rotate(-55 ${cx+bw/2} ${h-bottom+8})`,style:'font-size:9.5px'},x.layer.replace('blocks_','b')); });
   $('ss-chart').innerHTML=''; $('ss-chart').appendChild(s); $('ss-chart').appendChild(el('div',{class:'legend'},`<span><i style="background:var(--c5)"></i>SCALE-Sim (${r.rows}×${r.cols})</span><span><i style="background:var(--c1)"></i>npuloop analytical</span>`)); });
+
+// ---------- measured engine timing (E10) ----------
+section('timing', function(){ const rs=(R.e10_engine_timing||{}).records||[]; const meta=(R.e10_engine_timing||{}).meta||{}; if(!rs.length){ $('tm-table').innerHTML='<span class="empty">E10 not run yet</span>'; return; }
+  const t=el('table'); t.innerHTML=`<tr><th>model</th><th>nodes</th><th>NumPy engine ms/image</th><th>C++ engine ms/image</th><th>C++ / NumPy</th><th>modelled edge-10tops (simulated)</th></tr>`+
+    rs.map(r=>`<tr><td>${ml(r.model)}</td><td>${r.nodes}</td><td>${r.numpy.per_image_ms.toFixed(1)}</td><td>${r.cpp.per_image_ms.toFixed(1)}</td><td>${r.speedup.toFixed(1)}×</td><td>${fmt.n(r.modelled_cycles)} cycles · ${r.modelled_latency_ms.toFixed(3)} ms</td></tr>`).join('');
+  $('tm-table').innerHTML=''; $('tm-table').appendChild(t);
+  $('tm-table').appendChild(el('div',{class:'legend'},`<span>${rs[0].cpu} · 1 thread · batch ${meta.batch||rs[0].batch} · median of ${meta.repeats||'n'} passes</span>`));
+  fillSelect($('tm-model'),rs.map(r=>r.model),rs.map(r=>ml(r.model)));
+  function render(){ const r=rs.find(x=>x.model===$('tm-model').value)||rs[0];
+    const ops=Object.entries(r.by_op).sort((a,b)=>b[1].cpp_ms-a[1].cpp_ms);
+    $('tm-stats').innerHTML=ops.slice(0,4).map(([op,v])=>`<span>${op} <b>${fmt.pct(v.cpp_ms/r.cpp.total_ms,0)}</b> of C++ time · <b>${fmt.pct(v.cycles/(r.modelled_cycles||1),0)}</b> of modelled cycles</span>`).join('');
+    const n=el('table'); n.innerHTML='<tr><th>node</th><th>op</th><th>NumPy ms</th><th>C++ ms</th><th>modelled cycles</th><th>share</th></tr>'+
+      r.top_nodes.map(x=>`<tr><td>${x.name}</td><td>${x.op}</td><td>${x.numpy_ms.toFixed(2)}</td><td>${x.cpp_ms.toFixed(2)}</td><td>${x.cycles!=null?fmt.n(x.cycles):'—'}</td><td>${x.cycle_share!=null?fmt.pct(x.cycle_share,1):'—'}</td></tr>`).join('');
+    $('tm-nodes').innerHTML=''; $('tm-nodes').appendChild(n); }
+  $('tm-model').addEventListener('change',render); render(); });
 
 // ---------- lint ----------
 section('lint', function(){ const e1=(R.e1_baselines||{}).records||[]; if(!e1.length){ $('li-score').innerHTML='<span class="empty">E1 not run yet</span>'; return; }

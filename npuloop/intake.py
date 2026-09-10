@@ -182,14 +182,41 @@ def alternatives(model: nn.Module, spec, input_shape=(3, 32, 32)) -> list[dict]:
     return sorted(rows, key=lambda r: r["cycles"])
 
 
+def measured_block(model: nn.Module, ds, cost, images: int = 64, repeats: int = 3, scheme: str = "npu-default",
+                   calib_images: int = 512, top: int = 8) -> dict[str, Any]:
+    """Host-CPU wall-clock of the bit-exact reference engines on `images` test images, joined with modelled cycles.
+
+    Not NPU latency: it measures how long verification takes on this machine (single thread), so the modelled
+    column is never mistaken for a measurement.
+    """
+    from .quant import prepare, calibrate, PRESET_SCHEMES
+    from .intengine import export_int_graph, bench_engines, layer_table
+    torch.set_num_threads(1)
+    qm = prepare(model, PRESET_SCHEMES[scheme])
+    calibrate(qm, [ds.calib_batch(calib_images // 2, seed=s) for s in range(2)])
+    ig = export_int_graph(qm)
+    x, _ = next(ds.test_batches(images))
+    b = bench_engines(ig, x.numpy(), repeats=repeats)
+    rows = layer_table(ig, b, cost, top=top)
+    return dict(batch=b["batch"], repeats=b["repeats"], cpu=b["cpu"], threads=b["threads"], scheme=scheme,
+                engines={k: dict(total_ms=v["total_ms"], per_image_ms=v["per_image_ms"], images_per_s=v["images_per_s"])
+                         for k, v in b["engines"].items()},
+                speedup=b.get("speedup"), top_nodes=rows)
+
+
 def intake_report(model: nn.Module, spec="edge-10tops", calib: np.ndarray | None = None,
-                  input_shape=(3, 32, 32), with_prescriptions: bool = True) -> dict[str, Any]:
-    """The full receive -> diagnose -> prescribe report as a JSON-friendly dict."""
+                  input_shape=(3, 32, 32), with_prescriptions: bool = True, bench: int = 0, bench_data=None) -> dict[str, Any]:
+    """The full receive -> diagnose -> prescribe report as a JSON-friendly dict.
+
+    `bench=N` (with `bench_data`, a CIFAR10NPZ) adds a `measured` block: host-CPU wall-clock of the NumPy and C++
+    reference engines on N test images, per node, next to the modelled cycles of the same node.
+    """
     spec = get_spec(spec)
     graph = trace(model, input_shape)
     cost = estimate(graph, spec)
     lr = lint(graph, spec, calib)
     ok, reasons = can_run(graph, spec)
+    measured = measured_block(model, bench_data, cost, images=bench) if (bench and bench_data is not None) else None
     return dict(
         spec=spec.name,
         model=dict(config=getattr(model, "config", None),
@@ -203,6 +230,7 @@ def intake_report(model: nn.Module, spec="edge-10tops", calib: np.ndarray | None
                                 counts=lr.counts())),
         prescribe=prescriptions(model, spec, input_shape) if with_prescriptions else [],
         alternatives=alternatives(model, spec, input_shape) if with_prescriptions else [],
+        measured=measured,
     )
 
 
@@ -240,6 +268,20 @@ def render(report: dict) -> str:
             cyc = f"{p['cycles']:,.0f}" if p["cycles"] else "—"
             sav = f"{p['saving'] * 100:.0f}%" if p["saving"] else "—"
             lines.append(f"| {p['action']} | {cyc} | {sav} | {p['why']} | {p['risk']} |")
+    if report.get("measured"):
+        mb = report["measured"]; e = mb["engines"]
+        lines += ["", "## 4. Measured on this host (verification engines, not NPU latency)", "",
+                  f"batch {mb['batch']} · median of {mb['repeats']} passes · 1 thread on {mb['cpu']}", ""]
+        for name, r in e.items():
+            lines.append(f"- {name}: {r['per_image_ms']:.3f} ms/image ({r['images_per_s']:.0f} images/s)")
+        if mb.get("speedup"):
+            lines.append(f"- C++ / NumPy speed-up: {mb['speedup']:.1f}x")
+        lines += ["", "| node | op | " + " | ".join(f"{n} ms" for n in e) + " | modelled cycles | share |",
+                  "|---|---|" + "---|" * (len(e) + 2)]
+        for r in mb["top_nodes"]:
+            cyc = f"{r['cycles']:,.0f}" if r["cycles"] is not None else "—"
+            share = f"{r['cycle_share'] * 100:.1f}%" if r["cycle_share"] is not None else "—"
+            lines.append(f"| `{r['name']}` | {r['op']} | " + " | ".join(f"{r[f'{n}_ms']:.3f}" for n in e) + f" | {cyc} | {share} |")
     if report.get("alternatives"):
         lines += ["", "Same model, other presets (a hardware answer, not a model change):", "",
                   "| preset | cycles | vs current | runs on-chip |", "|---|---|---|---|"]

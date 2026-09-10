@@ -178,11 +178,12 @@ def calibrate_sequential(gm: fx.GraphModule, batches: list[torch.Tensor]) -> fx.
 
 
 @torch.no_grad()
-def evaluate(gm: nn.Module, ds, batch_size: int = 500, channels_last: bool = False, limit: int | None = None) -> float:
-    """Top-1 accuracy on the test split (optionally only the first `limit` images)."""
+def evaluate(gm: nn.Module, ds, batch_size: int = 500, channels_last: bool = False, limit: int | None = None,
+             split: str = "test") -> float:
+    """Top-1 accuracy on the 'test' (default) or 'val' split (optionally only its first `limit` images)."""
     gm.eval()
     correct = 0; total = 0
-    for xb, yb in ds.test_batches(batch_size):
+    for xb, yb in ds.batches(split, batch_size):
         if channels_last:
             xb = xb.to(memory_format=torch.channels_last)
         correct += (gm(xb).argmax(1) == yb).sum().item(); total += len(yb)

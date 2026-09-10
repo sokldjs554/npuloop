@@ -210,9 +210,10 @@ class NumpyEngine:
         out = self.run(codes)
         return dequantize(out, self.g["output"].out_q)
 
-    def evaluate(self, ds, batch_size: int = 500, limit: int | None = None) -> float:
+    def evaluate(self, ds, batch_size: int = 500, limit: int | None = None, split: str = "test") -> float:
+        """Top-1 accuracy of the integer graph on the 'test' (default) or 'val' split."""
         correct = 0; total = 0
-        for xb, yb in ds.test_batches(batch_size):
+        for xb, yb in ds.batches(split, batch_size):
             logits = self.predict(xb.numpy())
             correct += int((logits.argmax(1) == yb.numpy()).sum()); total += len(yb)
             if limit and total >= limit:

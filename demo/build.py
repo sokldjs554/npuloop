@@ -23,7 +23,7 @@ def layer_descriptors(model):
             d.update(m=ho * wo, k=cin_g * kh * kw, n=cout, macs=n.macs, groups=n.attrs["groups"], depthwise=bool(n.attrs["depthwise"]),
                      kh=kh, kw=kw, weight_bytes=int(n.weight.size) + 4 * cout)
         elif n.op == "linear":
-            d.update(m=1, k=int(n.weight.shape[1]), n=int(n.weight.shape[0]), macs=n.macs, groups=1, depthwise=False, kh=1, kw=1,
+            d.update(m=int(n.attrs.get("tokens", 1)), k=int(n.weight.shape[1]), n=int(n.weight.shape[0]), macs=n.macs, groups=1, depthwise=False, kh=1, kw=1,
                      weight_bytes=int(n.weight.size) + 4 * int(n.weight.shape[0]))
         elif n.op == "act":
             d.update(kind=n.attrs["kind"])

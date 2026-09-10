@@ -50,6 +50,11 @@ flowchart LR
 숫자는 전부 `results/*.json`에서 `tools/readme_tables.py --inject README.md`로 생성한 것입니다. 정확도는 test 10,000장 기준이며,
 `simulated`로 표시한 사이클·활용률은 가상 NPU 비용 모델 값입니다.
 
+**데이터 분할과 체크포인트 선택.** CIFAR-10의 공식 학습 50,000장을 고정 시드로 **학습 45,000장 / 검증 5,000장**(클래스별 500장, 층화)으로
+한 번 나눴습니다(`npuloop/zoo/data.py`). 학습 중 체크포인트 선택(`best.pt` = 검증 정확도가 가장 높은 epoch)과 학습 시점의 모든 결정은
+검증 분할로만 하고, test 10,000장은 선택된 체크포인트에 대해 마지막에 한 번 평가합니다. 캘리브레이션 이미지도 학습 분할에서만 뽑습니다.
+QAT·healing·프루닝 후 미세조정은 마지막 epoch 모델을 그대로 쓰므로(선택 없음) test를 들여다볼 기회가 없습니다.
+
 ### E9. 고객 모델 인테이크 — 이 프로젝트가 답하는 질문
 
 가상 고객 두 곳이 체크포인트를 보내왔다고 가정했습니다. **고객 A는 ViT**(attention 12개, LayerNorm 13개, GELU),
@@ -96,14 +101,14 @@ flowchart LR
 ResNet-20의 16/32 채널은 64폭 배열의 열을 1/4~1/2밖에 채우지 못해 2코어 64×64(edge-10tops)에서 배열 활용률이 14%, 8코어(pcie-80tops)에서는 5%까지 떨어지고, 32×32 배열(tiny-1tops)에서는 45%로 올라갑니다.
 지연 시간은 큰 NPU가 짧지만 실리콘의 대부분이 놀고 있다는 뜻이고, "작은 모델에는 큰 배열이 낭비"라는 것이 첫 번째 관찰입니다.
 SiLU 모델은 strict 프리셋(LUT 없음, 호스트 폴백)에서 사이클이 45배로 뛰고 lint의 효율성·강건성 점수가 모두 떨어집니다.
-FP32 정확도는 분석 대상 체크포인트(`best.pt`)를 그대로 다시 평가한 값이라 E2·E4·E6의 FP32와 정확히 같습니다.
+FP32 정확도는 분석 대상 체크포인트(`best.pt`, 검증 정확도 기준으로 고른 epoch)를 test에서 다시 평가한 값이라 E2·E4·E6의 FP32와 정확히 같습니다.
 
 <!-- TABLE:E1 -->
-| 모델 | 파라미터 | MACs | FP32 acc | tiny-1tops cycles (util) | edge-10tops cycles (util) | pcie-80tops cycles (util) | lint eff / q-rob |
-|---|---|---|---|---|---|---|---|
-| ResNet-20 ReLU | 272,474 | 40.8M | 90.47% | 87,730 (45%) | 34,417 (14%) | 22,791 (5%) | 80 / 97 |
-| ResNet-20 SiLU | 272,474 | 40.8M | 90.50% | 90,674 (44%) | 34,785 (14%) | 22,817 (5%) | 72 / 75 |
-| MobileNetV2-0.5 ReLU6 | 700,490 | 28.0M | 91.01% | 200,536 (12%) | 87,056 (3%) | 67,351 (1%) | 77 / 98 |
+| 모델 | 파라미터 | MACs | val acc (선택 epoch) | test acc | tiny-1tops cycles (util) | edge-10tops cycles (util) | pcie-80tops cycles (util) | lint eff / q-rob |
+|---|---|---|---|---|---|---|---|---|
+| ResNet-20 ReLU | 272,474 | 40.8M | — | 90.47% | 87,730 (45%) | 34,417 (14%) | 22,791 (5%) | 80 / 97 |
+| ResNet-20 SiLU | 272,474 | 40.8M | — | 90.50% | 90,674 (44%) | 34,785 (14%) | 22,817 (5%) | 72 / 75 |
+| MobileNetV2-0.5 ReLU6 | 700,490 | 28.0M | — | 91.01% | 200,536 (12%) | 87,056 (3%) | 67,351 (1%) | 77 / 98 |
 <!-- /TABLE:E1 -->
 
 ### E8. 비용 모델은 믿을 만한가 — SCALE-Sim 대조
@@ -112,13 +117,37 @@ FP32 정확도는 분석 대상 체크포인트(`best.pt`)를 그대로 다시 �
 처음 만든 모델(타일당 `M + R + C`)은 10~13% 낙관적이었고, SCALE-Sim의 per-fold 사이클을 뜯어보니 가중치 타일을 배열에 싣는 `R` 사이클이 빠져 있었습니다.
 `M + 2R + C − 2`로 고친 뒤에는 세 배열 크기 모두에서 합계 0.03%, 최악 레이어 0.5%(FC의 off-by-one) 이내입니다.
 
+**검증 범위는 systolic GEMM 사이클뿐입니다.** dense conv와 (토큰 단위) linear를 단일 코어, 메모리 스톨 없음 조건으로 대조한 것이고,
+depthwise conv(npuloop에서는 별도 depthwise 엔진, SCALE-Sim의 conv 형식에는 groups가 없음), activation×activation matmul,
+softmax·LayerNorm·add·pool 같은 벡터 패스, 멀티코어 분할, DRAM roofline은 해석적 값 그대로이며 여기서 검증되지 않았습니다.
+
 <!-- TABLE:E8 -->
 | 모델 | 배열 | SCALE-Sim cycles | npuloop cycles | 비율 | 최악 레이어 오차 | fill/drain 없이 |
 |---|---|---|---|---|---|---|
 | ResNet-20 ReLU | 32×32 | 84,276 | 84,298 | 1.0003 | 0.5% | 0.683 |
 | ResNet-20 ReLU | 64×64 | 49,123 | 49,145 | 1.0004 | 0.5% | 0.614 |
 | ResNet-20 ReLU | 16×16 | 208,486 | 208,508 | 1.0001 | 0.5% | 0.766 |
+| MobileNetV2-0.5 ReLU6 | 32×32 | 108,030 | 108,066 | 1.0003 | 0.2% | 0.350 |
 <!-- /TABLE:E8 -->
+
+### E10. 검증 엔진은 얼마나 걸리는가 — 실측과 모델을 같은 표에
+
+이 저장소에서 **실측**할 수 있는 시간은 비트 정확 검증 엔진 두 개(NumPy int64 워크, C++ 커널)가 호스트 CPU에서 도는 시간뿐이고,
+NPU 사이클은 전부 **모델** 값입니다. 둘을 섞어 읽지 않도록 같은 노드에 대해 실측 ms와 모델 사이클을 나란히 둡니다
+(`npuloop bench`, `npuloop intake --bench`). 처음 잰 C++ 엔진은 순진한 7중 루프라 NumPy(내부적으로 torch conv2d)보다 3배
+**느렸고**, im2col + int32 GEMM(4탭 블록, 정확성은 `K·max|x−zp|·128 < 2³¹`일 때만 int32 누산)으로 고쳐 2~6배 빠르게 만든 뒤의 값입니다.
+
+<!-- TABLE:E10 -->
+이 호스트(Intel(R) Xeon(R) Processor @ 2.80GHz, 스레드 1개)에서 64장 배치를 5회 돌린 중앙값입니다. **검증 엔진의 실측이지 NPU 지연이 아닙니다** — 마지막 열은 같은 모델의 비용 모델 값이며 둘은 다른 질문에 답합니다.
+
+| 모델 | 노드 | NumPy 엔진 ms/장 | C++ 엔진 ms/장 | C++/NumPy | 가장 비싼 op (C++ 기준) | 비용 모델 edge-10tops (simulated) |
+|---|---|---|---|---|---|---|
+| ResNet-20 ReLU | 35 | 26.0 | 11.4 | 2.3× | conv 85% · add 15% | 34,417 cycles (0.057 ms) |
+| ResNet-20 SiLU | 54 | 29.9 | 11.2 | 2.7× | conv 81% · add 14% | 34,785 cycles (0.058 ms) |
+| MobileNetV2-0.5 ReLU6 | 67 | 123.0 | 21.4 | 5.7× | conv 95% · add 3% | 87,056 cycles (0.145 ms) |
+| 고객 A · ViT-128/6 | 148 | 65.2 | 21.5 | 3.0× | linear 56% · matmul 12% | 52,246 cycles (0.087 ms) |
+| 고객 B · Inception-32 | 23 | 17.8 | 12.0 | 1.5× | conv 87% · concat 12% | 31,224 cycles (0.052 ms) |
+<!-- /TABLE:E10 -->
 
 ### E2. PTQ 스킴 그리드 — fake-quant는 정수 엔진을 얼마나 잘 예측하는가
 
@@ -342,12 +371,12 @@ npuloop/
 ├── graph/ir.py          torch.fx → StaticGraph (BN folding, shape 전파, 미지원 op 즉시 실패)
 ├── npu/spec.py, cost.py 가상 NPU 프리셋 4종 + weight-stationary systolic 비용 모델 (멀티코어 M/N 분할, DW 엔진, LUT/폴백, DRAM roofline)
 ├── lint/checks.py       정적·동적 준비도 점검 → efficiency / quant-robustness 점수
-├── quant/               관측기(minmax·percentile·MSE), fake-quant(STE·LSQ), NPU식 삽입(prepare), 캘리브레이션, CLE, 바이어스 보정, 민감도, 활성함수 교체, QAT
+├── quant/               관측기(minmax·percentile·MSE), fake-quant(STE, 선택적 학습 스케일), NPU식 삽입(prepare), 캘리브레이션, CLE, 바이어스 보정, 민감도, 활성함수 교체, QAT
 ├── intengine/           IntGraph export, gemmlowp/TFLite 동일 requant, NumPy 엔진, C++ 커널(ctypes), fake-vs-int 검증
 ├── prune/structured.py  채널 프루닝: uniform · aligned · cost-greedy(비용 모델 in-the-loop)
 ├── zoo/                 CIFAR-10 npz 로더, 모델, 재현 가능한 트레이너(resume)
 └── cli.py               npuloop cost | lint | quantize
-experiments/             E1–E8 스크립트 (재개 가능, results/*.json에 provenance 라벨과 함께 저장)
+experiments/             E1–E10 스크립트 (재개 가능, results/*.json에 provenance 라벨과 함께 저장)
 results/                 실험 결과 JSON
 demo/                    build.py + index.template.html → 인라인 JSON 데모 페이지 (docs/index.html)
 tests/                   pytest 69개 (참조 구현 대조, 비트 동일성, 정확성 회귀)
@@ -411,7 +440,7 @@ print(NumpyEngine(ig).evaluate(ds, limit=2000), CppEngine(ig).evaluate(ds, limit
 ## 한계와 다음 단계
 
 * **CIFAR-10, 30 epoch, seed 1개.** 정확도 차이 0.2%p 이하는 잡음입니다(10k 이미지 표준오차 ≈ 0.3%p). 결론은 "방향"이지 소수점 둘째 자리가 아닙니다.
-* **가상 NPU.** 실제 칩의 컴파일러(fusion, 타일링, 메모리 스케줄링)와 다릅니다. 비용 모델은 연산 사이클은 검증했지만 DRAM/SRAM 모델은 1차 근사(roofline)입니다. 실제 NPU 보드가 생기면 같은 IntGraph를 올려 정확도·지연을 대조하는 것이 첫 번째 할 일입니다.
+* **가상 NPU.** 실제 칩의 컴파일러(fusion, 타일링, 메모리 스케줄링)와 다릅니다. 비용 모델은 dense GEMM 사이클만 검증했고(E8) DRAM/SRAM 모델은 1차 근사(roofline)입니다. 이 저장소가 실측한 시간은 호스트 CPU의 검증 엔진뿐입니다(E10). 실제 NPU 보드가 생기면 같은 IntGraph를 올려 정확도·지연을 대조하는 것이 첫 번째 할 일입니다.
 * **지원 op는 conv/dw-conv/grouped-conv · linear(토큰 단위 포함) · add · mul · concat · matmul · softmax · layernorm · transpose/reshape · pool · elementwise 활성함수**입니다. upsample·detection 헤드(DFL, NMS)·KV 캐시는 아직 `UnsupportedOpError`로 즉시 실패시킵니다(조용히 넘어가지 않기 위해).
 * **정수 LayerNorm의 β는 출력 도메인에서 더합니다.** 하드웨어 커널이 흔히 그렇게 하지만 최대 0.5 LSB의 반올림 오차가 생깁니다. softmax의 정규화도 정확한 정수 나눗셈으로 모델링했는데, 실제 NPU는 역수 근사를 쓰는 경우가 많습니다(그 차이는 E7식 ablation으로 재는 것이 다음 단계).
 * **프루닝 대상이 residual 밖의 내부 채널뿐**이라 절감 폭에 상한이 있습니다. residual stream 채널을 같이 자르려면 의존성 그래프가 필요합니다.

@@ -21,8 +21,11 @@ def main():
         g = trace(m)
         rec = dict(model=name, config=m.config, params=count_params(m), macs=g.total_macs,
                    float_acc=evaluate(m, ds),   # re-evaluate the loaded checkpoint so E1 matches E2/E4/E6 exactly
-                   final_test_acc=log_["final_test_acc"], best_acc=log_["best_test_acc"], train_minutes=log_["train_minutes"],
-                   epochs=[dict(epoch=e["epoch"], test_acc=e["test_acc"], train_loss=e["train_loss"]) for e in log_["epochs"]],
+                   val_acc=evaluate(m, ds, split="val"),
+                   selected_epoch=log_["selected_epoch"], best_val_acc=log_["best_val_acc"],
+                   final_test_acc=log_["final_test_acc"], train_minutes=log_["train_minutes"],
+                   splits=log_.get("splits"), selection=log_.get("selection"),
+                   epochs=[dict(epoch=e["epoch"], val_acc=e["val_acc"], train_loss=e["train_loss"]) for e in log_["epochs"]],
                    cost={}, lint={})
         for spec in PRESETS:
             r = estimate(g, spec)

@@ -1,6 +1,6 @@
 """C++ integer kernels (compiled on first use) driving the same IntGraph as the NumPy engine."""
 from __future__ import annotations
-import ctypes
+import ctypes, platform
 import hashlib
 import os
 import subprocess
@@ -14,16 +14,40 @@ ROUNDING = {"tflite": 0, "half_even": 1, "truncate": 2, "floor": 3, "single": 4}
 _lib = None
 
 
+def _cpu_tag() -> str:
+    try:
+        for line in open("/proc/cpuinfo"):
+            if line.startswith("model name"):
+                return line.split(":", 1)[1].strip()
+    except OSError:
+        pass
+    return platform.processor() or platform.machine()
+
+
+def build_flags() -> list[str]:
+    """-O3 plus the host ISA (-march=native) unless NPULOOP_CPP_NATIVE=0; the build is cached per source+flags+CPU."""
+    flags = ["-O3", "-std=c++17", "-shared", "-fPIC"]
+    if os.environ.get("NPULOOP_CPP_NATIVE", "1") != "0":
+        flags.append("-march=native")
+    return flags
+
+
 def build_library(force: bool = False) -> str:
-    """Compile int8_engine.cpp into a shared library (cached by source hash)."""
+    """Compile int8_engine.cpp into a shared library (cached by source hash, compiler flags and CPU model)."""
     src = open(_SRC, "rb").read()
-    tag = hashlib.sha1(src).hexdigest()[:10]
+    flags = build_flags()
+    tag = hashlib.sha1(src + " ".join(flags).encode() + _cpu_tag().encode()).hexdigest()[:10]
     out_dir = os.path.join(_HERE, "cpp", "build")
     os.makedirs(out_dir, exist_ok=True)
     so = os.path.join(out_dir, f"libint8engine_{tag}.so")
     if force or not os.path.exists(so):
-        cmd = ["g++", "-O3", "-std=c++17", "-shared", "-fPIC", "-o", so, _SRC]
-        subprocess.run(cmd, check=True)
+        try:
+            subprocess.run(["g++", *flags, "-o", so, _SRC], check=True, capture_output=True)
+        except subprocess.CalledProcessError as e:
+            if "-march=native" not in flags:
+                raise RuntimeError(e.stderr.decode(errors="replace")) from e
+            flags.remove("-march=native")            # compilers without -march=native: fall back to generic
+            subprocess.run(["g++", *flags, "-o", so, _SRC], check=True)
     return so
 
 
