@@ -10,6 +10,6 @@ jobs:
       - name: Install CPU torch + deps
         run: |
           pip install --index-url https://download.pytorch.org/whl/cpu torch
-          pip install numpy pytest
+          pip install numpy pytest pytest-timeout
       - name: Unit tests (graph, cost model, lint, quantizer, integer engines, pruning)
-        run: python -m pytest -q
+        run: python -u -m pytest -v --timeout=900 --durations=10
