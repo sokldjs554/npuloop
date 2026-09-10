@@ -5,6 +5,10 @@
 # state.pt and every experiment script skips records it already has.
 cd "$(dirname "$0")/.."
 export OMP_WAIT_POLICY=PASSIVE NPULOOP_INT_EVAL=${NPULOOP_INT_EVAL:-10000}
+# The integer engines allocate and free large int64 temporaries per node; with glibc's default mmap threshold
+# every one is a fresh mmap + page-fault storm (measured: 64% of wall-clock in the kernel on a 500-image batch).
+# Keep freed blocks on the heap instead: 2.4x faster evaluation, identical results.
+export MALLOC_MMAP_THRESHOLD_=2147483647 MALLOC_TRIM_THRESHOLD_=2147483647 MALLOC_TOP_PAD_=268435456
 mkdir -p results/logs runs
 RUNS=${NPULOOP_RUNS:-runs}
 QUEUE_DONE=$RUNS/QUEUE_DONE

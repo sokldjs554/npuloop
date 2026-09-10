@@ -210,7 +210,7 @@ class NumpyEngine:
         out = self.run(codes)
         return dequantize(out, self.g["output"].out_q)
 
-    def evaluate(self, ds, batch_size: int = 500, limit: int | None = None, split: str = "test") -> float:
+    def evaluate(self, ds, batch_size: int = 200, limit: int | None = None, split: str = "test") -> float:
         """Top-1 accuracy of the integer graph on the 'test' (default) or 'val' split."""
         correct = 0; total = 0
         for xb, yb in ds.batches(split, batch_size):

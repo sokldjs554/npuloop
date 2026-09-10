@@ -39,6 +39,7 @@ def main():
     torch.set_num_threads(1)
     ds = dataset()
     res = Results("e10_engine_timing", meta=dict(batch=BATCH, repeats=REPEATS, warmup=1, threads=1, spec=SPEC, scheme="npu-default",
+                                                  malloc=("mmap threshold raised (MALLOC_MMAP_THRESHOLD_)" if "MALLOC_MMAP_THRESHOLD_" in os.environ else "glibc default"),
                                                   note="host-CPU wall-clock of the verification engines; not NPU latency"))
     calib = calib_batches(ds, 512, seed=0)
     x, _ = next(ds.test_batches(BATCH))
