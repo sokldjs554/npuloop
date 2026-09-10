@@ -16,7 +16,23 @@ from npuloop.intengine import export_int_graph, bench_engines, layer_table
 MODELS = os.environ.get("NPULOOP_MODELS", "resnet20_relu,resnet20_silu,mnv2_050_relu6,cust_vit,cust_inception").split(",")
 BATCH = int(os.environ.get("NPULOOP_E10_BATCH", 64))
 REPEATS = int(os.environ.get("NPULOOP_E10_REPEATS", 5))
+EQUAL_IMAGES = int(os.environ.get("NPULOOP_E10_EQUAL", 2000))   # test images on which both engines must agree code for code
 SPEC = "edge-10tops"
+
+
+def output_equality(ig, ds, images: int, batch: int = 250) -> dict:
+    """Run both engines on `images` test images and count images whose output codes differ anywhere."""
+    from npuloop.intengine import NumpyEngine, quantize_input
+    from npuloop.intengine.cpp_engine import CppEngine
+    np_eng, cpp_eng = NumpyEngine(ig), CppEngine(ig)
+    seen = differ = 0
+    for xb, _ in ds.test_batches(batch):
+        codes = quantize_input(xb.numpy(), ig.input_q)
+        a, b = np_eng.run(codes), cpp_eng.run(codes)
+        differ += int((a.reshape(len(xb), -1) != b.reshape(len(xb), -1)).any(axis=1).sum()); seen += len(xb)
+        if seen >= images:
+            break
+    return dict(images=seen, images_with_any_mismatch=differ)
 
 
 def main():
@@ -36,6 +52,7 @@ def main():
         cost = estimate(trace(m), SPEC)
         b = bench_engines(ig, x.numpy(), repeats=REPEATS)
         rows = layer_table(ig, b, cost)
+        eq = output_equality(ig, ds, EQUAL_IMAGES)
         by_op = {}
         for r in rows:
             d = by_op.setdefault(r["op"], dict(numpy_ms=0.0, cpp_ms=0.0, cycles=0.0, count=0))
@@ -43,9 +60,10 @@ def main():
         res.add(dict(model=name, macs=int(trace(m).total_macs), nodes=len(ig.nodes), cpu=b["cpu"], batch=b["batch"],
                      numpy=b["engines"]["numpy"], cpp=b["engines"]["cpp"], speedup=b["speedup"],
                      modelled_cycles=cost.total_cycles, modelled_latency_ms=cost.latency_ms,
-                     by_op=by_op, top_nodes=rows[:10], minutes=(time.time() - t0) / 60), provenance="measured+simulated")
+                     by_op=by_op, top_nodes=rows[:10], output_equality=eq, minutes=(time.time() - t0) / 60), provenance="measured+simulated")
         log(f"{name}: numpy {b['engines']['numpy']['per_image_ms']:.2f} ms/img, cpp {b['engines']['cpp']['per_image_ms']:.2f} ms/img "
-            f"({b['speedup']:.1f}x), modelled {cost.latency_ms:.3f} ms on {SPEC}")
+            f"({b['speedup']:.1f}x), modelled {cost.latency_ms:.3f} ms on {SPEC}; output codes differ on "
+            f"{eq['images_with_any_mismatch']}/{eq['images']} images")
 
 
 if __name__ == "__main__":

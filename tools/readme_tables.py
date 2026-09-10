@@ -194,13 +194,15 @@ def e10():
     meta = load("e10_engine_timing").get("meta", {})
     out = [f"이 호스트({rs[0]['cpu']}, 스레드 1개)에서 {meta.get('batch', 64)}장 배치를 {meta.get('repeats', 5)}회 돌린 중앙값입니다. "
            "**검증 엔진의 실측이지 NPU 지연이 아닙니다** — 마지막 열은 같은 모델의 비용 모델 값이며 둘은 다른 질문에 답합니다.", "",
-           "| 모델 | 노드 | NumPy 엔진 ms/장 | C++ 엔진 ms/장 | C++/NumPy | 가장 비싼 op (C++ 기준) | 비용 모델 edge-10tops (simulated) |",
-           "|---|---|---|---|---|---|---|"]
+           "| 모델 | 노드 | NumPy 엔진 ms/장 | C++ 엔진 ms/장 | C++/NumPy | 가장 비싼 op (C++ 기준) | 두 엔진 출력 코드 동일 | 비용 모델 edge-10tops (simulated) |",
+           "|---|---|---|---|---|---|---|---|"]
     for r in rs:
         top = sorted(r["by_op"].items(), key=lambda kv: -kv[1]["cpp_ms"])[:2]
         top_txt = " · ".join(f"{op} {v['cpp_ms'] / r['cpp']['total_ms'] * 100:.0f}%" for op, v in top)
+        eq = r.get("output_equality")
+        eq_txt = (f"{eq['images'] - eq['images_with_any_mismatch']:,}/{eq['images']:,}장" if eq else "—")
         out.append(f"| {LABEL.get(r['model'], r['model'])} | {r['nodes']} | {r['numpy']['per_image_ms']:.1f} | {r['cpp']['per_image_ms']:.1f} | "
-                   f"{r['speedup']:.1f}× | {top_txt} | {r['modelled_cycles']:,.0f} cycles ({r['modelled_latency_ms']:.3f} ms) |")
+                   f"{r['speedup']:.1f}× | {top_txt} | {eq_txt} | {r['modelled_cycles']:,.0f} cycles ({r['modelled_latency_ms']:.3f} ms) |")
     return "\n".join(out)
 
 
