@@ -1,0 +1,29 @@
+diff --git a/src/cpu/x64/jit_avx2_1x1_convolution.cpp b/src/cpu/x64/jit_avx2_1x1_convolution.cpp
+index bcc4dbe..95dc468 100644
+--- a/src/cpu/x64/jit_avx2_1x1_convolution.cpp
++++ b/src/cpu/x64/jit_avx2_1x1_convolution.cpp
+@@ -635,7 +635,9 @@ void jit_avx2_1x1_convolution_bwd_weights_t::execute_backward_weights(
+ 
+                         rp.ws = rtus_space
+                                 + ithr * pd()->rtus_.space_per_thread_
+-                                + (ic_b * jcp.is + sp) * jcp.ic_block;
++                                + (ic_b * jcp.is + sp)
++                                        * (is_src_layout_nxc ? jcp.ic
++                                                             : jcp.ic_block);
+                         size_t src_offset
+                                 = iw * src_d.blocking_desc().strides[ndims - 1];
+                         if (ndims > 3)
+diff --git a/src/cpu/x64/jit_avx512_common_1x1_convolution.cpp b/src/cpu/x64/jit_avx512_common_1x1_convolution.cpp
+index 499ed39..ee01920 100644
+--- a/src/cpu/x64/jit_avx512_common_1x1_convolution.cpp
++++ b/src/cpu/x64/jit_avx512_common_1x1_convolution.cpp
+@@ -829,7 +829,8 @@ void jit_avx512_common_1x1_convolution_bwd_weights_t::execute_backward_weights(
+ 
+                             rp.ws = rtus_space
+                                     + ithr * pd()->rtus_.space_per_thread_
+-                                    + sp * jcp.ic_block;
++                                    + sp * (is_src_layout_nxc ? jcp.ic
++                                                              : jcp.ic_block);
+ 
+                             if (ndims == 3)
+                                 rp.src = local_src

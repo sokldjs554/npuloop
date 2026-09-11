@@ -56,11 +56,12 @@ def test_fit_selects_best_checkpoint_on_validation_split(tmp_path):
     from npuloop.zoo import fit, build_model, load_checkpoint
     from npuloop.zoo.train import evaluate
     ds = _TinyDataset()
-    # width >= 8 on purpose: with 4 channels the 1x1 shortcut convs have in_channels below oneDNN's AVX2 block of 8,
-    # and torch 2.14.0+cpu (oneDNN 3.12) then corrupts memory in loss.backward() inside
-    # jit_avx2_1x1_convolution_bwd_weights: an endless spin on the AMD EPYC CI runners (runs 12-16) or a segfault
-    # with one thread. ONEDNN_MAX_CPU_ISA=AVX2 reproduces it on any CPU; Intel runners pick AVX-512 kernels.
-    model = build_model(dict(arch="resnet", depth=8, width=8, act="relu"))
+    # width 16 on purpose: the 1x1 stride-2 shortcut convs then have 16 and 32 input channels, a multiple of both
+    # oneDNN channel blocks (8 on AVX2, 16 on AVX-512). torch 2.14.0 (oneDNN 3.12) writes past the rtus workspace
+    # in 1x1 backward_weights when a channels_last, strided conv has fewer input channels than the block: an
+    # endless spin on the AMD EPYC CI runners (runs 12-16) or a segfault. Report, validated patch and reproducer:
+    # docs/upstream/ and tools/onednn_1x1_repro.py. ONEDNN_MAX_CPU_ISA=AVX2 reproduces the AVX2 case on any CPU.
+    model = build_model(dict(arch="resnet", depth=8, width=16, act="relu"))
     log = fit(model, ds, epochs=3, lr=0.05, bs=32, seed=0, out=str(tmp_path))
     assert [e["epoch"] for e in log["epochs"]] == [1, 2, 3]
     assert all("val_acc" in e and "test_acc" not in e for e in log["epochs"])      # test never scored per epoch
