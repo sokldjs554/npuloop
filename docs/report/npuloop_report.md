@@ -163,7 +163,7 @@ TFLite 자신의 XNNPACK 델리게이트는 reference 커널과 155/1000장에�
 
 ### 4.7 두 번째 데이터셋 (E12)
 
-실행 전.
+Imagenette 128×128, ResNet-20(stem stride 2): val 84.70% → test 83.97%, 163M MACs; PTQ npu-default fake 84.08% / 정수 84.03%, per-tensor fake 83.97% / 정수 84.05%, pow2 fake 84.08% / 정수 83.95%
 
 ## 5. 한계
 

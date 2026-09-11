@@ -539,7 +539,7 @@ TFLite 자신의 XNNPACK 델리게이트는 reference 커널과 155/1000장에�
 <p>검증 범위는 dense conv·linear의 systolic 연산 사이클(단일 코어, 메모리 스톨 없음)이다. 처음 모델(<code>M + R + C</code>)은 10~13% 낙관적이었고
 가중치 타일 적재 <code>R</code> 사이클이 빠져 있었다.</p>
 <h3>4.7 두 번째 데이터셋 (E12)</h3>
-<p>실행 전.</p>
+<p>Imagenette 128×128, ResNet-20(stem stride 2): val 84.70% → test 83.97%, 163M MACs; PTQ npu-default fake 84.08% / 정수 84.03%, per-tensor fake 83.97% / 정수 84.05%, pow2 fake 84.08% / 정수 83.95%</p>
 <h2>5. 한계</h2>
 <p>CIFAR-10 규모, seed 1개, 가상 NPU(실제 컴파일러의 fusion·타일링·메모리 스케줄링 없음), 에너지는 자릿수 추정, TFLite 교차 검증은 conv·pool·fc에
 한정, ImageNet 사전학습 체크포인트 미사용(호스트 차단). 체크포인트를 바꾸면 결론 일부가 흔들렸다: E3의 레이어 수준 상관은 재현되지 않았고

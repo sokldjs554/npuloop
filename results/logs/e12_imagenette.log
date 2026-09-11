@@ -1,0 +1,4 @@
+[01:48:06] baseline: test 0.8397 val 0.8470 MACs 163.3M edge cycles 80,754 energy 100.1 uJ
+[01:52:25] ptq npu-default: fp32 0.8397 fake 0.8408 int 0.8403 (248s)
+[01:55:07] ptq per-tensor: fp32 0.8397 fake 0.8397 int 0.8405 (162s)
+[01:57:51] ptq pow2: fp32 0.8397 fake 0.8408 int 0.8395 (164s)

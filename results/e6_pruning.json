@@ -488,6 +488,220 @@
    },
    "provenance": "measured+simulated",
    "timestamp": "2026-09-11T01:23:14"
+  },
+  {
+   "model": "cust_inception",
+   "strategy": "cost-greedy",
+   "ratio": 0.7,
+   "align": 8,
+   "keep": [
+    8,
+    8,
+    32,
+    8,
+    16,
+    64,
+    32,
+    64,
+    16,
+    32,
+    56,
+    32
+   ],
+   "acc_after_prune": 0.1482,
+   "ft_acc": 0.8768,
+   "int8_acc": 0.876,
+   "ft_epochs": 3,
+   "greedy_steps": 13,
+   "target_reached": true,
+   "achieved_ratio": 0.6889572124007174,
+   "minutes": 9.27455015182495,
+   "macs": 33335808,
+   "params": 236626,
+   "tiny-1tops": {
+    "cycles": 65096.0,
+    "util": 0.5000998525255008,
+    "latency_ms": 0.130192
+   },
+   "edge-10tops": {
+    "cycles": 21512.0,
+    "util": 0.1891647685013016,
+    "latency_ms": 0.035853333333333334
+   },
+   "pcie-80tops": {
+    "cycles": 14871.0,
+    "util": 0.06841020274359491,
+    "latency_ms": 0.0123925
+   },
+   "provenance": "measured+simulated",
+   "timestamp": "2026-09-11T01:32:30"
+  },
+  {
+   "model": "cust_vit",
+   "strategy": "none",
+   "ratio": 1.0,
+   "align": 0,
+   "keep": [
+    256,
+    256,
+    256,
+    256,
+    256,
+    256
+   ],
+   "float_acc": 0.8098,
+   "ft_acc": 0.8098,
+   "int8_acc": 0.8087,
+   "macs": 57017600,
+   "params": 799370,
+   "tiny-1tops": {
+    "cycles": 164556.0,
+    "util": 0.33837265125549965,
+    "latency_ms": 0.329112
+   },
+   "edge-10tops": {
+    "cycles": 52246.0,
+    "util": 0.13321893063583815,
+    "latency_ms": 0.08707666666666666
+   },
+   "pcie-80tops": {
+    "cycles": 32379.094452773617,
+    "util": 0.05373958388607582,
+    "latency_ms": 0.026982578710644682
+   },
+   "provenance": "measured+simulated",
+   "timestamp": "2026-09-11T01:33:46"
+  },
+  {
+   "model": "cust_vit",
+   "strategy": "uniform",
+   "ratio": 0.5,
+   "align": 0,
+   "keep": [
+    128,
+    128,
+    128,
+    128,
+    128,
+    128
+   ],
+   "acc_after_prune": 0.6189,
+   "ft_acc": 0.7998,
+   "int8_acc": 0.8013,
+   "ft_epochs": 3,
+   "greedy_steps": null,
+   "target_reached": null,
+   "achieved_ratio": null,
+   "minutes": 11.548569536209106,
+   "macs": 44434688,
+   "params": 601994,
+   "tiny-1tops": {
+    "cycles": 132588.0,
+    "util": 0.3272788638489154,
+    "latency_ms": 0.265176
+   },
+   "edge-10tops": {
+    "cycles": 42790.0,
+    "util": 0.12676224000934797,
+    "latency_ms": 0.07131666666666667
+   },
+   "pcie-80tops": {
+    "cycles": 28725.382308845576,
+    "util": 0.04720699790590522,
+    "latency_ms": 0.023937818590704648
+   },
+   "provenance": "measured+simulated",
+   "timestamp": "2026-09-11T01:45:19"
+  },
+  {
+   "model": "cust_vit",
+   "strategy": "cost-greedy",
+   "ratio": 0.7,
+   "align": 8,
+   "keep": [
+    8,
+    8,
+    8,
+    8,
+    8,
+    8
+   ],
+   "acc_after_prune": 0.1283,
+   "ft_acc": 0.5734,
+   "int8_acc": 0.5732,
+   "ft_epochs": 3,
+   "greedy_steps": 186,
+   "target_reached": false,
+   "achieved_ratio": 0.7155380316196456,
+   "minutes": 9.220054324467977,
+   "macs": 32638208,
+   "params": 416954,
+   "tiny-1tops": {
+    "cycles": 107772.0,
+    "util": 0.2957470400475077,
+    "latency_ms": 0.215544
+   },
+   "edge-10tops": {
+    "cycles": 37384.0,
+    "util": 0.1065738350631286,
+    "latency_ms": 0.06230666666666667
+   },
+   "pcie-80tops": {
+    "cycles": 26529.382308845576,
+    "util": 0.0375447513592465,
+    "latency_ms": 0.022107818590704646
+   },
+   "provenance": "measured+simulated",
+   "timestamp": "2026-09-11T01:54:32"
+  },
+  {
+   "model": "mnv2_050_relu6",
+   "strategy": "none",
+   "ratio": 1.0,
+   "align": 0,
+   "keep": [
+    16,
+    8,
+    48,
+    96,
+    96,
+    96,
+    96,
+    96,
+    192,
+    192,
+    192,
+    192,
+    288,
+    288,
+    288,
+    480,
+    480,
+    480,
+    160
+   ],
+   "float_acc": 0.9023,
+   "ft_acc": 0.9023,
+   "int8_acc": 0.903,
+   "macs": 27969024,
+   "params": 691218,
+   "tiny-1tops": {
+    "cycles": 200536.0,
+    "util": 0.1205394542625763,
+    "latency_ms": 0.401072
+   },
+   "edge-10tops": {
+    "cycles": 87056.0,
+    "util": 0.034708262497702626,
+    "latency_ms": 0.14509333333333332
+   },
+   "pcie-80tops": {
+    "cycles": 67351.16341829085,
+    "util": 0.011215702694080787,
+    "latency_ms": 0.056125969515242374
+   },
+   "provenance": "measured+simulated",
+   "timestamp": "2026-09-11T01:55:48"
   }
  ]
 }
