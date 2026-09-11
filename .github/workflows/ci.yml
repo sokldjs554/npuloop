@@ -3,6 +3,7 @@ on: [push, pull_request]
 jobs:
   pytest:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
@@ -11,5 +12,11 @@ jobs:
         run: |
           pip install --index-url https://download.pytorch.org/whl/cpu torch
           pip install numpy pytest pytest-timeout
+      - name: Host info (runner CPU, torch build)
+        run: |
+          lscpu | grep -E '^Model name|^CPU\(s\)|^Flags' | cut -c1-240
+          python -c "import torch; print(torch.__version__); print(torch.__config__.parallel_info())"
       - name: Unit tests (graph, cost model, lint, quantizer, integer engines, pruning)
-        run: python -u -m pytest -v --timeout=900 --durations=10
+        # A test stuck inside native code (torch kernels, the ctypes engine) cannot be interrupted by a signal, so the
+        # watchdog is a thread: faulthandler dumps every thread's stack after 4 min and pytest-timeout kills the run at 5.
+        run: python -u -m pytest -v --timeout=300 --timeout-method=thread -o faulthandler_timeout=240 --durations=10
