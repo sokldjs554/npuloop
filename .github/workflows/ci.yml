@@ -18,5 +18,17 @@ jobs:
           python -c "import torch; print(torch.__version__); print(torch.__config__.parallel_info())"
       - name: Unit tests (graph, cost model, lint, quantizer, integer engines, pruning)
         # A test stuck inside native code (torch kernels, the ctypes engine) cannot be interrupted by a signal, so the
-        # watchdog is a thread: faulthandler dumps every thread's stack after 4 min and pytest-timeout kills the run at 5.
-        run: python -u -m pytest -v --timeout=300 --timeout-method=thread -o faulthandler_timeout=240 --durations=10
+        # watchdog is a thread: faulthandler dumps every Python stack after 150 s and pytest-timeout kills the run at
+        # 180 s. If the suite is still running after 90 s (it finishes in ~25 s), py-spy records every thread's native
+        # stack first, so a hang inside torch shows the kernel or lock it sits in.
+        run: |
+          pip install -q py-spy
+          python -u -m pytest -v --timeout=180 --timeout-method=thread -o faulthandler_timeout=150 --durations=10 &
+          PID=$!
+          for i in $(seq 1 18); do sleep 5; kill -0 $PID 2>/dev/null || break; done
+          if kill -0 $PID 2>/dev/null; then
+            echo "::group::py-spy native dump (pytest still running after 90 s)"
+            sudo env "PATH=$PATH" py-spy dump --pid $PID --native --nonblocking || true
+            echo "::endgroup::"
+          fi
+          wait $PID
