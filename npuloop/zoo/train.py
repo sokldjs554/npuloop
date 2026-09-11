@@ -135,6 +135,8 @@ def main():
     p.add_argument("--depth", type=int, default=20)
     p.add_argument("--width", type=int, default=16)
     p.add_argument("--width-mult", type=float, default=0.5)
+    p.add_argument("--stem-stride", type=int, default=1)     # resnet: 2 for 128px inputs
+    p.add_argument("--val-per-class", type=int, default=None)   # default: the npz's value, else 500
     p.add_argument("--act", default="relu")
     p.add_argument("--dim", type=int, default=128)          # vit
     p.add_argument("--heads", type=int, default=4)          # vit
@@ -152,10 +154,10 @@ def main():
     p.add_argument("--smoke", action="store_true")
     a = p.parse_args()
     torch.set_num_threads(a.threads)
-    ds = CIFAR10NPZ(a.data)
+    ds = CIFAR10NPZ(a.data, val_per_class=a.val_per_class)
     cfg = dict(arch=a.arch, act=a.act)
     if a.arch == "resnet":
-        cfg.update(depth=a.depth, width=a.width)
+        cfg.update(depth=a.depth, width=a.width, stem_stride=a.stem_stride)
     elif a.arch == "mobilenetv2":
         cfg.update(width_mult=a.width_mult)
     elif a.arch == "vit":

@@ -61,6 +61,7 @@ def load_library():
         _lib.linear_requant.argtypes = [i32p, c, c, i8p, c, c, i32p, i32p, i32p, c, c, c, c, c, i32p]
         _lib.add_requant.argtypes = [i32p, i32p, ctypes.c_int64, c, c, c, ctypes.c_int32, c, ctypes.c_int32, c, ctypes.c_int32, c, c, c, c, c, i32p]
         _lib.global_avgpool.argtypes = [i32p, c, c, c, c, c, i32p]
+        _lib.global_avgpool_requant.argtypes = [i32p, c, c, c, c, ctypes.c_int32, c, c, c, c, c, i32p]
         _lib.lut_apply.argtypes = [i32p, ctypes.c_int64, i32p, c, i32p]
         _lib.token_mean.argtypes = [i32p, c, c, c, c, c, i32p]
         _lib.matmul_requant.argtypes = [i32p, i32p, c, c, c, c, c, c, ctypes.c_int32, c, c, c, c, c, c, i32p, i64p]
@@ -90,9 +91,18 @@ class CppEngine(NumpyEngine):
         self.rounding = ROUNDING[graph.requant.rounding]
 
     def exec_node(self, n: IntNode, vals: dict) -> np.ndarray:
-        lib, cfg = self.lib, self.cfg
         if n.op == "input":
             return vals["__input__"]
+        rounding_saved = self.rounding
+        if "rounding" in n.attrs:
+            self.rounding = ROUNDING[n.attrs["rounding"]]
+        try:
+            return self._exec(n, vals)
+        finally:
+            self.rounding = rounding_saved
+
+    def _exec(self, n: IntNode, vals: dict) -> np.ndarray:
+        lib, cfg = self.lib, self.cfg
         if n.op == "conv":
             x = _i32(vals[n.inputs[0]]); N, C, H, W = x.shape
             w = np.ascontiguousarray(n.w_int, dtype=np.int8); Cout, cin_g, kh, kw = w.shape
@@ -190,6 +200,13 @@ class CppEngine(NumpyEngine):
             lib.add_requant(_ptr(a), _ptr(b), a.size, q1.zero_point, q2.zero_point, p["left_shift"],
                             int(p["m1"][0]), int(p["m1"][1]), int(p["m2"][0]), int(p["m2"][1]), int(p["mo"][0]), int(p["mo"][1]),
                             n.out_q.zero_point, lo, hi, self.rounding, _ptr(out))
+            return out.astype(np.int64)
+        if n.op == "pool" and n.attrs.get("kind") == "global_avg_requant":
+            x = _i32(vals[n.inputs[0]]); N, C, H, W = x.shape
+            out = np.empty((N, C, 1, 1), dtype=np.int32)
+            in_q = self.g[n.inputs[0]].out_q
+            lib.global_avgpool_requant(_ptr(x), N, C, H * W, in_q.zero_point, int(n.mult[0]), int(n.shift[0]),
+                                       n.out_q.zero_point, n.out_q.qmin, n.out_q.qmax, self.rounding, _ptr(out))
             return out.astype(np.int64)
         if n.op == "pool":
             x = _i32(vals[n.inputs[0]]); N, C, H, W = x.shape

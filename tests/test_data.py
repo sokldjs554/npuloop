@@ -42,7 +42,9 @@ class _TinyDataset:
         self.x_train, self.y_train = mk(n_train)
         self.x_val, self.y_val = mk(n_val)
         self.x_test, self.y_test = mk(n_test)
-        self.to_tensor = CIFAR10NPZ.to_tensor
+        from npuloop.zoo.data import CIFAR_MEAN, CIFAR_STD
+        self.mean, self.std, self.pad = CIFAR_MEAN, CIFAR_STD, 4
+        self.to_tensor = CIFAR10NPZ.to_tensor.__get__(self)
         self.batches = CIFAR10NPZ.batches.__get__(self)
         self.train_batches = CIFAR10NPZ.train_batches.__get__(self)
         self.test_batches = CIFAR10NPZ.test_batches.__get__(self)

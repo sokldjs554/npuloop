@@ -73,7 +73,7 @@ QAT·healing·프루닝 후 미세조정은 마지막 epoch 모델을 그대로 
 * **그리고 그 처방으로도 부족하다고 정직하게 말합니다.** 고객 A는 strict NPU에서 **사이클의 97%가 호스트 폴백**이고(layernorm 13개 · softmax 6개 · GELU 6개), 활성함수만 바꿔서는 layernorm과 softmax가 그대로 남습니다. lint 효율 점수는 30.9 → 85.9로 오르지만 여전히 온칩 실행 불가입니다. 리포트의 결론은 모델 수술이 아니라 **벡터 유닛이 있는 프리셋**(edge-10tops 52,246 · pcie-80tops 27,843)입니다.
 * **수술의 정확도 비용은 −0.03%p였습니다.** GELU→ReLU 교체 후 3 epoch healing으로 FP32 80.98% → 80.95%, INT8 정수 엔진은 80.80% → 81.00%(2,000장 기준). E4에서 SiLU→ReLU가 3 epoch로 회복된 것과 같은 패턴이 transformer에서도 재현됩니다.
 * **attention은 정수 엔진과 fake-quant를 훨씬 크게 갈라놓습니다.** 최종 출력 코드 불일치가 CNN의 30~50%에서 **74%**로 올라가는데도 top-1 일치는 96.9%입니다. 레이어별로 국소(teacher-forced) 불일치를 재면 원인이 분명합니다 — **LayerNorm이 24.7%(최대 26.1%)로 압도적**이고 pool 0.8%, softmax 0.5%, matmul 0.27%, linear 0.08% 순입니다. 정수 LayerNorm은 int64 합과 정확한 정수 제곱근으로 정규화하고 fake-quant는 float32로 계산한 뒤 격자에 올리기 때문에, 네 개 중 하나꼴로 반올림 경계의 반대편에 떨어집니다(모두 ±1 LSB). **"transformer를 INT8로 올릴 때 먼저 의심할 곳은 LayerNorm"**이라는 것이 이 실험의 결론입니다.
-* **고객 B는 고칠 게 없었습니다.** concat 세 곳의 브랜치 범위 차이가 1.4~2.0배뿐이라 공유 스케일로 합쳐도 손해가 없고(lint `concat-scale-mismatch` = info), 두 프리셋 모두 온칩에서 돌며(31,224 사이클, 활용률 21.1%) INT8 손실도 없습니다(FP32 89.59% → 정수 엔진 89.56%, 10,000장). 대신 리포트는 **도구의 한계를 명시**합니다 — 구조적 프루너가 이 그래프에서 자를 그룹을 하나도 못 찾습니다(모든 conv가 concat이나 residual로 들어가서, 블록 내부 채널만 자르는 현재 구현의 대상이 아님).
+* **고객 B는 정확도 쪽에서는 고칠 게 없었습니다.** concat 세 곳의 브랜치 범위 차이가 1.4~2.0배뿐이라 공유 스케일로 합쳐도 손해가 없고(lint `concat-scale-mismatch` = info), 두 프리셋 모두 온칩에서 돌며(31,224 사이클, 활용률 21.1%) INT8 손실도 없습니다(FP32 89.59% → 정수 엔진 89.56%, 10,000장). 처방은 **프루닝**입니다: 첫 버전의 프루너는 이 그래프에서 자를 그룹을 하나도 못 찾아 리포트가 "도구의 한계"를 적었지만, 그래프 기반으로 다시 짠 프루너는 concat 브랜치 출력과 5×5 브랜치 내부 채널을 그룹으로 찾아 ratio 0.5에서 edge-10tops 사이클 **−44%**(예측)를 제시합니다. 실제로 잘라 3 epoch 미세조정한 결과는 E6 표에 있습니다.
 
 <!-- TABLE:E9 -->
 **(a) 인테이크 요약** — `npuloop intake`가 낸 값 (사이클은 비용 모델, INT8은 정수 엔진 실측)
@@ -104,13 +104,13 @@ SiLU 모델은 strict 프리셋(LUT 없음, 호스트 폴백)에서 사이클이
 FP32 정확도는 분석 대상 체크포인트(`best.pt`, 검증 정확도 기준으로 고른 epoch)를 test에서 다시 평가한 값이라 E2·E4·E6의 FP32와 정확히 같습니다.
 
 <!-- TABLE:E1 -->
-| 모델 | 파라미터 | MACs | val acc (선택 epoch) | test acc | tiny-1tops cycles (util) | edge-10tops cycles (util) | pcie-80tops cycles (util) | lint eff / q-rob |
-|---|---|---|---|---|---|---|---|---|
-| ResNet-20 ReLU | 272,474 | 40.8M | 90.24% (ep 30) | 89.59% | 87,730 (45%) | 34,417 (14%) | 22,791 (5%) | 80 / 98 |
-| ResNet-20 SiLU | 272,474 | 40.8M | 90.22% (ep 30) | 90.34% | 90,674 (44%) | 34,785 (14%) | 22,817 (5%) | 72 / 75 |
-| 고객 B · Inception-32 | 423,066 | 54.0M | 89.74% (ep 30) | 89.59% | 99,068 (53%) | 31,224 (21%) | 19,992 (8%) | 91 / 97 |
-| 고객 A · ViT-128/6 | 810,890 | 57.0M | 81.68% (ep 39) | 80.98% | 164,556 (34%) | 52,246 (13%) | 32,379 (5%) | 78 / 75 |
-| MobileNetV2-0.5 ReLU6 | 700,490 | 28.0M | 90.58% (ep 30) | 90.23% | 200,536 (12%) | 87,056 (3%) | 67,351 (1%) | 77 / 98 |
+| 모델 | 파라미터 | MACs | val acc (선택 epoch) | test acc | tiny-1tops cycles (util) | edge-10tops cycles (util) | pcie-80tops cycles (util) | edge-10tops µJ/장 (simulated) | lint eff / q-rob |
+|---|---|---|---|---|---|---|---|---|---|
+| ResNet-20 ReLU | 272,474 | 40.8M | 90.24% (ep 30) | 89.59% | 87,730 (45%) | 34,417 (14%) | 22,791 (5%) | 56.9 | 80 / 98 |
+| ResNet-20 SiLU | 272,474 | 40.8M | 90.22% (ep 30) | 90.34% | 90,674 (44%) | 34,785 (14%) | 22,817 (5%) | 57.9 | 72 / 75 |
+| MobileNetV2-0.5 ReLU6 | 700,490 | 28.0M | 90.58% (ep 30) | 90.23% | 200,536 (12%) | 87,056 (3%) | 67,351 (1%) | 129.1 | 77 / 98 |
+| 고객 A · ViT-128/6 | 810,890 | 57.0M | 81.68% (ep 39) | 80.98% | 164,556 (34%) | 52,246 (13%) | 32,379 (5%) | 155.5 | 78 / 75 |
+| 고객 B · Inception-32 | 423,066 | 54.0M | 89.74% (ep 30) | 89.59% | 99,068 (53%) | 31,224 (21%) | 19,992 (8%) | 84.8 | 91 / 97 |
 <!-- /TABLE:E1 -->
 
 ### E8. 비용 모델은 믿을 만한가 — SCALE-Sim 대조
@@ -158,6 +158,45 @@ NPU 사이클은 전부 **모델** 값입니다. 둘을 섞어 읽지 않도록 
 | 고객 A · ViT-128/6 | 148 | 70.8 | 22.5 | 3.2× | linear 55% · matmul 12% | 2,000/2,000장 | 52,246 cycles (0.087 ms) |
 | 고객 B · Inception-32 | 23 | 18.9 | 10.7 | 1.8× | conv 93% · concat 7% | 2,000/2,000장 | 31,224 cycles (0.052 ms) |
 <!-- /TABLE:E10 -->
+
+### E11. 실제 배포 런타임과 비트 단위로 맞는가 — TensorFlow Lite 교차 검증
+
+"gemmlowp/TFLite와 같은 requant"라는 말은 이 저장소 안에서만 검증된 주장이었습니다. 외부 오라클로 확인했습니다: 작은 Keras CNN을
+TFLite의 full-integer PTQ로 변환한 뒤, **TFLite가 정한** 스케일·zero-point·int8 가중치·int32 바이어스를 `.tflite`에서 읽어 npuloop
+IntGraph를 만들고(우리 쪽 캘리브레이션 없음), 같은 int8 입력을 TFLite reference 커널과 npuloop 엔진 두 개에 넣어 **모든 중간 텐서와
+출력 코드**를 비교했습니다.
+
+<!-- TABLE:E11 -->
+TensorFlow 2.21.0, TFLite full-integer PTQ (int8 in/out), 연산: CONV_2D → PAD → CONV_2D → CONV_2D → MEAN → FULLY_CONNECTED. TFLite가 정한 스케일·zero-point·int8 가중치·int32 바이어스를 그대로 읽어 npuloop IntGraph를 만들고, 같은 int8 입력 1,000장을 두 런타임에 넣었습니다.
+
+| 반올림 (conv·pool / fc) | 엔진 | 출력 코드가 다른 이미지 | 다른 원소 | top-1 일치 | conv1 / conv2 / conv3 / pool / fc 국소 불일치 |
+|---|---|---|---|---|---|
+| tflite / single | numpy | 0/1000 | 0/10000 | 100.0% | 0.00% / 0.00% / 0.00% / 0.00% / 0.00% |
+| tflite / single | cpp | 0/1000 | 0/10000 | 100.0% | 0.00% / 0.00% / 0.00% / 0.00% / 0.00% |
+| tflite / tflite | numpy | 20/1000 | 20/10000 | 100.0% | 0.00% / 0.00% / 0.00% / 0.00% / 0.20% |
+| tflite / tflite | cpp | 20/1000 | 20/10000 | 100.0% | 0.00% / 0.00% / 0.00% / 0.00% / 0.20% |
+| single / single | numpy | 155/1000 | 337/10000 | 100.0% | 0.08% / 0.43% / 1.86% / 1.29% / 3.37% |
+| single / single | cpp | 155/1000 | 337/10000 | 100.0% | 0.08% / 0.43% / 1.86% / 1.29% / 3.37% |
+| half_even / half_even | numpy | 182/1000 | 364/10000 | 100.0% | 0.09% / 0.44% / 1.91% / 1.30% / 3.64% |
+| half_even / half_even | cpp | 182/1000 | 364/10000 | 100.0% | 0.09% / 0.44% / 1.91% / 1.30% / 3.64% |
+| truncate / truncate | numpy | 1000/1000 | 8203/10000 | 99.8% | 23.10% / 32.78% / 32.13% / 80.23% / 82.03% |
+| truncate / truncate | cpp | 1000/1000 | 8203/10000 | 99.8% | 23.10% / 32.78% / 32.13% / 80.23% / 82.03% |
+| floor / floor | numpy | 1000/1000 | 7968/10000 | 99.8% | 23.10% / 32.78% / 32.13% / 80.23% / 79.68% |
+| floor / floor | cpp | 1000/1000 | 7968/10000 | 99.8% | 23.10% / 32.78% / 32.13% / 80.23% / 79.68% |
+
+TFLite 자신의 XNNPACK 델리게이트(최적화 경로)와 reference 커널은 같은 모델·입력에서 출력 코드가 **155/1000장** 다릅니다.
+<!-- /TABLE:E11 -->
+
+알게 된 것:
+
+* **conv·pool은 gemmlowp 이중 반올림, fully-connected는 단일 반올림입니다.** 그래프 전체를 한 모드로 돌리면 fc에서 0.2%의 코드가 ±1 LSB
+  어긋나고, fc만 `single`로 바꾸면 1,000장 × 모든 텐서가 0개 불일치입니다. TFLite reference 커널 안에서도 op마다 requant 구현이 다르다는
+  뜻이고, 그래서 이 저장소의 정수 그래프는 노드별 반올림 오버라이드(`attrs["rounding"]`)를 갖게 됐습니다.
+* **TFLite의 MEAN은 스케일을 보존하는 평균이 아닙니다.** 출력 스케일이 따로 있고 `Σ(x − zp_in)`을 `s_in/(s_out·HW)` 곱셈기로 한 번
+  requant합니다. NPU 풀링(입력 스케일 유지, 반올림 나눗셈)과 다른 의미론이라 `global_avg_requant` 풀링을 엔진 세 개(NumPy·C++·독립 러너)에 추가했습니다.
+* **TFLite 자신도 백엔드끼리 비트가 다릅니다.** 최적화 경로(XNNPACK 델리게이트)와 reference 커널은 같은 모델·입력에서 출력 코드가
+  15%의 이미지에서 다릅니다(위 표 아래 줄). "fake-quant와 하드웨어가 다르다"는 보고를 받으면 어느 런타임을 기준으로 삼았는지부터 물어야 하는 이유입니다.
+* 범위: conv(스트라이드 1·2, 명시적 패딩)·MEAN·fully-connected. TFLite의 depthwise·add·softmax는 아직 대조하지 않았습니다.
 
 ### E2. PTQ 스킴 그리드 — fake-quant는 정수 엔진을 얼마나 잘 예측하는가
 
@@ -354,6 +393,7 @@ FP32 대비 정확도 손실(%p), 시드 3개 평균 ± 표준편차. 열 = 캘�
 * **정렬 프루닝은 이 모델에서는 의미가 없습니다.** aligned-16은 uniform 0.75와 같은 사이클(87%)에서 정확도가 1.3%p 낮고(87.75% vs 89.04%), aligned-32는 MACs를 16%밖에 못 줄입니다. 64폭 배열에서 의미 있는 정렬 단위는 64인데 ResNet-20은 마지막 스테이지만 64채널이라, "정렬"은 어느 블록은 안 자르고 어느 블록은 절반을 자르는 불균형만 만듭니다. 정렬 프루닝이 타일 수를 실제로 줄이는 것은 배열보다 넓은 층(256채널 이상)뿐입니다.
 * **cost-greedy는 사이클–정확도 평면에서 uniform과 잡음 범위 안입니다.** 0.85 목표는 도달했지만(85% 사이클, FT 88.54%) uniform 0.75(87%, 89.04%)와 uniform 0.5(81%, 87.22%)를 잇는 선 위에 있습니다. 탐욕 탐색은 초반 블록을 바닥(8채널)까지 자르고 마지막 스테이지는 거의 남기는 배분(8 8 8 24 8 8 64 64 32)을 골랐는데, 사이클당 중요도가 그렇게 말했기 때문이고 결과는 uniform이 우연히 얻는 것과 같은 양입니다. 0.7·0.55 목표는 8채널 단위로 자를 수 있는 후보를 전부 써도 도달할 수 없어 **탐색이 "불가능"이라고 답하고 멈춥니다**(표의 ✗) — 조용히 근사치를 내놓지 않도록 `target_reached` 플래그를 기록합니다.
 * **MobileNetV2는 바닥이 더 높습니다.** 확장 채널을 절반으로 줄여도(MACs 57%) edge-10tops 사이클은 84%입니다. 이 모델의 사이클 45%는 depthwise 엔진(lane 병렬, C ≤ lane 수이면 사이클 = M·9로 채널 수와 무관)이고 11%는 메모리 바운드인 1280채널 head conv라, 프루너가 손대는 pointwise conv(34%)만 줄어듭니다. cost-greedy 0.7은 0.91에서 멈췄고(✗) 정확도 0.15%p(90.23% → 90.08%)로 사이클 9%를 얻었습니다.
+* **프루너는 이제 그래프에서 그룹을 찾습니다.** 처음 구현은 ResNet/MobileNetV2 블록 클래스를 알아보는 방식이라 Inception의 concat 그래프에서 "자를 그룹 없음"이라고 답했습니다(E9 첫 버전). 지금은 fx 그래프에서 conv/linear 출력 채널을 활성함수·depthwise conv를 지나 소비자까지 따라가고, `add`(residual)·pool·attention matmul·LayerNorm에 닿으면 포기, `concat`을 지나면 소비자의 입력 채널 슬라이스를 함께 자릅니다. 그래서 Inception은 브랜치 출력과 5×5 브랜치 내부 채널이, ViT는 MLP 은닉 차원(fc1→fc2)이, MobileNetV2는 확장 채널에 더해 residual이 없는 블록 출력까지 그룹이 됩니다(아래 표의 Inception·ViT·MobileNetV2 행).
 * 결론: **비용 모델을 루프 안에 두는 값은 "무엇을 자를지"보다 "자르기 전에 얼마가 나올지"를 아는 데 있습니다.** FLOPs 기준 65% 절감을 위해 fine-tune 3 epoch을 돌리기 전에, 이 배열에서는 26%가 상한이라는 것과 MobileNetV2에서는 depthwise 엔진이 병목이라는 것을 수 초 안에 압니다. 사이클을 더 줄이려면 채널이 아니라 M(입력 해상도·stride)이나 depthwise 엔진의 lane 수를 건드려야 합니다.
 
 <!-- TABLE:E6 -->
@@ -368,12 +408,25 @@ FP32 대비 정확도 손실(%p), 시드 3개 평균 ± 표준편차. 열 = 캘�
 | ResNet-20 ReLU | cost-greedy | 0.85 ✓ | 8 | 8 8 8 24 8 8 64 64 32 | 57% | 80% / 85% / 86% | 10% | 88.54% | 88.52% |
 | ResNet-20 ReLU | cost-greedy | 0.7 ✗ (0.72) | 8 | 8 8 8 8 8 8 8 8 8 | 31% | 60% / 72% / 69% | 6% | 81.13% | 81.15% |
 | ResNet-20 ReLU | cost-greedy | 0.55 ✗ (0.72) | 8 | 8 8 8 8 8 8 8 8 8 | 31% | 60% / 72% / 69% | 6% | 81.13% | 81.15% |
-| MobileNetV2-0.5 ReLU6 | none | 1.0 |  | 48 96 96 96 96 96 192 192 192 192 288 288 288 480 480 480 | 100% | 100% / 100% / 100% | 3% | 90.23% | 90.30% |
-| MobileNetV2-0.5 ReLU6 | uniform | 0.5 |  | 24 48 48 48 48 48 96 96 96 96 144 144 144 240 240 240 | 57% | 67% / 84% / 88% | 2% | 88.39% | 88.40% |
-| MobileNetV2-0.5 ReLU6 | cost-greedy | 0.7 ✗ (0.91) | 8 | 48 96 96 96 96 96 192 192 192 192 288 288 208 208 208 208 | 90% | 86% / 91% / 95% | 3% | 90.08% | 90.07% |
+| 고객 B · Inception-32 | none | 1.0 |  | 32 16 32 8 16 64 32 64 16 32 128 32 | 100% | 100% / 100% / 100% | 21% | 89.59% | 89.55% |
+| 고객 B · Inception-32 | uniform | 0.5 |  | 16 8 16 8 8 32 16 32 8 16 64 16 | 31% | 43% / 56% / 57% | 12% | 85.78% | 85.88% |
 
 MACs·cycles는 프루닝 전 대비. cost-greedy의 ratio는 edge-10tops 사이클 목표이며 ✓ = 도달, ✗ = 최소 채널 폭(8)에서 멈춤(괄호는 실제 달성 비율). FT acc = 3 epoch fine-tune 후 FP32, INT8 acc = npu-default PTQ fake-quant.
 <!-- /TABLE:E6 -->
+
+### E12. 두 번째 데이터셋과 더 큰 입력 — Imagenette 128×128
+
+CIFAR-10 32×32에서만 나온 결론이라는 지적에 대한 첫 답입니다. Imagenette(ImageNet 10클래스, fast.ai)를 128×128로 준비해 같은 트레이너로
+ResNet-20(stem stride 2)을 처음부터 학습하고, 같은 인테이크·PTQ·정수 엔진 파이프라인을 돌렸습니다. ImageNet 사전학습 가중치는 이
+환경에서 받을 수 없어(download.pytorch.org·Hugging Face 차단) 쓰지 못했고, 그래서 "사전학습 체크포인트의 CLE 효과"는 여전히 열린 항목입니다.
+
+<!-- TABLE:E12 -->
+_(아직 실행되지 않음)_
+<!-- /TABLE:E12 -->
+
+입력이 16배 커지면 비용 모델에서는 M(출력 픽셀 수)이 커져 채움/비움 오버헤드의 비중이 줄고 배열 활용률이 올라가며, 정수 엔진의 실측 시간은
+MACs에 비례해 늘어납니다. 데이터 로더는 파일에 든 평균·표준편차·패딩·hold-out 크기를 읽으므로(`tools/prepare_imagenette.py`가 씀) CIFAR
+코드 경로를 그대로 씁니다.
 
 ## 데모
 
@@ -401,14 +454,16 @@ npuloop/
 ├── npu/spec.py, cost.py 가상 NPU 프리셋 4종 + weight-stationary systolic 비용 모델 (멀티코어 M/N 분할, DW 엔진, LUT/폴백, DRAM roofline)
 ├── lint/checks.py       정적·동적 준비도 점검 → efficiency / quant-robustness 점수
 ├── quant/               관측기(minmax·percentile·MSE), fake-quant(STE, 선택적 학습 스케일), NPU식 삽입(prepare), 캘리브레이션, CLE, 바이어스 보정, 민감도, 활성함수 교체, QAT
-├── intengine/           IntGraph export, gemmlowp/TFLite 동일 requant, NumPy 엔진, C++ 커널(ctypes), fake-vs-int 검증
-├── prune/structured.py  채널 프루닝: uniform · aligned · cost-greedy(비용 모델 in-the-loop)
-├── zoo/                 CIFAR-10 npz 로더, 모델, 재현 가능한 트레이너(resume)
-└── cli.py               npuloop cost | lint | quantize
-experiments/             E1–E10 스크립트 (재개 가능, results/*.json에 provenance 라벨과 함께 저장)
+├── intengine/           IntGraph export, gemmlowp/TFLite 동일 requant, NumPy 엔진, C++ 커널(ctypes), fake-vs-int 검증,
+│                        bench(노드별 실측), serialize(.npuloop 파일), cpp/int8_runner.cpp(파이썬 없는 독립 실행기)
+├── prune/structured.py  fx 그래프에서 찾은 채널 그룹(체인·concat 브랜치·MLP 은닉)에 uniform · aligned · cost-greedy(비용 모델 in-the-loop) 프루닝
+├── zoo/                 npz 로더(CIFAR-10·Imagenette, 층화 검증 분할), 모델, 재현 가능한 트레이너(val 기준 선택, resume)
+└── cli.py               npuloop cost | lint | intake | quantize | export | bench
+experiments/             E1–E12 스크립트 (재개 가능, results/*.json에 provenance 라벨과 함께 저장)
 results/                 실험 결과 JSON
 demo/                    build.py + index.template.html → 인라인 JSON 데모 페이지 (docs/index.html)
 tests/                   pytest 69개 (참조 구현 대조, 비트 동일성, 정확성 회귀)
+tools/                   README 표 생성, CIFAR-10/Imagenette npz 준비, 처방 갱신
 docs/                    DESIGN.md · INTEGER_DATAPATH.md · RELATED.md
 ```
 
@@ -426,7 +481,10 @@ npuloop lint runs/resnet20_relu/best.pt --spec edge-10tops --data data/cifar10.n
 npuloop quantize runs/resnet20_relu/best.pt --data data/cifar10.npz --scheme npu-default --verify 500 --int-eval 2000
 
 python examples/walkthrough.py --ckpt runs/resnet20_relu/best.pt --data data/cifar10.npz   # 1~2분짜리 전체 흐름 데모
-npuloop intake runs/cust_vit/best.pt --spec edge-10tops-strict --data data/cifar10.npz   # 고객 인테이크 리포트
+npuloop intake runs/cust_vit/best.pt --spec edge-10tops-strict --data data/cifar10.npz   # 고객 인테이크 리포트 (--bench 64: 엔진 실측 열)
+npuloop bench runs/resnet20_relu/best.pt --data data/cifar10.npz                    # NumPy·C++ 엔진 노드별 wall-clock vs 모델 사이클
+npuloop export runs/resnet20_relu/best.pt --data data/cifar10.npz --out model.npuloop --sample 16   # 정수 그래프를 파일로
+make runner && build/int8_runner model.npuloop sample_input.f32 --float --argmax    # 파이썬 없이 같은 파일을 실행 (비트 동일)
 bash experiments/run_all.sh     # E1–E7 전부 (CPU 4코어 기준 수 시간), results/*.json
 python experiments/e9_customer_intake.py    # E9 고객 인테이크 (ViT healing 포함)
 python experiments/e8_scalesim.py   # 비용 모델 vs SCALE-Sim (pip install scalesim)
@@ -466,6 +524,10 @@ print(NumpyEngine(ig).evaluate(ds, limit=2000), CppEngine(ig).evaluate(ds, limit
 * **재현 가능성과 출처 라벨.** 학습·프루닝·QAT는 시드 고정·재개 가능(`state.pt`)이고, 실험 JSON의 모든 레코드에 `provenance: measured | simulated` 라벨이 붙습니다. 프리셋 NPU는 공개 헤드라인 수치에 맞춘 **가정**이며 특정 벤더의 실제 구조가 아님을 코드와 문서에 명시했습니다.
 * **테스트가 실제 버그를 잡았습니다.** 프루닝으로 새로 만든 BatchNorm이 eval 모드를 물려받지 않아 배치 통계로 평가되던 버그, half-even 반올림의 shift=0 예외, per-tensor 서브셋 평가가 클래스 순서로 정렬된 테스트셋 때문에 편향되던 문제를 모두 테스트/실험 단계에서 발견해 고쳤습니다(커밋 이력 참고).
 
+* **외부 오라클과의 대조.** 정수 엔진은 저장소 안의 두 구현(NumPy·C++)끼리만 맞추는 데서 그치지 않고 TFLite reference 커널과 1,000장 × 모든 텐서에서 비트 일치합니다(E11). 그 과정에서 TFLite의 op별 반올림 차이와 MEAN의 requant 의미론을 배웠습니다.
+* **실측과 모델을 섞지 않기.** 실측한 시간은 호스트 CPU의 검증 엔진뿐이고(E10), NPU 사이클·에너지는 `simulated` 라벨을 달고 다닙니다. 에너지 상수는 Horowitz(ISSCC 2014) 자릿수 추정이며 비율을 읽는 용도입니다.
+* **파일로 나가는 정수 그래프.** `.npuloop`는 int8 가중치·int32 바이어스·Q31 곱셈기·시프트·LUT만 담고, 파이썬 없는 C++ 실행기가 같은 파일을 읽어 두 파이썬 엔진과 코드 단위로 같은 답을 냅니다.
+
 ## 한계와 다음 단계
 
 * **CIFAR-10, 30 epoch, seed 1개.** 정확도 차이 0.2%p 이하는 잡음입니다(10k 이미지 표준오차 ≈ 0.3%p). 결론은 "방향"이지 소수점 둘째 자리가 아닙니다.
@@ -476,7 +538,8 @@ print(NumpyEngine(ig).evaluate(ds, limit=2000), CppEngine(ig).evaluate(ds, limit
 * **프루닝 대상이 residual 밖의 내부 채널뿐**이라 절감 폭에 상한이 있습니다. residual stream 채널을 같이 자르려면 의존성 그래프가 필요합니다.
 * **혼합 정밀도 없음.** 이 프로젝트의 NPU는 INT8 고정이라 비트 폭 탐색 대신 정수 구현 세부(E7)에 집중했습니다.
 * **활성함수 베이스라인 2개를 학습하지 못했습니다.** 계획했던 ResNet-20 GELU·HardSwish 베이스라인은 CPU 시간 때문에 빠졌습니다(E4(b)의 HardSwish는 SiLU 모델을 교체·healing한 것). LUT 활성함수에 대한 결론은 SiLU 한 모델에 기댑니다.
-* **CLE의 이득과 lint 점수의 보정을 보이지 못했습니다.** 이 저장소의 체크포인트에는 CLE가 고칠 만한 채널 범위 불균형이 없고(최대 3.5배), lint 점수는 순위는 맞지만 크기가 보정되지 않았습니다(E3). ImageNet 계열 체크포인트에서 같은 실험을 반복하는 것이 다음 단계입니다.
+* **CLE의 이득과 lint 점수의 보정을 보이지 못했습니다.** 이 저장소의 체크포인트에는 CLE가 고칠 만한 채널 범위 불균형이 없고(최대 6배), lint 점수는 순위는 맞지만 크기가 보정되지 않았습니다(E3). ImageNet 사전학습 체크포인트가 필요한데 이 환경에서는 가중치 호스트가 막혀 있어 Imagenette를 처음부터 학습하는 것으로 대신했습니다(E12).
+* **에너지 모델은 자릿수 추정입니다.** MAC·SRAM·DRAM·벡터·호스트 항목의 pJ 상수는 45 nm 공개 수치에서 가져온 것이라 절대값이 아니라 프리셋·모델 간 비율을 읽는 용도입니다. TFLite 교차 검증도 conv·pool·fc 세 op에 한정됩니다(depthwise·add·softmax는 아직).
 
 ## 라이선스
 

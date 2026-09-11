@@ -401,152 +401,93 @@
    "timestamp": "2026-09-10T13:12:55"
   },
   {
-   "model": "mnv2_050_relu6",
+   "model": "cust_inception",
    "strategy": "none",
    "ratio": 1.0,
    "align": 0,
    "keep": [
-    48,
-    96,
-    96,
-    96,
-    96,
-    96,
-    192,
-    192,
-    192,
-    192,
-    288,
-    288,
-    288,
-    480,
-    480,
-    480
+    32,
+    16,
+    32,
+    8,
+    16,
+    64,
+    32,
+    64,
+    16,
+    32,
+    128,
+    32
    ],
-   "float_acc": 0.9023,
-   "ft_acc": 0.9023,
-   "int8_acc": 0.903,
-   "macs": 27969024,
-   "params": 691218,
+   "float_acc": 0.8959,
+   "ft_acc": 0.8959,
+   "int8_acc": 0.8955,
+   "macs": 53971456,
+   "params": 422338,
    "tiny-1tops": {
-    "cycles": 200536.0,
-    "util": 0.1205394542625763,
-    "latency_ms": 0.401072
+    "cycles": 99068.0,
+    "util": 0.5320234586344733,
+    "latency_ms": 0.198136
    },
    "edge-10tops": {
-    "cycles": 87056.0,
-    "util": 0.034708262497702626,
-    "latency_ms": 0.14509333333333332
+    "cycles": 31224.0,
+    "util": 0.21100155329233922,
+    "latency_ms": 0.05204
    },
    "pcie-80tops": {
-    "cycles": 67351.16341829085,
-    "util": 0.011215702694080787,
-    "latency_ms": 0.056125969515242374
+    "cycles": 19992.0,
+    "util": 0.08238686099439776,
+    "latency_ms": 0.01666
    },
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-10T21:43:15"
+   "timestamp": "2026-09-11T01:17:39"
   },
   {
-   "model": "mnv2_050_relu6",
+   "model": "cust_inception",
    "strategy": "uniform",
    "ratio": 0.5,
    "align": 0,
    "keep": [
-    24,
-    48,
-    48,
-    48,
-    48,
-    48,
-    96,
-    96,
-    96,
-    96,
-    144,
-    144,
-    144,
-    240,
-    240,
-    240
+    16,
+    8,
+    16,
+    8,
+    8,
+    32,
+    16,
+    32,
+    8,
+    16,
+    64,
+    16
    ],
-   "acc_after_prune": 0.1316,
-   "ft_acc": 0.8839,
-   "int8_acc": 0.884,
+   "acc_after_prune": 0.101,
+   "ft_acc": 0.8578,
+   "int8_acc": 0.8588,
    "ft_epochs": 3,
    "greedy_steps": null,
    "target_reached": null,
    "achieved_ratio": null,
-   "minutes": 9.300599352518718,
-   "macs": 15989760,
-   "params": 455802,
+   "minutes": 5.585702196756999,
+   "macs": 16861696,
+   "params": 151914,
    "tiny-1tops": {
-    "cycles": 135216.0,
-    "util": 0.10333466453674121,
-    "latency_ms": 0.270432
+    "cycles": 42364.0,
+    "util": 0.3886908696062695,
+    "latency_ms": 0.084728
    },
    "edge-10tops": {
-    "cycles": 72833.75,
-    "util": 0.023980125971819383,
-    "latency_ms": 0.12138958333333333
+    "cycles": 17580.0,
+    "util": 0.11708262229806599,
+    "latency_ms": 0.0293
    },
    "pcie-80tops": {
-    "cycles": 59412.671664167916,
-    "util": 0.007349284466925263,
-    "latency_ms": 0.04951055972013993
+    "cycles": 11484.0,
+    "util": 0.04480826584813654,
+    "latency_ms": 0.00957
    },
    "provenance": "measured+simulated",
-   "timestamp": "2026-09-10T21:52:33"
-  },
-  {
-   "model": "mnv2_050_relu6",
-   "strategy": "cost-greedy",
-   "ratio": 0.7,
-   "align": 8,
-   "keep": [
-    48,
-    96,
-    96,
-    96,
-    96,
-    96,
-    192,
-    192,
-    192,
-    192,
-    288,
-    288,
-    208,
-    208,
-    208,
-    208
-   ],
-   "acc_after_prune": 0.647,
-   "ft_acc": 0.9008,
-   "int8_acc": 0.9007,
-   "ft_epochs": 3,
-   "greedy_steps": 112,
-   "target_reached": false,
-   "achieved_ratio": 0.9062212828524169,
-   "minutes": 18.284063172340392,
-   "macs": 25054720,
-   "params": 518802,
-   "tiny-1tops": {
-    "cycles": 172722.0,
-    "util": 0.12420247565451999,
-    "latency_ms": 0.345444
-   },
-   "edge-10tops": {
-    "cycles": 78892.0,
-    "util": 0.033990296861532224,
-    "latency_ms": 0.13148666666666667
-   },
-   "pcie-80tops": {
-    "cycles": 63717.53823088455,
-    "util": 0.010521288857249898,
-    "latency_ms": 0.053097948525737126
-   },
-   "provenance": "measured+simulated",
-   "timestamp": "2026-09-10T22:10:50"
+   "timestamp": "2026-09-11T01:23:14"
   }
  ]
 }

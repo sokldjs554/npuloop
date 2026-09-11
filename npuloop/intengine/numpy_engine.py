@@ -104,6 +104,9 @@ class NumpyEngine:
     def exec_node(self, n: IntNode, vals: dict) -> np.ndarray:
         """Execute one node given a dict of (already computed) input tensors (any integer dtype)."""
         cfg = self.cfg
+        if "rounding" in n.attrs and n.attrs["rounding"] != cfg.rounding:     # per-node override (E11: TFLite's FC rounds once)
+            from dataclasses import replace
+            cfg = replace(cfg, rounding=n.attrs["rounding"])
         vals = _Int64View(vals)
         if True:
             if n.op == "input":
@@ -189,6 +192,13 @@ class NumpyEngine:
                 cnt = x.shape[1]
                 s = x.sum(axis=1, keepdims=n.attrs.get("keepdim", False))
                 y = np.where(s >= 0, (s + cnt // 2) // cnt, -((-s + cnt // 2) // cnt))
+                return np.clip(y, n.out_q.qmin, n.out_q.qmax)
+            elif n.op == "pool" and n.attrs.get("kind") == "global_avg_requant":
+                # TFLite MEAN over H,W: sum of zero-point-centred codes, one requantization by s_in/(s_out*HW)
+                in_q = self.g[n.inputs[0]].out_q
+                x = vals[n.inputs[0]]
+                acc = (x - in_q.zero_point).sum(axis=(2, 3), keepdims=True)
+                y = multiply_by_quantized_multiplier(acc, n.mult[0], n.shift[0], cfg.rounding) + n.out_q.zero_point
                 return np.clip(y, n.out_q.qmin, n.out_q.qmax)
             elif n.op == "pool":
                 x = vals[n.inputs[0]]

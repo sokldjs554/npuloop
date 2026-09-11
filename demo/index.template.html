@@ -113,7 +113,7 @@ footer{padding:30px 0 50px;color:var(--muted);font-size:13px;border-top:1px soli
 <header class="top"><div class="wrap">
   <div class="brand">npu<b>loop</b></div>
   <nav>
-    <a href="#intake">Intake</a><a href="#loop">Loop</a><a href="#baselines">Baselines</a><a href="#cost">Cost model</a><a href="#scalesim">vs SCALE-Sim</a><a href="#timing">Measured</a><a href="#lint">Lint</a><a href="#ptq">PTQ &amp; bit-exact</a>
+    <a href="#intake">Intake</a><a href="#loop">Loop</a><a href="#baselines">Baselines</a><a href="#cost">Cost model</a><a href="#scalesim">vs SCALE-Sim</a><a href="#timing">Measured</a><a href="#tflite">vs TFLite</a><a href="#imagenette">Imagenette</a><a href="#lint">Lint</a><a href="#ptq">PTQ &amp; bit-exact</a>
     <a href="#requant">Requant</a><a href="#surgery">Surgery</a><a href="#calib">Calibration</a><a href="#prune">Pruning</a><a href="#lintvsdrop">Lint vs drop</a><a href="#method">Method</a>
   </nav>
 </div></header>
@@ -122,7 +122,7 @@ footer{padding:30px 0 50px;color:var(--muted);font-size:13px;border-top:1px soli
 <div class="hero">
   <p class="eyebrow">고객 모델 인테이크 · 가상 NPU 비용 모델 · 비트 정확 정수 엔진 · CIFAR-10</p>
   <h1>가상 NPU에 올려보고 양자화·프루닝을 고릅니다</h1>
-  <p class="lede">고객이 체크포인트를 보내오면 <b>돌기는 하는지 · 얼마나 걸리는지 · 무엇을 바꿔야 하는지</b>를 숫자로 답합니다. 바로 아래 <a href="#intake">고객 모델 인테이크</a>가 그 리포트이고, 나머지 섹션은 그 답을 뒷받침하는 실험 10개입니다. 사이클은 <b>해석적 systolic-array 비용 모델</b>(SCALE-Sim과 레이어당 0.5% 이내), 정확도는 <b>비트 정확(bit-exact) 정수 엔진</b>으로 잰 값이고, 모든 숫자는 저장소의 실험 스크립트가 만든 JSON에서 그대로 읽어옵니다.</p>
+  <p class="lede">고객이 체크포인트를 보내오면 <b>돌기는 하는지 · 얼마나 걸리는지 · 무엇을 바꿔야 하는지</b>를 숫자로 답합니다. 바로 아래 <a href="#intake">고객 모델 인테이크</a>가 그 리포트이고, 나머지 섹션은 그 답을 뒷받침하는 실험 12개입니다. 사이클은 <b>해석적 systolic-array 비용 모델</b>(SCALE-Sim과 레이어당 0.5% 이내), 정확도는 <b>비트 정확(bit-exact) 정수 엔진</b>으로 잰 값이고, 모든 숫자는 저장소의 실험 스크립트가 만든 JSON에서 그대로 읽어옵니다.</p>
   <div class="meta" id="meta"></div>
   <div class="kpis" id="kpis"></div>
 </div>
@@ -201,6 +201,18 @@ footer{padding:30px 0 50px;color:var(--muted);font-size:13px;border-top:1px soli
     <div class="row" style="margin-top:12px"><label class="ctrl">model<select id="tm-model"></select></label><div class="stats" id="tm-stats" style="margin:0"></div></div>
     <div class="tblwrap" id="tm-nodes"></div>
   </div>
+</section>
+
+<section id="tflite">
+  <h2><span class="num">E11</span>실제 런타임과 비트가 맞는가 — TensorFlow Lite 교차 검증</h2>
+  <p class="sub">TFLite full-integer PTQ 모델의 스케일·zero-point·int8 가중치·int32 바이어스를 그대로 읽어 npuloop 정수 그래프를 만들고, 같은 int8 입력을 TFLite reference 커널과 npuloop 엔진 두 개에 넣어 <b>모든 중간 텐서와 출력 코드</b>를 비교했습니다. conv·pool은 gemmlowp 이중 반올림, fully-connected는 단일 반올림일 때 1,000장 × 모든 텐서가 완전히 일치합니다.</p>
+  <div class="panel"><div class="tblwrap" id="tf-table"></div><div id="tf-note" class="note"></div></div>
+</section>
+
+<section id="imagenette">
+  <h2><span class="num">E12</span>두 번째 데이터셋 · 큰 입력 — Imagenette 128×128</h2>
+  <p class="sub">ImageNet 10클래스(Imagenette)를 128×128로 준비해 ResNet-20(stem stride 2)을 처음부터 학습하고, 같은 인테이크·PTQ·정수 엔진·실측 파이프라인을 돌렸습니다. 사전학습 가중치 호스트는 이 환경에서 막혀 있어 쓰지 않았습니다.</p>
+  <div class="panel"><div class="stats" id="im-head"></div><div class="tblwrap" id="im-cost"></div><div class="tblwrap" id="im-ptq" style="margin-top:10px"></div><div id="im-note" class="note"></div></div>
 </section>
 
 <section id="lint">
@@ -370,6 +382,7 @@ section('intake', function(){
     let g=`<div class="big">${fmt.n(d.cycles)} <small>cycles · ${d.latency_ms.toFixed(3)} ms</small></div>`+
       `<div class="budget">${seg}</div>`+
       `<div class="stats" style="margin:2px 0 10px"><span>배열 활용률 <b>${fmt.pct(d.array_utilization,1)}</b></span><span>DRAM <b>${(d.dram_bytes/1024).toFixed(0)} KB</b></span>`+
+      (d.energy_uj!=null?`<span>에너지 <b>${d.energy_uj.toFixed(1)} µJ/장</b> <small style="color:var(--muted)">(simulated: ${Object.entries(d.energy_breakdown||{}).map(([k,v])=>k+' '+v.toFixed(1)).join(' · ')})</small></span>`:'')+
       `<span>lint 효율 <b>${d.lint.scores.efficiency}</b></span><span>양자화 강건성 <b>${d.lint.scores.quant_robustness}</b></span></div>`;
     g+='<div class="tblwrap"><table><tr><th>병목</th><th>종류</th><th>사이클</th><th>비중</th></tr>'+
       d.bottlenecks.map(b=>`<tr><td>${b.name}</td><td>${b.kind}</td><td>${fmt.n(b.cycles)}</td><td>${fmt.pct(b.share,0)}</td></tr>`).join('')+'</table></div>';
@@ -471,6 +484,24 @@ section('timing', function(){ const rs=(R.e10_engine_timing||{}).records||[]; co
       r.top_nodes.map(x=>`<tr><td>${x.name}</td><td>${x.op}</td><td>${x.numpy_ms.toFixed(2)}</td><td>${x.cpp_ms.toFixed(2)}</td><td>${x.cycles!=null?fmt.n(x.cycles):'—'}</td><td>${x.cycle_share!=null?fmt.pct(x.cycle_share,1):'—'}</td></tr>`).join('');
     $('tm-nodes').innerHTML=''; $('tm-nodes').appendChild(n); }
   $('tm-model').addEventListener('change',render); render(); });
+
+// ---------- TFLite cross-check (E11) ----------
+section('tflite', function(){ const d=R.e11_tflite_crosscheck||{}; const rs=d.records||[]; if(!rs.length){ $('tf-table').innerHTML='<span class="empty">E11 not run yet</span>'; return; }
+  const meta=d.meta||{}; const t=el('table');
+  t.innerHTML='<tr><th>rounding conv·pool / fc</th><th>engine</th><th>images with any output mismatch</th><th>elements</th><th>top-1 agreement</th><th>per-node local mismatch</th></tr>'+
+    rs.map(r=>`<tr><td>${r.graph_rounding} / ${r.fc_rounding}</td><td>${r.engine}</td><td>${r.output_mismatch_images}/${r.images}</td><td>${r.output_mismatch_elems}/${r.output_elems}</td><td>${fmt.pct(r.top1_agreement,1)}</td><td>${Object.values(r.per_node).map(v=>fmt.pct(v.mismatch_frac,2)).join(' / ')}</td></tr>`).join('');
+  $('tf-table').innerHTML=''; $('tf-table').appendChild(t);
+  const x=meta.xnnpack_vs_reference; $('tf-note').innerHTML=`TensorFlow ${meta.tensorflow||''} · ops ${(meta.ops||[]).join(' → ')} · ${meta.images||''} test images.`+(x?` TFLite's own XNNPACK delegate differs from its reference kernels on <b>${x.output_mismatch_images}/${x.images}</b> images.`:''); });
+
+// ---------- Imagenette (E12) ----------
+section('imagenette', function(){ const rs=((R.e12_imagenette||{}).records)||[]; const meta=(R.e12_imagenette||{}).meta||{}; const base=rs.find(r=>r.kind==='baseline'); if(!base){ $('im-head').innerHTML='<span class="empty">E12 not run yet</span>'; return; }
+  $('im-head').innerHTML=`<span>train <b>${(meta.train||0).toLocaleString()}</b> · val <b>${meta.val}</b> · test <b>${(meta.test||0).toLocaleString()}</b></span><span>val acc <b>${fmt.pct(base.val_acc)}</b> (ep ${base.selected_epoch})</span><span>test acc <b>${fmt.pct(base.test_acc)}</b></span><span>MACs <b>${(base.macs/1e6).toFixed(0)}M</b></span><span>${base.train_minutes.toFixed(0)} min on CPU</span>`;
+  const c=el('table'); c.innerHTML='<tr><th>preset</th><th>cycles</th><th>latency (simulated)</th><th>array util</th><th>DRAM</th><th>energy µJ (simulated)</th><th>lint eff / q-rob</th></tr>'+
+    Object.entries(base.cost).map(([k,v])=>`<tr><td>${k}</td><td>${fmt.n(v.total_cycles)}</td><td>${v.latency_ms.toFixed(3)} ms</td><td>${fmt.pct(v.array_utilization,1)}</td><td>${(v.dram_bytes/1024).toFixed(0)} KB</td><td>${v.energy_uj.toFixed(1)}</td><td>${base.lint[k].scores.efficiency} / ${base.lint[k].scores.quant_robustness}</td></tr>`).join('');
+  $('im-cost').innerHTML=''; $('im-cost').appendChild(c);
+  const ptq=rs.filter(r=>r.kind==='ptq'); if(ptq.length){ const t=el('table'); t.innerHTML='<tr><th>scheme</th><th>FP32</th><th>fake-quant</th><th>integer engine (C++)</th><th>Δ</th></tr>'+ptq.map(r=>`<tr><td>${r.scheme}</td><td>${fmt.pct(r.float_acc)}</td><td>${fmt.pct(r.fake_acc)}</td><td>${fmt.pct(r.int_acc)}</td><td>${fmt.pp(r.int_acc-r.fake_acc,2)}</td></tr>`).join(''); $('im-ptq').innerHTML=''; $('im-ptq').appendChild(t);
+    const eq=(ptq.find(r=>r.output_equality)||{}).output_equality, b=(ptq.find(r=>r.bench)||{}).bench;
+    $('im-note').innerHTML=(eq?`NumPy and C++ engines agree code for code on ${eq.images-eq.images_with_any_mismatch}/${eq.images} test images. `:'')+(b?`Measured on this host (1 thread, 128px): NumPy ${b.engines.numpy.per_image_ms.toFixed(0)} ms/image, C++ ${b.engines.cpp.per_image_ms.toFixed(0)} ms/image (${b.speedup.toFixed(1)}×).`:''); } });
 
 // ---------- lint ----------
 section('lint', function(){ const e1=(R.e1_baselines||{}).records||[]; if(!e1.length){ $('li-score').innerHTML='<span class="empty">E1 not run yet</span>'; return; }

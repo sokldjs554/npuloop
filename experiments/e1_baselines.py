@@ -30,7 +30,8 @@ def main():
         for spec in PRESETS:
             r = estimate(g, spec)
             rec["cost"][spec] = dict(total_cycles=r.total_cycles, latency_ms=r.latency_ms, array_utilization=r.array_utilization,
-                                     dram_bytes=r.dram_bytes, breakdown=r.breakdown(),
+                                     dram_bytes=r.dram_bytes, breakdown=r.breakdown(), energy_uj=r.energy_uj,
+                                     energy_breakdown=r.energy_breakdown(),
                                      layers=[dict(name=l.name, kind=l.kind, macs=l.macs, cycles=l.cycles, bound=l.bound, util=l.array_util, m=l.m, k=l.k, n=l.n, split=l.split, dram_bytes=l.dram_bytes) for l in r.layers if l.op not in ("input", "output", "flatten")])
             lr = lint(g, spec, calib)
             rec["lint"][spec] = dict(scores=lr.scores, counts=lr.counts(), findings=[f.to_dict() for f in lr.findings],

@@ -26,6 +26,15 @@ class NPUSpec:
     layernorm_passes: int = 4                             # vector passes for layernorm (sum, sumsq, normalize, affine)
     fallback_cycles_per_elem: float = 8.0                 # cost of a host-side elementwise op (very rough)
     fill_drain: bool = True                               # count systolic pipeline fill/drain per weight tile
+    # Energy per operation, picojoules. Order-of-magnitude constants after Horowitz, "Computing's energy problem"
+    # (ISSCC 2014, 45 nm): 8-bit multiply 0.2 pJ + add 0.03 pJ; 8 KB SRAM read 5 pJ / 32-bit word (1.25 pJ/byte),
+    # 32 KB SRAM 10 pJ / word (2.5 pJ/byte, used for the MB-class buffers here); DRAM 640 pJ / 32-bit word
+    # (160 pJ/byte). Vector-unit ops and host fallbacks are rougher guesses. Provenance label: `simulated`.
+    pj_mac: float = 0.25
+    pj_sram_byte: float = 2.5
+    pj_dram_byte: float = 160.0
+    pj_vector_elem: float = 0.1
+    pj_host_elem: float = 100.0
 
     @property
     def macs_per_cycle(self) -> int:
@@ -50,7 +59,7 @@ class NPUSpec:
 PRESETS: dict[str, NPUSpec] = {
     # ~1 TOPS microNPU class (Ethos-U-like): single 32x32 array, tiny SRAM, slow memory.
     "tiny-1tops": NPUSpec("tiny-1tops", pe_rows=32, pe_cols=32, cores=1, freq_mhz=500, sram_kb=512,
-                          dram_gbps=3.2, vector_lanes=64, dw_lanes=64),
+                          dram_gbps=3.2, vector_lanes=64, dw_lanes=64, pj_sram_byte=1.25),
     # ~10 TOPS @ few watts edge SoC class (REGULUS-like headline numbers): 2 cores x 64x64 @ 600 MHz = 9.8 TOPS.
     "edge-10tops": NPUSpec("edge-10tops", pe_rows=64, pe_cols=64, cores=2, freq_mhz=600, sram_kb=2048,
                            dram_gbps=12.8, vector_lanes=256, dw_lanes=256),

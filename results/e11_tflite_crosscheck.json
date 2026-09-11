@@ -1,0 +1,515 @@
+{
+ "meta": {
+  "tensorflow": "2.21.0",
+  "images": 1000,
+  "note": "TFLite full-integer PTQ; npuloop IntGraph built from TFLite's own qparams/weights/biases",
+  "xnnpack_vs_reference": {
+   "images": 1000,
+   "output_mismatch_images": 155,
+   "output_mismatch_elems": 337
+  },
+  "tflite_bytes": 9128,
+  "ops": [
+   "CONV_2D",
+   "PAD",
+   "CONV_2D",
+   "CONV_2D",
+   "MEAN",
+   "FULLY_CONNECTED"
+  ]
+ },
+ "records": [
+  {
+   "rounding": "tflite+fc-single",
+   "graph_rounding": "tflite",
+   "fc_rounding": "single",
+   "engine": "numpy",
+   "images": 1000,
+   "output_mismatch_elems": 0,
+   "output_mismatch_images": 0,
+   "output_elems": 10000,
+   "top1_agreement": 1.0,
+   "per_node": {
+    "functional_1/conv1_1/Relu;functional_1/conv1_1/BiasAdd;functional_1/conv1_1/convolution;functional_1/conv1_1/Squeeze1": {
+     "op": "conv",
+     "mismatch_frac": 0.0,
+     "max_abs": 0
+    },
+    "functional_1/conv2_1/Relu;functional_1/conv2_1/BiasAdd;functional_1/conv2_1/convolution;functional_1/conv2_1/Squeeze1": {
+     "op": "conv",
+     "mismatch_frac": 0.0,
+     "max_abs": 0
+    },
+    "functional_1/conv3_1/Relu;functional_1/conv3_1/BiasAdd;functional_1/conv3_1/convolution;functional_1/conv3_1/Squeeze1": {
+     "op": "conv",
+     "mismatch_frac": 0.0,
+     "max_abs": 0
+    },
+    "functional_1/pool_1/Mean": {
+     "op": "pool",
+     "mismatch_frac": 0.0,
+     "max_abs": 0
+    },
+    "StatefulPartitionedCall_1:0": {
+     "op": "linear",
+     "mismatch_frac": 0.0,
+     "max_abs": 0
+    }
+   },
+   "exact": true,
+   "provenance": "measured",
+   "timestamp": "2026-09-11T01:22:25"
+  },
+  {
+   "rounding": "tflite+fc-single",
+   "graph_rounding": "tflite",
+   "fc_rounding": "single",
+   "engine": "cpp",
+   "images": 1000,
+   "output_mismatch_elems": 0,
+   "output_mismatch_images": 0,
+   "output_elems": 10000,
+   "top1_agreement": 1.0,
+   "per_node": {
+    "functional_1/conv1_1/Relu;functional_1/conv1_1/BiasAdd;functional_1/conv1_1/convolution;functional_1/conv1_1/Squeeze1": {
+     "op": "conv",
+     "mismatch_frac": 0.0,
+     "max_abs": 0
+    },
+    "functional_1/conv2_1/Relu;functional_1/conv2_1/BiasAdd;functional_1/conv2_1/convolution;functional_1/conv2_1/Squeeze1": {
+     "op": "conv",
+     "mismatch_frac": 0.0,
+     "max_abs": 0
+    },
+    "functional_1/conv3_1/Relu;functional_1/conv3_1/BiasAdd;functional_1/conv3_1/convolution;functional_1/conv3_1/Squeeze1": {
+     "op": "conv",
+     "mismatch_frac": 0.0,
+     "max_abs": 0
+    },
+    "functional_1/pool_1/Mean": {
+     "op": "pool",
+     "mismatch_frac": 0.0,
+     "max_abs": 0
+    },
+    "StatefulPartitionedCall_1:0": {
+     "op": "linear",
+     "mismatch_frac": 0.0,
+     "max_abs": 0
+    }
+   },
+   "exact": true,
+   "provenance": "measured",
+   "timestamp": "2026-09-11T01:22:25"
+  },
+  {
+   "rounding": "tflite",
+   "graph_rounding": "tflite",
+   "fc_rounding": "tflite",
+   "engine": "numpy",
+   "images": 1000,
+   "output_mismatch_elems": 20,
+   "output_mismatch_images": 20,
+   "output_elems": 10000,
+   "top1_agreement": 1.0,
+   "per_node": {
+    "functional_1/conv1_1/Relu;functional_1/conv1_1/BiasAdd;functional_1/conv1_1/convolution;functional_1/conv1_1/Squeeze1": {
+     "op": "conv",
+     "mismatch_frac": 0.0,
+     "max_abs": 0
+    },
+    "functional_1/conv2_1/Relu;functional_1/conv2_1/BiasAdd;functional_1/conv2_1/convolution;functional_1/conv2_1/Squeeze1": {
+     "op": "conv",
+     "mismatch_frac": 0.0,
+     "max_abs": 0
+    },
+    "functional_1/conv3_1/Relu;functional_1/conv3_1/BiasAdd;functional_1/conv3_1/convolution;functional_1/conv3_1/Squeeze1": {
+     "op": "conv",
+     "mismatch_frac": 0.0,
+     "max_abs": 0
+    },
+    "functional_1/pool_1/Mean": {
+     "op": "pool",
+     "mismatch_frac": 0.0,
+     "max_abs": 0
+    },
+    "StatefulPartitionedCall_1:0": {
+     "op": "linear",
+     "mismatch_frac": 0.002,
+     "max_abs": 1
+    }
+   },
+   "exact": false,
+   "provenance": "measured",
+   "timestamp": "2026-09-11T01:22:28"
+  },
+  {
+   "rounding": "tflite",
+   "graph_rounding": "tflite",
+   "fc_rounding": "tflite",
+   "engine": "cpp",
+   "images": 1000,
+   "output_mismatch_elems": 20,
+   "output_mismatch_images": 20,
+   "output_elems": 10000,
+   "top1_agreement": 1.0,
+   "per_node": {
+    "functional_1/conv1_1/Relu;functional_1/conv1_1/BiasAdd;functional_1/conv1_1/convolution;functional_1/conv1_1/Squeeze1": {
+     "op": "conv",
+     "mismatch_frac": 0.0,
+     "max_abs": 0
+    },
+    "functional_1/conv2_1/Relu;functional_1/conv2_1/BiasAdd;functional_1/conv2_1/convolution;functional_1/conv2_1/Squeeze1": {
+     "op": "conv",
+     "mismatch_frac": 0.0,
+     "max_abs": 0
+    },
+    "functional_1/conv3_1/Relu;functional_1/conv3_1/BiasAdd;functional_1/conv3_1/convolution;functional_1/conv3_1/Squeeze1": {
+     "op": "conv",
+     "mismatch_frac": 0.0,
+     "max_abs": 0
+    },
+    "functional_1/pool_1/Mean": {
+     "op": "pool",
+     "mismatch_frac": 0.0,
+     "max_abs": 0
+    },
+    "StatefulPartitionedCall_1:0": {
+     "op": "linear",
+     "mismatch_frac": 0.002,
+     "max_abs": 1
+    }
+   },
+   "exact": false,
+   "provenance": "measured",
+   "timestamp": "2026-09-11T01:22:28"
+  },
+  {
+   "rounding": "single",
+   "graph_rounding": "single",
+   "fc_rounding": "single",
+   "engine": "numpy",
+   "images": 1000,
+   "output_mismatch_elems": 337,
+   "output_mismatch_images": 155,
+   "output_elems": 10000,
+   "top1_agreement": 1.0,
+   "per_node": {
+    "functional_1/conv1_1/Relu;functional_1/conv1_1/BiasAdd;functional_1/conv1_1/convolution;functional_1/conv1_1/Squeeze1": {
+     "op": "conv",
+     "mismatch_frac": 0.0008189697265625,
+     "max_abs": 1
+    },
+    "functional_1/conv2_1/Relu;functional_1/conv2_1/BiasAdd;functional_1/conv2_1/convolution;functional_1/conv2_1/Squeeze1": {
+     "op": "conv",
+     "mismatch_frac": 0.004290771484375,
+     "max_abs": 1
+    },
+    "functional_1/conv3_1/Relu;functional_1/conv3_1/BiasAdd;functional_1/conv3_1/convolution;functional_1/conv3_1/Squeeze1": {
+     "op": "conv",
+     "mismatch_frac": 0.018586669921875,
+     "max_abs": 2
+    },
+    "functional_1/pool_1/Mean": {
+     "op": "pool",
+     "mismatch_frac": 0.0129375,
+     "max_abs": 1
+    },
+    "StatefulPartitionedCall_1:0": {
+     "op": "linear",
+     "mismatch_frac": 0.0337,
+     "max_abs": 1
+    }
+   },
+   "exact": false,
+   "provenance": "measured",
+   "timestamp": "2026-09-11T01:22:30"
+  },
+  {
+   "rounding": "single",
+   "graph_rounding": "single",
+   "fc_rounding": "single",
+   "engine": "cpp",
+   "images": 1000,
+   "output_mismatch_elems": 337,
+   "output_mismatch_images": 155,
+   "output_elems": 10000,
+   "top1_agreement": 1.0,
+   "per_node": {
+    "functional_1/conv1_1/Relu;functional_1/conv1_1/BiasAdd;functional_1/conv1_1/convolution;functional_1/conv1_1/Squeeze1": {
+     "op": "conv",
+     "mismatch_frac": 0.0008189697265625,
+     "max_abs": 1
+    },
+    "functional_1/conv2_1/Relu;functional_1/conv2_1/BiasAdd;functional_1/conv2_1/convolution;functional_1/conv2_1/Squeeze1": {
+     "op": "conv",
+     "mismatch_frac": 0.004290771484375,
+     "max_abs": 1
+    },
+    "functional_1/conv3_1/Relu;functional_1/conv3_1/BiasAdd;functional_1/conv3_1/convolution;functional_1/conv3_1/Squeeze1": {
+     "op": "conv",
+     "mismatch_frac": 0.018586669921875,
+     "max_abs": 2
+    },
+    "functional_1/pool_1/Mean": {
+     "op": "pool",
+     "mismatch_frac": 0.0129375,
+     "max_abs": 1
+    },
+    "StatefulPartitionedCall_1:0": {
+     "op": "linear",
+     "mismatch_frac": 0.0337,
+     "max_abs": 1
+    }
+   },
+   "exact": false,
+   "provenance": "measured",
+   "timestamp": "2026-09-11T01:22:31"
+  },
+  {
+   "rounding": "half_even",
+   "graph_rounding": "half_even",
+   "fc_rounding": "half_even",
+   "engine": "numpy",
+   "images": 1000,
+   "output_mismatch_elems": 364,
+   "output_mismatch_images": 182,
+   "output_elems": 10000,
+   "top1_agreement": 1.0,
+   "per_node": {
+    "functional_1/conv1_1/Relu;functional_1/conv1_1/BiasAdd;functional_1/conv1_1/convolution;functional_1/conv1_1/Squeeze1": {
+     "op": "conv",
+     "mismatch_frac": 0.000852783203125,
+     "max_abs": 1
+    },
+    "functional_1/conv2_1/Relu;functional_1/conv2_1/BiasAdd;functional_1/conv2_1/convolution;functional_1/conv2_1/Squeeze1": {
+     "op": "conv",
+     "mismatch_frac": 0.004443603515625,
+     "max_abs": 1
+    },
+    "functional_1/conv3_1/Relu;functional_1/conv3_1/BiasAdd;functional_1/conv3_1/convolution;functional_1/conv3_1/Squeeze1": {
+     "op": "conv",
+     "mismatch_frac": 0.01907373046875,
+     "max_abs": 2
+    },
+    "functional_1/pool_1/Mean": {
+     "op": "pool",
+     "mismatch_frac": 0.013,
+     "max_abs": 1
+    },
+    "StatefulPartitionedCall_1:0": {
+     "op": "linear",
+     "mismatch_frac": 0.0364,
+     "max_abs": 1
+    }
+   },
+   "exact": false,
+   "provenance": "measured",
+   "timestamp": "2026-09-11T01:22:35"
+  },
+  {
+   "rounding": "half_even",
+   "graph_rounding": "half_even",
+   "fc_rounding": "half_even",
+   "engine": "cpp",
+   "images": 1000,
+   "output_mismatch_elems": 364,
+   "output_mismatch_images": 182,
+   "output_elems": 10000,
+   "top1_agreement": 1.0,
+   "per_node": {
+    "functional_1/conv1_1/Relu;functional_1/conv1_1/BiasAdd;functional_1/conv1_1/convolution;functional_1/conv1_1/Squeeze1": {
+     "op": "conv",
+     "mismatch_frac": 0.000852783203125,
+     "max_abs": 1
+    },
+    "functional_1/conv2_1/Relu;functional_1/conv2_1/BiasAdd;functional_1/conv2_1/convolution;functional_1/conv2_1/Squeeze1": {
+     "op": "conv",
+     "mismatch_frac": 0.004443603515625,
+     "max_abs": 1
+    },
+    "functional_1/conv3_1/Relu;functional_1/conv3_1/BiasAdd;functional_1/conv3_1/convolution;functional_1/conv3_1/Squeeze1": {
+     "op": "conv",
+     "mismatch_frac": 0.01907373046875,
+     "max_abs": 2
+    },
+    "functional_1/pool_1/Mean": {
+     "op": "pool",
+     "mismatch_frac": 0.013,
+     "max_abs": 1
+    },
+    "StatefulPartitionedCall_1:0": {
+     "op": "linear",
+     "mismatch_frac": 0.0364,
+     "max_abs": 1
+    }
+   },
+   "exact": false,
+   "provenance": "measured",
+   "timestamp": "2026-09-11T01:22:36"
+  },
+  {
+   "rounding": "truncate",
+   "graph_rounding": "truncate",
+   "fc_rounding": "truncate",
+   "engine": "numpy",
+   "images": 1000,
+   "output_mismatch_elems": 8203,
+   "output_mismatch_images": 1000,
+   "output_elems": 10000,
+   "top1_agreement": 0.998,
+   "per_node": {
+    "functional_1/conv1_1/Relu;functional_1/conv1_1/BiasAdd;functional_1/conv1_1/convolution;functional_1/conv1_1/Squeeze1": {
+     "op": "conv",
+     "mismatch_frac": 0.23096240234375,
+     "max_abs": 1
+    },
+    "functional_1/conv2_1/Relu;functional_1/conv2_1/BiasAdd;functional_1/conv2_1/convolution;functional_1/conv2_1/Squeeze1": {
+     "op": "conv",
+     "mismatch_frac": 0.327796875,
+     "max_abs": 4
+    },
+    "functional_1/conv3_1/Relu;functional_1/conv3_1/BiasAdd;functional_1/conv3_1/convolution;functional_1/conv3_1/Squeeze1": {
+     "op": "conv",
+     "mismatch_frac": 0.3213125,
+     "max_abs": 6
+    },
+    "functional_1/pool_1/Mean": {
+     "op": "pool",
+     "mismatch_frac": 0.8023125,
+     "max_abs": 4
+    },
+    "StatefulPartitionedCall_1:0": {
+     "op": "linear",
+     "mismatch_frac": 0.8203,
+     "max_abs": 6
+    }
+   },
+   "exact": false,
+   "provenance": "measured",
+   "timestamp": "2026-09-11T01:22:38"
+  },
+  {
+   "rounding": "truncate",
+   "graph_rounding": "truncate",
+   "fc_rounding": "truncate",
+   "engine": "cpp",
+   "images": 1000,
+   "output_mismatch_elems": 8203,
+   "output_mismatch_images": 1000,
+   "output_elems": 10000,
+   "top1_agreement": 0.998,
+   "per_node": {
+    "functional_1/conv1_1/Relu;functional_1/conv1_1/BiasAdd;functional_1/conv1_1/convolution;functional_1/conv1_1/Squeeze1": {
+     "op": "conv",
+     "mismatch_frac": 0.23096240234375,
+     "max_abs": 1
+    },
+    "functional_1/conv2_1/Relu;functional_1/conv2_1/BiasAdd;functional_1/conv2_1/convolution;functional_1/conv2_1/Squeeze1": {
+     "op": "conv",
+     "mismatch_frac": 0.327796875,
+     "max_abs": 4
+    },
+    "functional_1/conv3_1/Relu;functional_1/conv3_1/BiasAdd;functional_1/conv3_1/convolution;functional_1/conv3_1/Squeeze1": {
+     "op": "conv",
+     "mismatch_frac": 0.3213125,
+     "max_abs": 6
+    },
+    "functional_1/pool_1/Mean": {
+     "op": "pool",
+     "mismatch_frac": 0.8023125,
+     "max_abs": 4
+    },
+    "StatefulPartitionedCall_1:0": {
+     "op": "linear",
+     "mismatch_frac": 0.8203,
+     "max_abs": 6
+    }
+   },
+   "exact": false,
+   "provenance": "measured",
+   "timestamp": "2026-09-11T01:22:39"
+  },
+  {
+   "rounding": "floor",
+   "graph_rounding": "floor",
+   "fc_rounding": "floor",
+   "engine": "numpy",
+   "images": 1000,
+   "output_mismatch_elems": 7968,
+   "output_mismatch_images": 1000,
+   "output_elems": 10000,
+   "top1_agreement": 0.998,
+   "per_node": {
+    "functional_1/conv1_1/Relu;functional_1/conv1_1/BiasAdd;functional_1/conv1_1/convolution;functional_1/conv1_1/Squeeze1": {
+     "op": "conv",
+     "mismatch_frac": 0.23096240234375,
+     "max_abs": 1
+    },
+    "functional_1/conv2_1/Relu;functional_1/conv2_1/BiasAdd;functional_1/conv2_1/convolution;functional_1/conv2_1/Squeeze1": {
+     "op": "conv",
+     "mismatch_frac": 0.327796875,
+     "max_abs": 4
+    },
+    "functional_1/conv3_1/Relu;functional_1/conv3_1/BiasAdd;functional_1/conv3_1/convolution;functional_1/conv3_1/Squeeze1": {
+     "op": "conv",
+     "mismatch_frac": 0.3213125,
+     "max_abs": 6
+    },
+    "functional_1/pool_1/Mean": {
+     "op": "pool",
+     "mismatch_frac": 0.8023125,
+     "max_abs": 4
+    },
+    "StatefulPartitionedCall_1:0": {
+     "op": "linear",
+     "mismatch_frac": 0.7968,
+     "max_abs": 6
+    }
+   },
+   "exact": false,
+   "provenance": "measured",
+   "timestamp": "2026-09-11T01:22:40"
+  },
+  {
+   "rounding": "floor",
+   "graph_rounding": "floor",
+   "fc_rounding": "floor",
+   "engine": "cpp",
+   "images": 1000,
+   "output_mismatch_elems": 7968,
+   "output_mismatch_images": 1000,
+   "output_elems": 10000,
+   "top1_agreement": 0.998,
+   "per_node": {
+    "functional_1/conv1_1/Relu;functional_1/conv1_1/BiasAdd;functional_1/conv1_1/convolution;functional_1/conv1_1/Squeeze1": {
+     "op": "conv",
+     "mismatch_frac": 0.23096240234375,
+     "max_abs": 1
+    },
+    "functional_1/conv2_1/Relu;functional_1/conv2_1/BiasAdd;functional_1/conv2_1/convolution;functional_1/conv2_1/Squeeze1": {
+     "op": "conv",
+     "mismatch_frac": 0.327796875,
+     "max_abs": 4
+    },
+    "functional_1/conv3_1/Relu;functional_1/conv3_1/BiasAdd;functional_1/conv3_1/convolution;functional_1/conv3_1/Squeeze1": {
+     "op": "conv",
+     "mismatch_frac": 0.3213125,
+     "max_abs": 6
+    },
+    "functional_1/pool_1/Mean": {
+     "op": "pool",
+     "mismatch_frac": 0.8023125,
+     "max_abs": 4
+    },
+    "StatefulPartitionedCall_1:0": {
+     "op": "linear",
+     "mismatch_frac": 0.7968,
+     "max_abs": 6
+    }
+   },
+   "exact": false,
+   "provenance": "measured",
+   "timestamp": "2026-09-11T01:22:41"
+  }
+ ]
+}

@@ -56,7 +56,10 @@ def main():
             else:
                 pm, groups = prune(m, ratio=ratio, strategy=strategy, align=align); hist = None
             acc_pruned = evaluate(pm, ds)
-            fit(pm, ds, epochs=FT_EPOCHS, lr=0.02, seed=0, warmup_pct=0.2); pm.eval()
+            if getattr(m, "config", {}).get("arch") == "vit":
+                fit(pm, ds, epochs=FT_EPOCHS, lr=0.0002, seed=0, warmup_pct=0.2, optimizer="adamw"); pm.eval()
+            else:
+                fit(pm, ds, epochs=FT_EPOCHS, lr=0.02, seed=0, warmup_pct=0.2); pm.eval()
             ft_acc = evaluate(pm, ds)
             qm = prepare(pm, PRESET_SCHEMES["npu-default"]); calibrate(qm, calib)
             rec = dict(model=name, strategy=strategy, ratio=ratio, align=align, keep=[g.channels for g in groups],

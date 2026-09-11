@@ -33,12 +33,12 @@ model ─►│ graph.trace (fx IR)  │─────────────�
 |---|---|---|
 | `graph/ir.py` | torch.fx → `StaticGraph` (input/conv/linear/add/act/pool/flatten/output) | BN은 IR 생성 시점에 conv로 접는다. NPU는 BN을 모른다. 지원하지 않는 op은 `UnsupportedOpError`로 즉시 실패시킨다(조용히 넘어가지 않음). |
 | `npu/spec.py` | 가상 NPU 파라미터(`NPUSpec`)와 프리셋 | 프리셋은 공개된 헤드라인 수치(TOPS, 대역폭)에 맞춘 **가정**이며 특정 벤더의 마이크로아키텍처가 아니다. 모든 결과의 출처 라벨은 `simulated`. |
-| `npu/cost.py` | 해석적 비용 모델 | weight-stationary systolic array 타일 모델(SCALE-Sim WS 연산 사이클과 타일당 1사이클 이내로 일치, E8), 멀티코어 M/N 분할 선택, depthwise 엔진, LUT/fused/fallback 활성함수, DRAM roofline. |
+| `npu/cost.py` | 해석적 비용 모델 | weight-stationary systolic array 타일 모델(SCALE-Sim WS 연산 사이클과 타일당 1사이클 이내로 일치, E8), 멀티코어 M/N 분할 선택, depthwise 엔진, LUT/fused/fallback 활성함수, DRAM roofline. 같은 양(MAC·활성값/가중치 바이트·DRAM 바이트·벡터/호스트 원소)에 pJ 상수(Horowitz 2014 자릿수)를 곱한 에너지 추정(`simulated`). |
 | `lint/checks.py` | 정적(가중치·shape)/동적(캘리브레이션 배치) 점검 → 효율성·양자화 강건성 점수 | 점수는 **레이어 비율** 기반이라 깊이에 따라 포화되지 않는다. 점수의 예측력은 실험으로 검증한다. |
 | `quant/` | NPU 방식의 fake-quant 삽입(`prepare`), 관측기, 캘리브레이션, QAT, CLE, 바이어스 보정, 민감도, 활성함수 교체 | 양자화 지점이 NPU 데이터패스와 1:1: ReLU 계열은 requant clamp에 융합, 비-ReLU는 LUT라서 pre-activation을 int8로 한 번 더 양자화. avgpool 출력은 입력 스케일에 묶임. |
-| `intengine/` | `IntGraph` export, NumPy 정수 엔진, C++ 커널, 검증 | requant는 gemmlowp/TFLite와 비트 동일(`SaturatingRoundingDoublingHighMul` + `RoundingDivideByPOT`). `RequantConfig`로 일부러 "싸구려" 구현(곱셈기 비트 수, 반올림 모드, 누산기 폭, 바이어스 폭)을 흉내 내 정확도 비용을 측정. |
-| `prune/structured.py` | 채널 프루닝(uniform / aligned / cost-greedy) | 프루닝 대상은 residual stream 밖의 내부 채널. `cost-greedy`는 비용 모델을 루프 안에서 호출해 "사이클 절감 / 중요도 손실"이 가장 큰 그룹부터 PE-array 폭 단위로 제거. |
-| `zoo/` | CIFAR-10 데이터(npz), 모델(ResNet-20 계열, MobileNetV2-CIFAR), 재현 가능한 트레이너 | 모든 활성함수는 `nn.Module`이라 교체·추적이 기계적으로 가능. 트레이너는 시드 고정·재개 가능. |
+| `intengine/` | `IntGraph` export, NumPy 정수 엔진, C++ 커널(im2col + int32 GEMM), 검증, 노드별 실측(`bench`), `.npuloop` 파일(`serialize`), 파이썬 없는 독립 실행기(`cpp/int8_runner.cpp`) | requant는 gemmlowp/TFLite와 비트 동일(`SaturatingRoundingDoublingHighMul` + `RoundingDivideByPOT`) — TFLite reference 커널과 1,000장 × 모든 텐서에서 확인(E11; conv/pool 이중 반올림, fc 단일 반올림은 노드별 `attrs["rounding"]`로). `RequantConfig`로 일부러 "싸구려" 구현(곱셈기 비트 수, 반올림 모드, 누산기 폭, 바이어스 폭)을 흉내 내 정확도 비용을 측정. |
+| `prune/structured.py` | fx 그래프에서 찾은 채널 그룹에 uniform / aligned / cost-greedy 프루닝 | 그룹 = conv/linear 출력 채널을 활성함수·depthwise conv를 지나 소비자까지 따라간 것(체인, concat 브랜치, MLP 은닉). residual add·pool·matmul·LayerNorm에 닿는 채널은 제외. `cost-greedy`는 비용 모델을 루프 안에서 호출해 "사이클 절감 / 중요도 손실"이 가장 큰 그룹부터 PE-array 폭 단위로 제거. |
+| `zoo/` | npz 데이터(CIFAR-10·Imagenette, 층화 검증 분할), 모델(ResNet-20 계열, MobileNetV2-CIFAR, ViT, Inception), 재현 가능한 트레이너 | 모든 활성함수는 `nn.Module`이라 교체·추적이 기계적으로 가능. 트레이너는 시드 고정·재개 가능하며 체크포인트는 검증 정확도로만 고른다. |
 
 ## 정수 데이터패스 정의 (가상 NPU의 "ISA")
 
@@ -49,7 +49,7 @@ model ─►│ graph.trace (fx IR)  │─────────────�
 * global avgpool: int32 합 → 반올림 나눗셈(round half away), 스케일 유지.
 * 입력: 호스트가 float → uint8 (round half to even).
 
-## 실험 계획 (E1–E10)
+## 실험 계획 (E1–E12)
 
 | # | 질문 | 방법 |
 |---|---|---|
@@ -63,6 +63,8 @@ model ─►│ graph.trace (fx IR)  │─────────────�
 | E8 | 비용 모델은 믿을 만한가 | SCALE-Sim v3(weight-stationary, 사이클 정확) 대조: 총 사이클과 레이어별 오차 |
 | E9 | 고객 모델 인테이크 | 가상 고객 2곳(ViT, concat 분기 CNN)을 접수 → 진단 → 처방 → 적용까지 돌려 예측 절감과 실측 정확도를 나란히 |
 | E10 | 검증 엔진은 얼마나 걸리는가 | NumPy·C++ 비트 정확 엔진의 노드별 wall-clock을 호스트 CPU에서 실측해 같은 노드의 비용 모델 사이클 옆에 둠(실측 vs 모델을 섞지 않기 위해) |
+| E11 | 실제 런타임과 비트가 맞는가 | TFLite full-integer 모델의 스케일·가중치·바이어스를 그대로 읽어 IntGraph를 만들고 reference 커널과 모든 텐서를 대조 — conv·pool은 이중 반올림, fc는 단일 반올림으로 1,000장 완전 일치 |
+| E12 | 데이터셋·입력 크기 축 | Imagenette 128×128에서 ResNet-20(stem stride 2)을 학습해 인테이크·PTQ·정수 엔진·실측을 같은 파이프라인으로 |
 
 ## 검증 원칙
 

@@ -1,4 +1,4 @@
-.PHONY: test demo experiments walkthrough lint
+.PHONY: test demo experiments walkthrough lint runner
 DATA ?= data/cifar10.npz
 CKPT ?= runs/resnet20_relu/best.pt
 
@@ -19,3 +19,6 @@ demo:            ## results/*.json -> demo/index.html + docs/index.html, then RE
 
 lint:
 	ruff check npuloop tests tools experiments examples demo/build.py --select F,E9 --ignore F401,F403,F405
+
+runner:  ## standalone C++ executor for .npuloop files (no Python)
+	mkdir -p build && g++ -O3 -march=native -std=c++17 -o build/int8_runner npuloop/intengine/cpp/int8_runner.cpp

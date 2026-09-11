@@ -183,3 +183,22 @@ K가 작아 정확)보다 **3배 느렸습니다**(E10에서 처음 잰 값). �
 * **빌드.** `g++ -O3 -march=native`로 import 시점에 컴파일하며(소스 해시 + 플래그 + CPU 모델로 캐시), `NPULOOP_CPP_NATIVE=0`이면
   일반 x86-64로 빌드합니다. 스레드는 1개입니다 — 이 엔진의 목적은 속도가 아니라 검증이고, E10의 시간은 그 검증이 이
   호스트에서 얼마나 걸리는지를 잰 것입니다.
+
+
+## 10. TFLite와 비트를 맞추며 배운 것 (E11)
+
+TFLite full-integer 모델(conv-relu ×3, MEAN, fully-connected)의 스케일·zero-point·int8 가중치·int32 바이어스를 `.tflite`에서 읽어 이 저장소의
+IntGraph로 다시 조립하고, TFLite reference 커널(`BUILTIN_REF` 리졸버)과 모든 중간 텐서를 비교했습니다.
+
+* **conv·MEAN은 gemmlowp 이중 반올림(§2의 MBQM), fully-connected는 단일 반올림.** fc만 `single`로 바꾸면 1,000장 × 모든 텐서가 0개
+  불일치입니다. 그래서 `IntNode.attrs["rounding"]`로 노드별 반올림을 덮어쓸 수 있게 했고, 세 엔진(NumPy·ctypes C++·독립 러너)이 모두 따릅니다.
+* **TFLite MEAN(int8)** 은 `acc = Σ(x − zp_in)`을 `QuantizeMultiplier(s_in / (s_out · HW))`로 한 번 requant하고 `zp_out`을 더합니다 — 출력 스케일이
+  입력과 다릅니다. NPU식 평균 풀링(§4, 스케일 유지·반올림 나눗셈)과 구분해 `pool` 노드의 `kind="global_avg_requant"`로 표현합니다.
+* **XNNPACK 델리게이트와 reference 커널은 서로 다릅니다** (출력 코드가 1,000장 중 155장에서 상이). "하드웨어와 다르다"는 보고는 기준 런타임을
+  먼저 정해야 합니다.
+
+## 11. `.npuloop` 파일과 독립 실행기
+
+`intengine/serialize.py`가 IntGraph를 한 파일로 씁니다: 8바이트 매직 `NPULOOP1` · uint32 헤더 길이 · JSON 헤더(노드·op·입력·출력 양자화·JSON-safe attrs·
+배열 디스크립터) · raw little-endian 배열(가중치 int8, 나머지 int32). float은 입력/출력 스케일뿐입니다. `cpp/int8_runner.cpp`(자체 JSON 파서 +
+같은 커널 소스)가 파이썬 없이 이 파일을 실행하며, `tests/test_export_runner.py`가 네 아키텍처의 모든 노드에서 NumPy 엔진과 코드 단위 일치를 강제합니다.

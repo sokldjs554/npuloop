@@ -218,6 +218,19 @@ void global_avgpool(const int32_t* x, int N, int C, int HW, int qmin, int qmax, 
         }
 }
 
+// Global average pool with its own output scale (TFLite MEAN over H,W): one requantization of the centred sum.
+void global_avgpool_requant(const int32_t* x, int N, int C, int HW, int zp_in, int32_t mult, int shift,
+                            int zp_out, int qmin, int qmax, int rounding, int32_t* out) {
+    for (int n = 0; n < N; ++n)
+        for (int c = 0; c < C; ++c) {
+            int64_t s = 0;
+            const int32_t* p = x + ((int64_t)n * C + c) * HW;
+            for (int i = 0; i < HW; ++i) s += p[i] - zp_in;
+            int32_t y = mbqm(sat(s, 32), mult, shift, rounding) + zp_out;
+            out[n * C + c] = std::min(std::max(y, qmin), qmax);
+        }
+}
+
 void lut_apply(const int32_t* x, int64_t n, const int32_t* table, int qmin_in, int32_t* out) {
     for (int64_t i = 0; i < n; ++i) out[i] = table[x[i] - qmin_in];
 }

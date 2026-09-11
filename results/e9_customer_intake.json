@@ -240,12 +240,20 @@
     },
     "prescribe": [
      {
-      "action": "\u2014",
-      "kind": "note",
-      "why": "the structured pruner found no prunable group in this graph: it only cuts channels inside a block (conv -> conv), and every conv here feeds a concat or the residual stream",
-      "cycles": null,
-      "saving": null,
-      "risk": "the tool says what it cannot do rather than staying silent"
+      "action": "uniform structured pruning, ratio 0.5",
+      "kind": "pruning",
+      "why": "fewer channels per block",
+      "cycles": 17580.0,
+      "saving": 0.4369715603382014,
+      "risk": "needs fine-tuning; E6 measured -1.1 to -2.4%p at these ratios"
+     },
+     {
+      "action": "uniform structured pruning, ratio 0.75",
+      "kind": "pruning",
+      "why": "fewer channels per block",
+      "cycles": 23904.0,
+      "saving": 0.23443504996156805,
+      "risk": "needs fine-tuning; E6 measured -1.1 to -2.4%p at these ratios"
      }
     ],
     "alternatives": [
@@ -502,12 +510,20 @@
     },
     "prescribe": [
      {
-      "action": "\u2014",
-      "kind": "note",
-      "why": "the structured pruner found no prunable group in this graph: it only cuts channels inside a block (conv -> conv), and every conv here feeds a concat or the residual stream",
-      "cycles": null,
-      "saving": null,
-      "risk": "the tool says what it cannot do rather than staying silent"
+      "action": "uniform structured pruning, ratio 0.5",
+      "kind": "pruning",
+      "why": "fewer channels per block",
+      "cycles": 17580.0,
+      "saving": 0.4369715603382014,
+      "risk": "needs fine-tuning; E6 measured -1.1 to -2.4%p at these ratios"
+     },
+     {
+      "action": "uniform structured pruning, ratio 0.75",
+      "kind": "pruning",
+      "why": "fewer channels per block",
+      "cycles": 23904.0,
+      "saving": 0.23443504996156805,
+      "risk": "needs fine-tuning; E6 measured -1.1 to -2.4%p at these ratios"
      }
     ],
     "alternatives": [
@@ -2100,20 +2116,28 @@
     },
     "prescribe": [
      {
+      "action": "uniform structured pruning, ratio 0.5",
+      "kind": "pruning",
+      "why": "fewer channels per block",
+      "cycles": 42790.0,
+      "saving": 0.1809899322436167,
+      "risk": "needs fine-tuning; E6 measured -1.1 to -2.4%p at these ratios"
+     },
+     {
+      "action": "uniform structured pruning, ratio 0.75",
+      "kind": "pruning",
+      "why": "fewer channels per block",
+      "cycles": 47518.0,
+      "saving": 0.0904949661218084,
+      "risk": "needs fine-tuning; E6 measured -1.1 to -2.4%p at these ratios"
+     },
+     {
       "action": "swap gelu -> relu",
       "kind": "activation-surgery",
       "why": "one int8 LUT pass per activation disappears",
       "cycles": 52054.0,
       "saving": 0.0036749224821038817,
       "risk": "needs a short healing fine-tune (E4: 3 epochs recovered the drop)"
-     },
-     {
-      "action": "\u2014",
-      "kind": "note",
-      "why": "the structured pruner found no prunable group in this graph: it only cuts channels inside a block (conv -> conv), and every conv here feeds a concat or the residual stream",
-      "cycles": null,
-      "saving": null,
-      "risk": "the tool says what it cannot do rather than staying silent"
      }
     ],
     "alternatives": [
@@ -2434,12 +2458,20 @@
       "risk": "needs a short healing fine-tune (E4: 3 epochs recovered the drop)"
      },
      {
-      "action": "\u2014",
-      "kind": "note",
-      "why": "the structured pruner found no prunable group in this graph: it only cuts channels inside a block (conv -> conv), and every conv here feeds a concat or the residual stream",
-      "cycles": null,
-      "saving": null,
-      "risk": "the tool says what it cannot do rather than staying silent"
+      "action": "uniform structured pruning, ratio 0.5",
+      "kind": "pruning",
+      "why": "fewer channels per block",
+      "cycles": 2096694.0,
+      "saving": 0.16262134177463916,
+      "risk": "needs fine-tuning; E6 measured -1.1 to -2.4%p at these ratios"
+     },
+     {
+      "action": "uniform structured pruning, ratio 0.75",
+      "kind": "pruning",
+      "why": "fewer channels per block",
+      "cycles": 2300286.0,
+      "saving": 0.08131067088731958,
+      "risk": "needs fine-tuning; E6 measured -1.1 to -2.4%p at these ratios"
      }
     ],
     "alternatives": [
@@ -2893,16 +2925,16 @@
       "action": "uniform structured pruning, ratio 0.5",
       "kind": "pruning",
       "why": "fewer channels per block",
-      "cycles": 72833.75,
-      "saving": 0.1633689808858666,
+      "cycles": 67118.75,
+      "saving": 0.22901638026098148,
       "risk": "needs fine-tuning; E6 measured -1.1 to -2.4%p at these ratios"
      },
      {
       "action": "uniform structured pruning, ratio 0.75",
       "kind": "pruning",
       "why": "fewer channels per block",
-      "cycles": 82167.125,
-      "saving": 0.05615781795625807,
+      "cycles": 79084.625,
+      "saving": 0.09156606092630026,
       "risk": "needs fine-tuning; E6 measured -1.1 to -2.4%p at these ratios"
      }
     ],
@@ -3216,16 +3248,16 @@
       "action": "uniform structured pruning, ratio 0.5",
       "kind": "pruning",
       "why": "fewer channels per block",
-      "cycles": 299619.0,
-      "saving": 0.47400104280229416,
+      "cycles": 289048.0,
+      "saving": 0.4925590614077129,
       "risk": "needs fine-tuning; E6 measured -1.1 to -2.4%p at these ratios"
      },
      {
       "action": "uniform structured pruning, ratio 0.75",
       "kind": "pruning",
       "why": "fewer channels per block",
-      "cycles": 436857.0,
-      "saving": 0.23307157942414136,
+      "cycles": 431346.5,
+      "saving": 0.24274558959585268,
       "risk": "needs fine-tuning; E6 measured -1.1 to -2.4%p at these ratios"
      }
     ],

@@ -24,12 +24,14 @@ def e1():
     rs = load("e1_baselines")["records"]
     if not rs: return ""
     specs = ["tiny-1tops", "edge-10tops", "pcie-80tops"]
-    out = ["| 모델 | 파라미터 | MACs | val acc (선택 epoch) | test acc | " + " | ".join(f"{s} cycles (util)" for s in specs) + " | lint eff / q-rob |", "|---|---|---|---|---|" + "---|" * len(specs) + "---|"]
+    out = ["| 모델 | 파라미터 | MACs | val acc (선택 epoch) | test acc | " + " | ".join(f"{s} cycles (util)" for s in specs) + " | edge-10tops µJ/장 (simulated) | lint eff / q-rob |", "|---|---|---|---|---|" + "---|" * len(specs) + "---|---|"]
     for r in rs:
         cells = [f"{r['cost'][s]['total_cycles']:,.0f} ({r['cost'][s]['array_utilization']*100:.0f}%)" for s in specs]
         sc = r["lint"]["edge-10tops"]["scores"]
         val = f"{pct(r['val_acc'])} (ep {r['selected_epoch']})" if "val_acc" in r else "—"
-        out.append(f"| {LABEL.get(r['model'], r['model'])} | {r['params']:,} | {r['macs']/1e6:.1f}M | {val} | {pct(r['float_acc'])} | " + " | ".join(cells) + f" | {sc['efficiency']:.0f} / {sc['quant_robustness']:.0f} |")
+        e = r["cost"]["edge-10tops"].get("energy_uj")
+        energy = f"{e:.1f}" if e is not None else "—"
+        out.append(f"| {LABEL.get(r['model'], r['model'])} | {r['params']:,} | {r['macs']/1e6:.1f}M | {val} | {pct(r['float_acc'])} | " + " | ".join(cells) + f" | {energy} | {sc['efficiency']:.0f} / {sc['quant_robustness']:.0f} |")
     return "\n".join(out)
 
 
@@ -206,7 +208,54 @@ def e10():
     return "\n".join(out)
 
 
-TABLES = [("E1", e1), ("E2", e2), ("E3", e3), ("E4", e4), ("E5", e5), ("E6", e6), ("E7", e7), ("E8", e8), ("E9", e9), ("E10", e10)]
+def e11():
+    d = load("e11_tflite_crosscheck"); rs = d["records"]
+    if not rs: return ""
+    meta = d.get("meta", {}); xnn = meta.get("xnnpack_vs_reference", {})
+    out = [f"TensorFlow {meta.get('tensorflow', '?')}, TFLite full-integer PTQ (int8 in/out), 연산: {' → '.join(meta.get('ops', []))}. "
+           f"TFLite가 정한 스케일·zero-point·int8 가중치·int32 바이어스를 그대로 읽어 npuloop IntGraph를 만들고, 같은 int8 입력 {meta.get('images', '?'):,}장을 두 런타임에 넣었습니다.", "",
+           "| 반올림 (conv·pool / fc) | 엔진 | 출력 코드가 다른 이미지 | 다른 원소 | top-1 일치 | conv1 / conv2 / conv3 / pool / fc 국소 불일치 |",
+           "|---|---|---|---|---|---|"]
+    for r in rs:
+        pn = list(r["per_node"].values())
+        cells = " / ".join(f"{v['mismatch_frac'] * 100:.2f}%" for v in pn)
+        out.append(f"| {r['graph_rounding']} / {r['fc_rounding']} | {r['engine']} | {r['output_mismatch_images']}/{r['images']} | "
+                   f"{r['output_mismatch_elems']}/{r['output_elems']} | {pct(r['top1_agreement'], 1)} | {cells} |")
+    if xnn:
+        out.append(f"\nTFLite 자신의 XNNPACK 델리게이트(최적화 경로)와 reference 커널은 같은 모델·입력에서 출력 코드가 **{xnn['output_mismatch_images']}/{xnn['images']}장** 다릅니다.")
+    return "\n".join(out)
+
+
+def e12():
+    d = load("e12_imagenette"); rs = d["records"]
+    if not rs: return ""
+    base = next((r for r in rs if r["kind"] == "baseline"), None)
+    out = []
+    if base:
+        c = base["cost"]
+        out += [f"ResNet-20(stem stride 2), 128×128 입력, 학습 {d['meta']['train']:,}장 / 검증 {d['meta']['val']:,}장 / test {d['meta']['test']:,}장, "
+                f"{base['epochs']} epoch({base['train_minutes']:.0f}분, CPU). val {pct(base['val_acc'])} (ep {base['selected_epoch']}) → **test {pct(base['test_acc'])}**, "
+                f"MACs {base['macs'] / 1e6:.0f}M (CIFAR ResNet-20의 4배).", "",
+                "| 프리셋 | cycles | 지연 (simulated) | 배열 활용률 | DRAM | 에너지 µJ/장 (simulated) | lint eff / q-rob |", "|---|---|---|---|---|---|---|"]
+        for spec, v in c.items():
+            sc = base["lint"][spec]["scores"]
+            out.append(f"| {spec} | {v['total_cycles']:,.0f} | {v['latency_ms']:.3f} ms | {v['array_utilization'] * 100:.1f}% | {v['dram_bytes'] / 1024:.0f} KB | {v['energy_uj']:.1f} | {sc['efficiency']:.0f} / {sc['quant_robustness']:.0f} |")
+    ptq = [r for r in rs if r["kind"] == "ptq"]
+    if ptq:
+        out += ["", f"PTQ (test {ptq[0]['int_eval_images']:,}장 전부, 정수 정확도는 C++ 엔진):", "",
+                "| 스킴 | FP32 | fake-quant | 정수 엔진 | 차이 |", "|---|---|---|---|---|"]
+        for r in ptq:
+            out.append(f"| {r['scheme']} | {pct(r['float_acc'])} | {pct(r['fake_acc'])} | {pct(r['int_acc'])} | {pp(r['int_acc'] - r['fake_acc'])} |")
+        eq = next((r.get("output_equality") for r in ptq if r.get("output_equality")), None)
+        b = next((r.get("bench") for r in ptq if r.get("bench")), None)
+        if eq:
+            out.append(f"\nNumPy·C++ 엔진 출력 코드 동일: {eq['images'] - eq['images_with_any_mismatch']:,}/{eq['images']:,}장.")
+        if b:
+            out.append(f"실측(검증 엔진, 1스레드, 128px): NumPy {b['engines']['numpy']['per_image_ms']:.0f} ms/장, C++ {b['engines']['cpp']['per_image_ms']:.0f} ms/장 ({b['speedup']:.1f}×).")
+    return "\n".join(out)
+
+
+TABLES = [("E1", e1), ("E2", e2), ("E3", e3), ("E4", e4), ("E5", e5), ("E6", e6), ("E7", e7), ("E8", e8), ("E9", e9), ("E10", e10), ("E11", e11), ("E12", e12)]
 
 
 def inject(readme_path: str) -> int:

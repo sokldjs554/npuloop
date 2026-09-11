@@ -49,12 +49,12 @@ class ResNetCIFAR(nn.Module):
     """ResNet-(6n+2) for CIFAR (He et al. 2016). depth=20 -> n=3, widths 16/32/64."""
 
     def __init__(self, depth: int = 20, width: int = 16, act: str = "relu", num_classes: int = 10,
-                 widths: tuple[int, int, int] | None = None):
+                 widths: tuple[int, int, int] | None = None, stem_stride: int = 1):
         super().__init__()
         assert (depth - 2) % 6 == 0
         n = (depth - 2) // 6
         w = widths or (width, 2 * width, 4 * width)
-        self.stem_conv = nn.Conv2d(3, w[0], 3, 1, 1, bias=False)
+        self.stem_conv = nn.Conv2d(3, w[0], 3, stem_stride, 1, bias=False)   # stride 2 for larger inputs (Imagenette 128px)
         self.stem_bn = nn.BatchNorm2d(w[0])
         self.stem_act = make_act(act)
         blocks = []
@@ -68,7 +68,8 @@ class ResNetCIFAR(nn.Module):
         self.pool = nn.AdaptiveAvgPool2d(1)
         self.flatten = nn.Flatten(1)
         self.fc = nn.Linear(cin, num_classes)
-        self.config = dict(arch="resnet", depth=depth, width=width, act=act, num_classes=num_classes, widths=list(w))
+        self.config = dict(arch="resnet", depth=depth, width=width, act=act, num_classes=num_classes, widths=list(w),
+                           stem_stride=stem_stride)
         self._init()
 
     def _init(self):

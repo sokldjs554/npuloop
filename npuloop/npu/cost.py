@@ -20,7 +20,7 @@ Mapping assumptions (documented, deliberately simple, deterministic):
     plus fallback_cycles_per_elem per element of host work.
 """
 from __future__ import annotations
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, field, asdict
 import math
 from ..graph.ir import StaticGraph, Node
 from .spec import NPUSpec, get_spec
@@ -47,6 +47,8 @@ class LayerCost:
     split: str = ""           # multi-core split strategy chosen
     weight_tiles: int = 0
     note: str = ""
+    energy_pj: float = 0.0    # simulated: MACs + on-chip traffic + DRAM traffic + vector/host work (see NPUSpec.pj_*)
+    energy_parts: dict = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -87,6 +89,19 @@ class CostReport:
     def dram_bytes(self) -> int:
         return sum(l.dram_bytes for l in self.layers)
 
+    @property
+    def energy_uj(self) -> float:
+        """Simulated energy per image in microjoules (sum of the per-layer estimates)."""
+        return sum(l.energy_pj for l in self.layers) / 1e6
+
+    def energy_breakdown(self) -> dict[str, float]:
+        """Energy per image by component (uJ): mac, sram, dram, vector, host."""
+        out: dict[str, float] = {}
+        for l in self.layers:
+            for k, v in l.energy_parts.items():
+                out[k] = out.get(k, 0.0) + v / 1e6
+        return out
+
     def breakdown(self) -> dict[str, float]:
         out: dict[str, float] = {}
         for l in self.layers:
@@ -96,7 +111,8 @@ class CostReport:
     def to_dict(self) -> dict:
         return dict(spec=self.spec.to_dict(), total_cycles=self.total_cycles, latency_ms=self.latency_ms,
                     total_macs=self.total_macs, ideal_cycles=self.ideal_cycles, array_utilization=self.array_utilization,
-                    dram_bytes=self.dram_bytes, breakdown=self.breakdown(), layers=[l.to_dict() for l in self.layers])
+                    dram_bytes=self.dram_bytes, breakdown=self.breakdown(), energy_uj=self.energy_uj,
+                    energy_breakdown=self.energy_breakdown(), layers=[l.to_dict() for l in self.layers])
 
     def table(self) -> str:
         rows = [f"{'layer':26s} {'kind':12s} {'MACs':>11s} {'M':>5s} {'K':>5s} {'N':>5s} {'cyc':>10s} {'bound':8s} {'util':>6s} {'split':6s} {'dramKB':>8s}"]
@@ -105,8 +121,10 @@ class CostReport:
                 continue
             util = f"{l.array_util*100:5.1f}%" if l.on_array else (f"{l.engine_util*100:4.0f}%e" if l.kind == "dwconv" else "     ")
             rows.append(f"{l.name:26s} {l.kind:12s} {l.macs:11,d} {l.m:5d} {l.k:5d} {l.n:5d} {l.cycles:10,.0f} {l.bound:8s} {util:>6s} {l.split:6s} {l.dram_bytes/1024:8.1f}")
+        eb = self.energy_breakdown()
         rows.append(f"TOTAL cycles={self.total_cycles:,.0f}  latency={self.latency_ms:.3f} ms  "
                     f"array util={self.array_utilization*100:.1f}%  DRAM={self.dram_bytes/1024:.0f} KB  "
+                    f"energy={self.energy_uj:.1f} uJ/image (" + ", ".join(f"{k} {v:.1f}" for k, v in eb.items()) + ")  "
                     f"(spec {self.spec.name}: {self.spec.peak_tops:.1f} TOPS peak)")
         return "\n".join(rows)
 
@@ -302,7 +320,41 @@ def estimate(graph: StaticGraph, spec="edge-10tops") -> CostReport:
             lc.bound = "vector" if lc.vector_cycles >= lc.dram_cycles else "memory"
             layers.append(lc); continue
         raise ValueError(f"cost model: unhandled op {node.op}")
+    _add_energy(graph, layers, spec, out_bytes)
     return CostReport(spec, layers)
+
+
+def _add_energy(graph: StaticGraph, layers: list[LayerCost], spec: NPUSpec, out_bytes: dict[str, int]) -> None:
+    """Simulated energy per layer from the same quantities the cycle model already tracks.
+
+    mac    : every MAC (array or depthwise engine) at pj_mac
+    sram   : every activation byte read or written and every weight byte, at pj_sram_byte (all operands pass
+             through the on-chip buffer; DRAM round-trips are charged on top)
+    dram   : dram_bytes at pj_dram_byte
+    vector : elementwise work on the vector unit (LUT activations, add, pool, concat, transpose, softmax,
+             layernorm passes) at pj_vector_elem per element and pass
+    host   : elements handed to the host at pj_host_elem (fallback ops)
+    """
+    by_name = {n.name: n for n in graph.nodes}
+    for lc in layers:
+        node = by_name[lc.name]
+        if lc.kind in ("input", "output", "flatten", "reshape", "act-fused", "const"):
+            continue
+        parts = {"mac": lc.macs * spec.pj_mac}
+        act_bytes = sum(out_bytes[src] for src in node.inputs) + out_bytes[node.name]
+        weight_bytes = int(node.weight.size) if getattr(node, "weight", None) is not None else 0
+        parts["sram"] = (act_bytes + weight_bytes) * spec.pj_sram_byte
+        parts["dram"] = lc.dram_bytes * spec.pj_dram_byte
+        elems = out_bytes[node.name]
+        if lc.bound == "fallback":
+            parts["host"] = elems * spec.pj_host_elem
+        elif lc.kind in ("act-lut", "add", "pool", "concat", "transpose", "mul"):
+            parts["vector"] = elems * spec.pj_vector_elem
+        elif lc.kind in ("softmax", "layernorm"):
+            passes = spec.softmax_passes if lc.kind == "softmax" else spec.layernorm_passes
+            parts["vector"] = elems * passes * spec.pj_vector_elem
+        lc.energy_parts = {k: v for k, v in parts.items() if v}
+        lc.energy_pj = sum(parts.values())
 
 
 def alignment_loss(cin_k: int, cout: int, spec: NPUSpec) -> dict:

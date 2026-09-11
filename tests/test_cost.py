@@ -61,3 +61,23 @@ def test_presets_have_sane_peak_tops():
     assert 75 < PRESETS["pcie-80tops"].peak_tops < 85
     with pytest.raises(KeyError):
         get_spec("nope")
+
+
+def test_energy_estimate_tracks_macs_and_dram(small_resnet, small_mobilenet):
+    from npuloop.graph import trace
+    from npuloop.npu import estimate, get_spec
+    from dataclasses import replace
+    r = estimate(trace(small_resnet), "edge-10tops")
+    assert r.energy_uj > 0 and abs(sum(r.energy_breakdown().values()) - r.energy_uj) < 1e-9
+    conv = [l for l in r.layers if l.kind == "conv"]
+    assert all(l.energy_parts["mac"] == l.macs * get_spec("edge-10tops").pj_mac for l in conv)
+    assert all(l.energy_pj == 0 for l in r.layers if l.kind in ("input", "output", "flatten", "act-fused"))
+    # a slower DRAM changes nothing; a costlier DRAM byte does, and only through the dram component
+    spec = get_spec("edge-10tops")
+    hi = estimate(trace(small_resnet), replace(spec, name="x", pj_dram_byte=spec.pj_dram_byte * 10))
+    assert hi.energy_breakdown()["dram"] > r.energy_breakdown()["dram"]
+    assert abs(hi.energy_breakdown()["mac"] - r.energy_breakdown()["mac"]) < 1e-9
+    # host fallbacks are charged as host energy on the strict preset
+    strict = estimate(trace(small_mobilenet), "edge-10tops-strict")
+    assert "host" not in strict.energy_breakdown()      # relu6 is fused: nothing falls back
+    assert "energy_uj" in r.to_dict() and "energy=" in r.table().split("\n")[-1]

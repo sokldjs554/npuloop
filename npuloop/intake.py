@@ -183,7 +183,7 @@ def alternatives(model: nn.Module, spec, input_shape=(3, 32, 32)) -> list[dict]:
 
 
 def measured_block(model: nn.Module, ds, cost, images: int = 64, repeats: int = 3, scheme: str = "npu-default",
-                   calib_images: int = 512, top: int = 8) -> dict[str, Any]:
+                   calib_images: int = 512, top: int = 8, input_shape=(3, 32, 32)) -> dict[str, Any]:
     """Host-CPU wall-clock of the bit-exact reference engines on `images` test images, joined with modelled cycles.
 
     Not NPU latency: it measures how long verification takes on this machine (single thread), so the modelled
@@ -194,7 +194,7 @@ def measured_block(model: nn.Module, ds, cost, images: int = 64, repeats: int = 
     torch.set_num_threads(1)
     qm = prepare(model, PRESET_SCHEMES[scheme])
     calibrate(qm, [ds.calib_batch(calib_images // 2, seed=s) for s in range(2)])
-    ig = export_int_graph(qm)
+    ig = export_int_graph(qm, input_shape=input_shape)
     x, _ = next(ds.test_batches(images))
     b = bench_engines(ig, x.numpy(), repeats=repeats)
     rows = layer_table(ig, b, cost, top=top)
@@ -216,7 +216,7 @@ def intake_report(model: nn.Module, spec="edge-10tops", calib: np.ndarray | None
     cost = estimate(graph, spec)
     lr = lint(graph, spec, calib)
     ok, reasons = can_run(graph, spec)
-    measured = measured_block(model, bench_data, cost, images=bench) if (bench and bench_data is not None) else None
+    measured = measured_block(model, bench_data, cost, images=bench, input_shape=input_shape) if (bench and bench_data is not None) else None
     return dict(
         spec=spec.name,
         model=dict(config=getattr(model, "config", None),
@@ -225,6 +225,7 @@ def intake_report(model: nn.Module, spec="edge-10tops", calib: np.ndarray | None
         receive=dict(runs_on_chip=ok, host_fallbacks=reasons, ops=op_support(graph, spec)),
         diagnose=dict(cycles=cost.total_cycles, latency_ms=cost.latency_ms,
                       array_utilization=cost.array_utilization, dram_bytes=cost.dram_bytes,
+                      energy_uj=cost.energy_uj, energy_breakdown=cost.energy_breakdown(),
                       breakdown=cost.breakdown(), by_unit=cycles_by_unit(cost), bottlenecks=bottlenecks(cost),
                       lint=dict(scores=lr.scores, findings=[f.to_dict() for f in lr.findings[:12]],
                                 counts=lr.counts())),
@@ -252,7 +253,9 @@ def render(report: dict) -> str:
                           for k, v in sorted(d["by_unit"].items(), key=lambda kv: -kv[1]))
     lines += ["", "## 2. Diagnose", "",
               f"cycles **{d['cycles']:,.0f}** · latency {d['latency_ms']:.3f} ms · array utilization "
-              f"{d['array_utilization'] * 100:.1f}% · DRAM {d['dram_bytes'] / 1024:.0f} KB",
+              f"{d['array_utilization'] * 100:.1f}% · DRAM {d['dram_bytes'] / 1024:.0f} KB · "
+              f"energy {d.get('energy_uj', 0):.1f} uJ/image (simulated: "
+              + ", ".join(f"{k} {v:.1f}" for k, v in d.get("energy_breakdown", {}).items()) + ")",
               f"cycle budget: {unit_txt}",
               f"lint: efficiency {d['lint']['scores']['efficiency']:.0f}/100 · "
               f"quant-robustness {d['lint']['scores']['quant_robustness']:.0f}/100", "",
