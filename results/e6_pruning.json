@@ -702,6 +702,114 @@
    },
    "provenance": "measured+simulated",
    "timestamp": "2026-09-11T01:55:48"
+  },
+  {
+   "model": "mnv2_050_relu6",
+   "strategy": "uniform",
+   "ratio": 0.5,
+   "align": 0,
+   "keep": [
+    8,
+    8,
+    24,
+    48,
+    48,
+    48,
+    48,
+    48,
+    96,
+    96,
+    96,
+    96,
+    144,
+    144,
+    144,
+    240,
+    240,
+    240,
+    80
+   ],
+   "acc_after_prune": 0.1273,
+   "ft_acc": 0.8837,
+   "int8_acc": 0.8841,
+   "ft_epochs": 3,
+   "greedy_steps": null,
+   "target_reached": null,
+   "achieved_ratio": null,
+   "minutes": 5.666079298655192,
+   "macs": 13683712,
+   "params": 333754,
+   "tiny-1tops": {
+    "cycles": 116166.0,
+    "util": 0.10151421242015736,
+    "latency_ms": 0.232332
+   },
+   "edge-10tops": {
+    "cycles": 67118.75,
+    "util": 0.02196200763572027,
+    "latency_ms": 0.11186458333333334
+   },
+   "pcie-80tops": {
+    "cycles": 57570.3928035982,
+    "util": 0.006401130981634842,
+    "latency_ms": 0.047975327336331836
+   },
+   "provenance": "measured+simulated",
+   "timestamp": "2026-09-11T03:19:30"
+  },
+  {
+   "model": "mnv2_050_relu6",
+   "strategy": "cost-greedy",
+   "ratio": 0.7,
+   "align": 8,
+   "keep": [
+    16,
+    8,
+    48,
+    96,
+    96,
+    96,
+    96,
+    96,
+    192,
+    192,
+    192,
+    192,
+    288,
+    288,
+    208,
+    208,
+    208,
+    208,
+    24
+   ],
+   "acc_after_prune": 0.2553,
+   "ft_acc": 0.8973,
+   "int8_acc": 0.8978,
+   "ft_epochs": 3,
+   "greedy_steps": 129,
+   "target_reached": false,
+   "achieved_ratio": 0.8070207682411321,
+   "minutes": 14.377699581782023,
+   "macs": 21816832,
+   "params": 316298,
+   "tiny-1tops": {
+    "cycles": 141017.0,
+    "util": 0.1297042200585745,
+    "latency_ms": 0.282034
+   },
+   "edge-10tops": {
+    "cycles": 70256.0,
+    "util": 0.0325425942268276,
+    "latency_ms": 0.11709333333333333
+   },
+   "pcie-80tops": {
+    "cycles": 60529.66416791604,
+    "util": 0.009442942280571366,
+    "latency_ms": 0.0504413868065967
+   },
+   "provenance": "measured+simulated",
+   "timestamp": "2026-09-11T03:33:53"
   }
  ]
 }
