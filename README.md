@@ -566,6 +566,7 @@ print(NumpyEngine(ig).evaluate(ds, limit=2000), CppEngine(ig).evaluate(ds, limit
 * **활성함수 베이스라인 2개를 학습하지 못했습니다.** 계획했던 ResNet-20 GELU·HardSwish 베이스라인은 CPU 시간 때문에 빠졌습니다(E4(b)의 HardSwish는 SiLU 모델을 교체·healing한 것). LUT 활성함수에 대한 결론은 SiLU 한 모델에 기댑니다.
 * **CLE의 이득과 lint 점수의 보정을 보이지 못했습니다.** 이 저장소의 체크포인트에는 CLE가 고칠 만한 채널 범위 불균형이 없고(최대 6배), lint 점수는 순위는 맞지만 크기가 보정되지 않았습니다(E3). ImageNet 사전학습 체크포인트가 필요한데 이 환경에서는 가중치 호스트가 막혀 있어 Imagenette를 처음부터 학습하는 것으로 대신했습니다(E12).
 * **에너지 모델은 자릿수 추정입니다.** MAC·SRAM·DRAM·벡터·호스트 항목의 pJ 상수는 45 nm 공개 수치에서 가져온 것이라 절대값이 아니라 프리셋·모델 간 비율을 읽는 용도입니다. TFLite 교차 검증도 conv·pool·fc 세 op에 한정됩니다(depthwise·add·softmax는 아직).
+* **CPU 학습 환경 주의.** torch 2.14.0+cpu(oneDNN 3.12)의 AVX2 JIT 1×1 conv backward-weights 커널은 입력 채널이 8 미만이면 메모리를 오염시켜 무한 스핀(GitHub의 AMD EPYC 러너)이나 세그폴트(1스레드)를 냅니다. `ONEDNN_MAX_CPU_ISA=AVX2`로 어느 CPU에서나 재현되며 CI는 이 설정으로도 전체 스위트를 돌립니다. 이 저장소의 모델은 폭이 모두 8 이상이라 실험 결과와는 무관하고, 채널 8 미만의 장난감 모델을 channels_last로 학습할 때만 해당됩니다.
 
 ## 라이선스
 

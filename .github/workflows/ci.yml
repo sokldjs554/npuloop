@@ -4,6 +4,15 @@ jobs:
   pytest:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        # ALL = whatever the runner's CPU supports (AVX-512 on the Intel runners, AVX2 on AMD EPYC 7763); AVX2 pins the
+        # kernel family the AMD runners use so that path is exercised on every run, not only when the pool hands out AMD.
+        onednn_isa: [ALL, AVX2]
+    name: pytest (oneDNN ${{ matrix.onednn_isa }})
+    env:
+      ONEDNN_MAX_CPU_ISA: ${{ matrix.onednn_isa }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
@@ -11,20 +20,17 @@ jobs:
       - name: Install CPU torch + deps
         run: |
           pip install --index-url https://download.pytorch.org/whl/cpu torch
-          pip install numpy pytest pytest-timeout
+          pip install numpy pytest pytest-timeout py-spy
       - name: Host info (runner CPU, torch build)
         run: |
-          lscpu | grep -E '^Model name|^CPU\(s\)|^Flags' | cut -c1-240
+          lscpu | grep -E '^Model name|^CPU\(s\)' | cut -c1-120
           python -c "import torch; print(torch.__version__); print(torch.__config__.parallel_info())"
       - name: Unit tests (graph, cost model, lint, quantizer, integer engines, pruning)
-        # A test stuck inside native code (torch kernels, the ctypes engine) cannot be interrupted by a signal, so the
-        # watchdog is a thread: faulthandler dumps every Python stack after 150 s and pytest-timeout kills the run at
-        # 180 s. If the suite is still running after 90 s (it finishes in ~25 s), the native stacks of every thread are
-        # recorded first (py-spy, gdb) together with per-thread CPU use, so a hang inside torch shows the kernel or
-        # lock it sits in and whether it spins or sleeps.
+        # A test stuck inside native code cannot be interrupted by a signal, so the watchdog is a thread: faulthandler
+        # dumps every Python stack after 150 s and pytest-timeout kills the run at 180 s. If the suite is still running
+        # after 90 s (it finishes in ~25 s), py-spy records every thread's native stack first, so a hang inside torch
+        # names the kernel it sits in (this is how the oneDNN AVX2 1x1-conv bug behind runs 12-16 was found).
         run: |
-          pip install -q py-spy
-          sudo apt-get install -y -q gdb >/dev/null 2>&1 || true
           python -u -m pytest -v --timeout=180 --timeout-method=thread -o faulthandler_timeout=150 --durations=10 &
           PID=$!
           for i in $(seq 1 18); do sleep 5; kill -0 $PID 2>/dev/null || break; done
@@ -34,9 +40,6 @@ jobs:
             echo "::endgroup::"
             echo "::group::py-spy native dump"
             sudo env "PATH=$PATH" py-spy dump --pid $PID --native || true
-            echo "::endgroup::"
-            echo "::group::gdb backtrace of every thread"
-            sudo gdb -p $PID -batch -ex "set pagination off" -ex "thread apply all bt 25" 2>/dev/null | grep -v "^\[New LWP\|^\[Thread debugging\|^Using host" || true
             echo "::endgroup::"
           fi
           wait $PID
