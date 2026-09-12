@@ -18,8 +18,8 @@
 
 ## 3분 안에 보기
 
-**1. 클릭만 (설치 없음).** 인터랙티브 데모 → https://claude.ai/code/artifact/8112e532-a441-4118-9cc1-fb939e3dab49
-(같은 페이지가 `docs/index.html`이므로 GitHub Pages `https://sokldjs554.github.io/npuloop/`로도 열립니다.)
+**1. 클릭만 (설치 없음).** 인터랙티브 데모 → **https://sokldjs554.github.io/npuloop/**
+(`docs/index.html` 한 파일짜리 정적 페이지를 GitHub Pages가 그대로 서빙합니다. 오프라인이면 저장소의 `docs/index.html`을 브라우저로 열어도 같습니다.)
 맨 위 **고객 모델 인테이크**에서 모델과 NPU를 바꿔 보세요. 접수 → 진단 → 처방이 그 자리에서 다시 계산됩니다.
 
 ![고객 모델 인테이크: 모델과 NPU를 바꾸면 접수·진단·처방이 다시 계산됩니다](docs/intake.gif)
@@ -485,7 +485,7 @@ MACs에 비례해 늘어납니다. 데이터 로더는 파일에 든 평균·표
 배열 크기·코어 수·DRAM 대역폭·depthwise 엔진 유무·비-ReLU 활성함수 실행 방식을 바꾸면 레이어별 사이클과 활용률이 즉시 다시 계산됩니다.
 lint 리포트, PTQ 그리드와 레이어별 일치도, requant ablation, 수술, 캘리브레이션, 프루닝 Pareto, lint-vs-drop 산점도를 모두 담았습니다.
 
-**라이브 데모:** https://claude.ai/code/artifact/8112e532-a441-4118-9cc1-fb939e3dab49
+**라이브 데모:** https://sokldjs554.github.io/npuloop/
 
 같은 페이지가 저장소의 `docs/index.html`에 그대로 들어 있어서, 빌드 없이 어느 정적 호스팅에나 올릴 수 있습니다.
 
