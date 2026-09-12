@@ -1,9 +1,15 @@
-.PHONY: test demo experiments walkthrough lint runner
+.PHONY: test demo experiments walkthrough quickstart lint runner
 DATA ?= data/cifar10.npz
 CKPT ?= runs/resnet20_relu/best.pt
 
 test:            ## unit tests (C++ kernels are compiled on first run)
 	python -m pytest -q
+
+quickstart:      ## 40 s tour on the bundled checkpoints + CIFAR-10 sample (no dataset, no training)
+	python -m npuloop intake examples/quickstart/cust_inception.pt --data examples/quickstart/cifar10_sample.npz --spec edge-10tops
+	python -m npuloop quantize examples/quickstart/resnet20_relu.pt --data examples/quickstart/cifar10_sample.npz --verify 200 --int-eval 500
+	mkdir -p build && python -m npuloop export examples/quickstart/resnet20_relu.pt --data examples/quickstart/cifar10_sample.npz --out build/quickstart.npuloop --sample 8 --sample-path build/quickstart_input.f32
+	$(MAKE) runner && build/int8_runner build/quickstart.npuloop build/quickstart_input.f32 --float --argmax
 
 walkthrough:     ## 1-2 min end-to-end run on one checkpoint
 	python examples/walkthrough.py --ckpt $(CKPT) --data $(DATA)

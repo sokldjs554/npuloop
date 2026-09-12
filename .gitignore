@@ -9,6 +9,7 @@ runs/
 data/
 .pytest_cache/
 *.pt
+!examples/quickstart/*.pt
 !results/**/*.json
 runs
 data

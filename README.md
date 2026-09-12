@@ -12,8 +12,33 @@
 >
 > 처방을 실제로 적용한 뒤에는 int8 가중치/int32 바이어스/고정소수점 requant로 export한 정수 그래프를 NumPy와 C++ 커널로
 > **비트 단위로 같게** 실행해서, fake-quant가 아니라 진짜 정수 결과로 정확도를 확인합니다.
-> CIFAR-10에서 CNN 3종 + 가상 고객 2곳(ViT 81.0% · concat 분기 CNN 89.6%)으로 10개 실험(E1–E10)을 돌린 결과가 JSON으로 있고,
+> CIFAR-10에서 CNN 3종 + 가상 고객 2곳(ViT 81.0% · concat 분기 CNN 89.6%)으로 12개 실험(E1–E12)을 돌린 결과가 JSON으로 있고,
 > 그 JSON을 읽는 [인터랙티브 데모](#데모)가 있습니다.
+
+
+## 3분 안에 보기
+
+**1. 클릭만 (설치 없음).** 인터랙티브 데모 → https://claude.ai/code/artifact/8112e532-a441-4118-9cc1-fb939e3dab49
+(같은 페이지가 `docs/index.html`이므로 GitHub Pages `https://sokldjs554.github.io/npuloop/`로도 열립니다.)
+맨 위 **고객 모델 인테이크**에서 모델과 NPU를 바꿔 보세요. 접수 → 진단 → 처방이 그 자리에서 다시 계산됩니다.
+
+![고객 모델 인테이크: 모델과 NPU를 바꾸면 접수·진단·처방이 다시 계산됩니다](docs/intake.gif)
+
+**2. 30초 실행 (데이터셋 다운로드·학습 없음, torch CPU + numpy만).** 저장소에 작은 체크포인트 2개(ResNet-20 ReLU, 고객 B Inception-32)와
+CIFAR-10 샘플 1,012장(`examples/quickstart/`, 6 MB)을 넣어 두었습니다.
+
+```bash
+git clone https://github.com/sokldjs554/npuloop && cd npuloop && pip install -e .
+make quickstart      # 아래 세 명령을 차례로 실행 (CPU 4코어 기준 약 40초, C++ 커널 컴파일 포함)
+```
+
+| 명령 | 무엇이 나오나 | 시간 |
+|---|---|---|
+| `npuloop intake examples/quickstart/cust_inception.pt --data examples/quickstart/cifar10_sample.npz --spec edge-10tops` | 고객 모델 인테이크 리포트: op별 실행 위치 → 사이클·병목·에너지 → 프루닝 처방과 다른 프리셋 비교(데모의 인테이크 칸과 같은 내용) | 9초 |
+| `npuloop quantize examples/quickstart/resnet20_relu.pt --data examples/quickstart/cifar10_sample.npz --verify 200 --int-eval 500` | PTQ 뒤 fake-quant와 정수 엔진의 노드별 일치도 표, 그리고 NumPy·C++ 정수 엔진(비트 동일)이 잰 INT8 정확도(샘플 500장 기준 88.6%) | 21초 |
+| `npuloop export … --out model.npuloop --sample 8` + `make runner` + `build/int8_runner model.npuloop input.f32 --float --argmax` | 정수 그래프를 `.npuloop` 파일로 내보내고, 파이썬 없는 C++ 실행기가 같은 파일로 같은 답을 냅니다 | 2초 |
+
+**3. 전체 재현.** CIFAR-10 전체와 학습부터 하려면 [빠른 시작](#빠른-시작)과 `experiments/`를 보세요. README의 모든 표는 `results/*.json`에서 스크립트로 생성됩니다.
 
 
 ## 왜 이 프로젝트를 했나
@@ -489,6 +514,7 @@ experiments/             E1–E12 스크립트 (재개 가능, results/*.json에
 results/                 실험 결과 JSON
 demo/                    build.py + index.template.html → 인라인 JSON 데모 페이지 (docs/index.html)
 tests/                   pytest 69개 (참조 구현 대조, 비트 동일성, 정확성 회귀)
+examples/                walkthrough.py · quickstart/ (번들 체크포인트 2개 + CIFAR-10 샘플 1,012장: `make quickstart`)
 tools/                   README 표 생성, CIFAR-10/Imagenette npz 준비, 처방 갱신, oneDNN 버그 재현 스크립트
 docs/                    DESIGN.md · INTEGER_DATAPATH.md · RELATED.md · upstream/ (oneDNN 버그 보고서·패치)
 ```
@@ -497,7 +523,8 @@ docs/                    DESIGN.md · INTEGER_DATAPATH.md · RELATED.md · upstr
 
 ```bash
 pip install -e .[dev]           # torch(CPU), numpy, pytest
-python -m pytest -q             # 69 tests, ~20 s (C++ 커널은 첫 실행 때 g++로 컴파일되어 처음엔 더 걸립니다)
+make quickstart                 # 데이터·학습 없이 40초: 번들 체크포인트로 intake → quantize/verify → export + C++ runner
+python -m pytest -q             # 80 tests, ~25 s (C++ 커널은 첫 실행 때 g++로 컴파일되어 처음엔 더 걸립니다)
 
 # CIFAR-10 (npz 한 파일) 준비: tools/prepare_cifar10.py 참고
 python -m npuloop.zoo.train --arch resnet --act relu --epochs 30 --out runs/resnet20_relu --data data/cifar10.npz
