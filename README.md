@@ -491,7 +491,7 @@ lint 리포트, PTQ 그리드와 레이어별 일치도, requant ablation, 수�
 
 | 호스팅 | 설정 | 주소 |
 |---|---|---|
-| GitHub Pages | Settings → Pages → Deploy from a branch → `master` / `/docs` | `https://<user>.github.io/npuloop/` |
+| GitHub Pages | `.github/workflows/pages.yml`이 `docs/`를 push마다 자동 게시 (Settings → Pages의 Source가 GitHub Actions) | https://sokldjs554.github.io/npuloop/ |
 | Render | New → Blueprint(저장소의 `render.yaml`) 또는 New → Static Site, publish directory `docs` | `https://<name>.onrender.com` |
 
 둘 다 push할 때마다 자동으로 갱신됩니다.
