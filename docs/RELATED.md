@@ -19,10 +19,10 @@
 |---|---|---|
 | fake-quant ↔ 정수 실행 불일치를 **코드(LSB) 단위로, 노드별 국소/전파로 분리**해 측정 | 처음 조사 때는 검색 0건이라고 적었으나 **정정**: MQBench(NeurIPS 2021 D&B)는 학술 fake-quant와 실제 백엔드(TensorRT·SNPE·TVM·ACL·FBGEMM)의 배포 격차를 벤치마크했고, PPQ(OpenPPL)는 레이어별·그래프별 양자화 오차 분석 도구를, HAWQ-V3는 TVM 배포까지 포함한 정수 전용 추론을 이미 제공합니다. 그들이 재는 것은 float↔양자화 오차 또는 백엔드 정확도 격차이고, 이 저장소가 재는 것은 **같은 스케일의 정수 코드가 몇 LSB 어긋나는지를 노드마다 teacher-forcing으로 분리한 값**입니다(E2/E7). KEA는 로짓 ±1 드리프트를 언급하는 정도 | `intengine.verify`: 국소(teacher-forced) vs 전파 불일치, `RequantConfig` ablation |
 | torch.fx 그래프를 먹는 가벼운 순수 파이썬 NPU 비용 모델 | branes-ai/graphs(0 star, roofline CLI), Vela(TFLite/Ethos-U 전용), SCALE-Sim/Timeloop/MAESTRO/ZigZag는 오프라인 도구 | `npu.estimate` + SCALE-Sim 대조(E8) |
-| 비용 모델을 프루닝 루프 안에서 호출 | HALP/NetAdapt는 측정 LUT, Torch-Pruning은 HW 모델 없음, U-Boost(NAS)는 코드 없음, `channel pruning alignment hardware` 0건 | `prune.prune_cost_greedy`, E6 |
+| 비용 모델을 프루닝 루프 안에서 호출 | **정정(2026-09-13)**: 처음에 "U-Boost는 코드 없음"이라고 적었으나 틀렸습니다. U-Boost NAS(Yüzügüler et al., ECCV 2022)는 배열 기반 가속기의 **미분 가능한 활용도 해석 모델**을 NAS 목적함수 안에 넣고 128×128 systolic array RTL로 검증했으며, 코드도 공개되어 있습니다(github.com/yuezuegu/UBoostNAS). 해석 모델을 탐색 루프에 넣는 계열은 그 뒤로도 이어집니다 — HASS(FPL 2024)는 하드웨어 성능·자원 추정을 비정형 희소성 탐색에, SASP(GLSVLSI 2025, arXiv 2411.10285)는 systolic 배열 크기에 맞춘 블록 희소성을 트랜스포머 FFN 공동 설계에 씁니다. HALP/NetAdapt/AMC는 여전히 **측정 LUT**(실리콘 필요), Torch-Pruning(DepGraph)은 MACs·파라미터만 봅니다. 남는 자리는 "해석 모델 + 의존성 그래프 위의 구조적 채널 프루닝 + 그 결정을 정수 실행 정확도까지 되돌려 확인"의 조합이지 "해석 모델을 루프에 넣은 최초"가 아닙니다 | `prune.prune_cost_greedy`, E6 |
 | NPU 친화 활성함수 교체 + 재학습의 정확도·사이클 트레이드오프 | `quantization-friendly training`, `hardware-friendly activation quantization replace` 0건; 얼굴인식 저장소 하나가 PReLU→LeakyReLU를 손으로 교체 | `quant.swap_activations` + healing, E4(b); LUT 활성함수의 이중 양자화 지점을 lint가 설명 |
 | 캘리브레이션 세트 크기/구성 연구 (CV PTQ) | quantscope의 오염 테스트 정도 | E5 |
-| 정수 구현 선택(반올림·곱셈기 비트·누산기 폭)의 정확도 비용 | deterministic-int8-llm-inference(LLM/GPU)만. TFLite는 `TFLITE_SINGLE_ROUNDING` 같은 선택지를 코드로 갖고 있지만 정확도 비용을 표로 낸 곳은 찾지 못함 | `RequantConfig`, E7 |
+| 정수 구현 선택(반올림·곱셈기 비트·누산기 폭)의 정확도 비용 | 축마다 사정이 다릅니다. **누산기 폭에는 선행 연구가 있습니다** — A2Q(Colbert et al., ICCV 2023)와 A2Q+(2024)는 목표 누산기 비트 폭에서 유도한 한계로 가중치 L1 노름을 제약해 오버플로를 원천 차단하며 Brevitas·FINN에 통합돼 있습니다. 다만 그쪽은 *좁은 누산기에 맞게 학습시키는* 문제를 풀고, 이 저장소는 *평범하게 학습된 모델을 그냥 좁혔을 때 무엇이 깨지는지*를 잽니다. **반올림 모드**는 선택지 자체가 널리 알려져 있고(gemmlowp 이중 반올림 vs `TFLITE_SINGLE_ROUNDING`, PPQ는 플랫폼별 반올림 정책을 인코딩) TFLite 이슈·PR로도 논의됐지만, 그 선택의 **정확도 비용을 표로 낸 것**은 찾지 못했습니다. **곱셈기 비트 폭** ablation은 어떤 규모에서도 찾지 못했습니다 | `RequantConfig`, E7 |
 | 검증 문화: PyTorch 쪽 압축 코드에 비트 정확 골든모델 | FPGA 저장소에는 흔하지만 PyTorch 쪽 압축 저장소에는 거의 없음 | NumPy ⇄ C++ 비트 동일 테스트, gemmlowp 참조 대조 |
 
 ## 이 프로젝트에 가장 가까운 것들 (참고하고 차별화한 대상)
@@ -42,6 +42,28 @@
 * **LSQ**: `quant/fake.py`의 학습 가능한 스케일은 LSQ의 그래디언트 식(STE로 자연히 나오는 `round(x/s) − x/s`)은 따르지만 LSQ의 그래디언트 스케일 `1/√(N·Q_P)`는 구현하지 않았고, 실험(E4의 QAT)에서는 스케일을 고정한 채 학습했습니다. 따라서 이 저장소는 LSQ를 재현했다고 말하지 않습니다.
 * 검색 기반 조사라 여전히 완전하지 않습니다. 비슷한 것을 알고 계시면 이슈로 알려 주시면 표를 고치겠습니다.
 
+## 정정과 추가 조사 (2026-09-13)
+
+지원 준비 과정에서 이 문서를 다시 검증했고, 사실 오류 하나와 누락 넷을 고쳤습니다.
+
+* **U-Boost NAS는 코드가 있습니다.** 위 표의 "코드 없음"은 틀렸고, 하필 이 저장소의 중심 아이디어(해석적 활용도 모델을 탐색 루프에)에
+  가장 가까운 선행 연구입니다. 차별점은 NAS가 아니라 구조적 프루닝이라는 것, 그리고 결정을 정수 실행 정확도까지 되돌려 확인한다는 것입니다.
+* **Torch2Chip**(MLSys 2024) — 정수 엔진 쪽의 최근접 비교 대상이고 문제 의식이 이 저장소와 같습니다:
+  현재 알고리즘들이 양자화된 정수를 중간 결과로만 취급하고 최종 출력은 "이산화된" 부동소수점이라, 하드웨어 설계자에게 정수 파라미터 추출과
+  레이어 fusion 부담을 떠넘긴다는 것입니다. 커스텀 압축 + 자동 fusion + 정수 파라미터 추출 + 연산자별 정수 텐서 관측을 제공합니다.
+  **없는 것**: 하드웨어 비용 모델, 비트 일치 대조용 두 번째 엔진, fake-quant와 정수 실행의 격차 수치.
+* **HASS**(FPL 2024) — dataflow 가속기를 위한 하드웨어 인지 프루닝을 표방하며 하드웨어 성능·자원 추정을 희소성 탐색과 공동 최적화합니다.
+  FPGA dataflow에 비정형 희소성이라 이 저장소(systolic, 구조적 채널)와는 다른 자리입니다.
+* **SASP**(GLSVLSI 2025, arXiv 2411.10285) — 프루닝 블록 크기를 systolic 배열 차원에 맞춰 타일 단위로 건너뛰게 하고,
+  (배열 크기 × 희소율) 공간을 함께 훑습니다. E6의 "정렬 프루닝" 아이디어에 가장 가까운 2025년 연구입니다.
+* **A2Q / A2Q+**(ICCV 2023 / 2024) — 누산기 비트 폭의 정확도·자원 결과를 다루는 선행 연구. E7의 누산기 폭 축은 이 계열을 인용해야 합니다.
+
+덧붙여 **E8의 표현을 낮췄습니다.** SCALE-Sim은 그 자체가 이상화 모델이고, 실제 TPU와의 대조는 2026년에야
+(그것도 선형 상관까지) 확인되었으며 elementwise 연산에서는 따로 모델이 필요하다고 보고되었습니다.
+따라서 0.5% 일치는 "닫힌 식을 올바로 구현했다"는 교차 확인이지 하드웨어 충실도의 증거가 아닙니다.
+**E13**(Arm Vela 대조)을 추가한 이유가 이것입니다. 벤더가 실제 판매되는 칩을 위해 출하하는 추정기와 대면시키자
+이 저장소의 모델이 체계적으로 낙관적이라는 것이 드러났습니다.
+
 ## 참고한 논문
 
 * Nagel et al., *Data-Free Quantization through Weight Equalization and Bias Correction* (ICCV 2019) — CLE, BC
@@ -52,6 +74,11 @@
 * Liu et al., *Learning Efficient Convolutional Networks through Network Slimming* (ICCV 2017) — BN-γ 채널 중요도
 * Shen et al., *HALP: Hardware-Aware Latency Pruning* (NeurIPS 2022) — 지연 기반 프루닝 (측정 LUT)
 * Gupta & Akin, *Accelerator-aware Neural Network Design using AutoML* (2020) — EdgeTPU에서 depthwise가 systolic array를 못 채우는 문제
+* Yüzügüler et al., *U-Boost NAS: Utilization-Boosted Differentiable Neural Architecture Search* (ECCV 2022) — 해석적 활용도 모델을 탐색 루프에 (코드 공개)
+* Colbert et al., *A2Q: Accumulator-Aware Quantization with Guaranteed Overflow Avoidance* (ICCV 2023), *A2Q+* (2024) — 누산기 폭
+* *Torch2Chip: An End-to-end Customizable Deep Neural Network Compression and Deployment Toolkit* (MLSys 2024)
+* *HASS: Hardware-Aware Sparsity Search for Dataflow DNN Accelerator* (FPL 2024)
+* Palacios et al., *Systolic Arrays and Structured Pruning Co-design for Efficient Transformers in Edge Systems* (GLSVLSI 2025)
 * Li et al., *MQBench: Towards Reproducible and Deployable Model Quantization Benchmark* (NeurIPS 2021 D&B) — fake-quant와 실제 백엔드의 배포 격차
 * Yao et al., *HAWQ-V3: Dyadic Neural Network Quantization* (ICML 2021) — 정수 전용 추론, dyadic requant
 * Kim et al., *I-BERT: Integer-only BERT Quantization* (ICML 2021) — 정수 softmax/GELU/LayerNorm

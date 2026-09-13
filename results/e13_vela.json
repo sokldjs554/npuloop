@@ -1,0 +1,1352 @@
+{
+ "meta": {
+  "vela_version": "5.2.0",
+  "accelerator": "ethos-u55-256",
+  "spec": {
+   "name": "ethos-u55-256",
+   "pe_rows": 16,
+   "pe_cols": 16,
+   "cores": 1,
+   "freq_mhz": 500.0,
+   "sram_kb": 4096.0,
+   "dram_gbps": 0.4657,
+   "vector_lanes": 64,
+   "dw_lanes": 256,
+   "lut_acts": [
+    "gelu",
+    "hsigmoid",
+    "hswish",
+    "lrelu",
+    "sigmoid",
+    "silu",
+    "tanh"
+   ],
+   "fused_acts": [
+    "relu",
+    "relu6"
+   ],
+   "unsupported_ops": [],
+   "softmax_passes": 3,
+   "layernorm_passes": 4,
+   "fallback_cycles_per_elem": 8.0,
+   "fill_drain": true,
+   "pj_mac": 0.25,
+   "pj_sram_byte": 2.5,
+   "pj_dram_byte": 160.0,
+   "pj_vector_elem": 0.1,
+   "pj_host_elem": 100.0,
+   "peak_tops": 0.26
+  },
+  "note": "Two analytical estimators on the same INT8 graph. The npuloop spec is taken from Vela's configuration dump, not fitted to its cycle counts. Vela costs a compiled, fused, cascaded schedule; npu.estimate costs one layer at a time with no compiler. Vela's own docs mark its performance estimation EXPERIMENTAL \u2014 neither side is a hardware measurement."
+ },
+ "records": [
+  {
+   "net": "conv-stack",
+   "layers": [
+    [
+     "conv",
+     16,
+     3,
+     2
+    ],
+    [
+     "conv",
+     32,
+     3,
+     1
+    ],
+    [
+     "conv",
+     32,
+     3,
+     2
+    ],
+    [
+     "conv",
+     64,
+     3,
+     1
+    ],
+    [
+     "gap"
+    ],
+    [
+     "fc",
+     10
+    ]
+   ],
+   "vela": {
+    "total_cycles": 47832.0,
+    "total_macs": 3064448,
+    "inference_time_us": 95.664,
+    "npu_passes": 7,
+    "cpu_operator_pct": 0.0,
+    "rows": [
+     {
+      "op": "Conv2D",
+      "nng": "Conv2D",
+      "target": "NPU",
+      "cycles": 4064.0,
+      "macs": 110592,
+      "util": 0.1062992125984252,
+      "name": "functional_1/conv2d_1/Relu;functional_1/conv2d_1/convolution"
+     },
+     {
+      "op": "Conv2D",
+      "nng": "Conv2D",
+      "target": "NPU",
+      "cycles": 8112.0,
+      "macs": 1179648,
+      "util": 0.5680473372781065,
+      "name": "functional_1/conv2d_1_2/Relu;functional_1/conv2d_1_2/convolution"
+     },
+     {
+      "op": "Conv2D",
+      "nng": "Conv2D",
+      "target": "NPU",
+      "cycles": 9552.0,
+      "macs": 589824,
+      "util": 0.2412060301507538,
+      "name": "functional_1/conv2d_2_1/Relu;functional_1/conv2d_2_1/convolution"
+     },
+     {
+      "op": "Conv2D",
+      "nng": "Conv2D",
+      "target": "NPU",
+      "cycles": 19088.0,
+      "macs": 1179648,
+      "util": 0.24140821458507966,
+      "name": "functional_1/conv2d_3_1/Relu;functional_1/conv2d_3_1/convolution"
+     },
+     {
+      "op": "Mean",
+      "nng": "DepthwiseConv2D",
+      "target": "NPU",
+      "cycles": 6048.0,
+      "macs": 4096,
+      "util": 0.0026455026455026454,
+      "name": "functional_1/global_average_pooling2d_1/Mean_intermediate"
+     },
+     {
+      "op": "Mean",
+      "nng": "Mul",
+      "target": "NPU",
+      "cycles": 72.0,
+      "macs": 0,
+      "util": 0.0,
+      "name": "functional_1/global_average_pooling2d_1/Mean"
+     },
+     {
+      "op": "FullyConnected",
+      "nng": "FullyConnected",
+      "target": "NPU",
+      "cycles": 896.0,
+      "macs": 640,
+      "util": 0.0027901785714285715,
+      "name": "StatefulPartitionedCall_1:0"
+     }
+    ]
+   },
+   "npuloop": {
+    "total_cycles": 40157.50483143655,
+    "total_macs": 3060352,
+    "latency_us": 80.3150096628731,
+    "rows": [
+     {
+      "name": "net_0",
+      "kind": "conv",
+      "cycles": 3830.79235559373,
+      "macs": 110592,
+      "util": 0.11277040358744395,
+      "bound": "memory"
+     },
+     {
+      "name": "net_2",
+      "kind": "conv",
+      "cycles": 5436.0,
+      "macs": 1179648,
+      "util": 0.847682119205298,
+      "bound": "compute"
+     },
+     {
+      "name": "net_4",
+      "kind": "conv",
+      "cycles": 10032.20957698089,
+      "macs": 589824,
+      "util": 0.22966027397260272,
+      "bound": "memory"
+     },
+     {
+      "name": "net_6",
+      "kind": "conv",
+      "cycles": 20064.41915396178,
+      "macs": 1179648,
+      "util": 0.22966027397260272,
+      "bound": "memory"
+     },
+     {
+      "name": "net_8",
+      "kind": "pool",
+      "cycles": 64.0,
+      "macs": 0,
+      "util": 0.0,
+      "bound": "vector"
+     },
+     {
+      "name": "net_10",
+      "kind": "linear",
+      "cycles": 730.0837449001504,
+      "macs": 640,
+      "util": 0.003424264705882353,
+      "bound": "memory"
+     }
+    ]
+   },
+   "mac_match": false,
+   "cycle_ratio": 0.8395531199079392,
+   "per_layer": [
+    {
+     "kind": "conv",
+     "index": 0,
+     "name": "net_0",
+     "vela_cycles": 4064.0,
+     "npuloop_cycles": 3830.79235559373,
+     "vela_macs": 110592,
+     "npuloop_macs": 110592,
+     "vela_util": 0.1062992125984252,
+     "npuloop_util": 0.11277040358744395,
+     "ratio": 0.9426162292307406
+    },
+    {
+     "kind": "conv",
+     "index": 1,
+     "name": "net_2",
+     "vela_cycles": 8112.0,
+     "npuloop_cycles": 5436.0,
+     "vela_macs": 1179648,
+     "npuloop_macs": 1179648,
+     "vela_util": 0.5680473372781065,
+     "npuloop_util": 0.847682119205298,
+     "ratio": 0.6701183431952663
+    },
+    {
+     "kind": "conv",
+     "index": 2,
+     "name": "net_4",
+     "vela_cycles": 9552.0,
+     "npuloop_cycles": 10032.20957698089,
+     "vela_macs": 589824,
+     "npuloop_macs": 589824,
+     "vela_util": 0.2412060301507538,
+     "npuloop_util": 0.22966027397260272,
+     "ratio": 1.0502731969201098
+    },
+    {
+     "kind": "conv",
+     "index": 3,
+     "name": "net_6",
+     "vela_cycles": 19088.0,
+     "npuloop_cycles": 20064.41915396178,
+     "vela_macs": 1179648,
+     "npuloop_macs": 1179648,
+     "vela_util": 0.24140821458507966,
+     "npuloop_util": 0.22966027397260272,
+     "ratio": 1.0511535600357176
+    },
+    {
+     "kind": "linear",
+     "index": 0,
+     "name": "net_10",
+     "vela_cycles": 896.0,
+     "npuloop_cycles": 730.0837449001504,
+     "vela_macs": 640,
+     "npuloop_macs": 640,
+     "vela_util": 0.0027901785714285715,
+     "npuloop_util": 0.003424264705882353,
+     "ratio": 0.8148256081474893
+    },
+    {
+     "kind": "pool",
+     "index": 0,
+     "name": "net_8",
+     "vela_cycles": 6048.0,
+     "npuloop_cycles": 64.0,
+     "vela_macs": 4096,
+     "npuloop_macs": 0,
+     "vela_util": 0.0026455026455026454,
+     "npuloop_util": 0.0,
+     "ratio": 0.010582010582010581
+    },
+    {
+     "kind": "pool",
+     "index": -1,
+     "name": "(count mismatch)",
+     "vela_count": 2,
+     "npuloop_count": 1
+    }
+   ],
+   "provenance": "simulated",
+   "timestamp": "2026-09-13T15:35:27"
+  },
+  {
+   "net": "dw-separable",
+   "layers": [
+    [
+     "conv",
+     16,
+     3,
+     2
+    ],
+    [
+     "dw",
+     3,
+     1
+    ],
+    [
+     "conv",
+     32,
+     1,
+     1
+    ],
+    [
+     "dw",
+     3,
+     2
+    ],
+    [
+     "conv",
+     64,
+     1,
+     1
+    ],
+    [
+     "gap"
+    ],
+    [
+     "fc",
+     10
+    ]
+   ],
+   "vela": {
+    "total_cycles": 22360.0,
+    "total_macs": 432768,
+    "inference_time_us": 44.72,
+    "npu_passes": 8,
+    "cpu_operator_pct": 0.0,
+    "rows": [
+     {
+      "op": "Conv2D",
+      "nng": "Conv2D",
+      "target": "NPU",
+      "cycles": 4064.0,
+      "macs": 110592,
+      "util": 0.1062992125984252,
+      "name": "functional_1_1/conv2d_4_1/Relu;functional_1_1/conv2d_4_1/convolution"
+     },
+     {
+      "op": "DepthwiseConv2D",
+      "nng": "DepthwiseConv2D",
+      "target": "NPU",
+      "cycles": 3200.0,
+      "macs": 36864,
+      "util": 0.045,
+      "name": "functional_1_1/depthwise_conv2d_1/Relu;functional_1_1/depthwise_conv2d_1/depthwise"
+     },
+     {
+      "op": "Conv2D",
+      "nng": "Conv2D",
+      "target": "NPU",
+      "cycles": 3648.0,
+      "macs": 131072,
+      "util": 0.14035087719298245,
+      "name": "functional_1_1/conv2d_5_1/Relu;functional_1_1/conv2d_5_1/convolution"
+     },
+     {
+      "op": "DepthwiseConv2D",
+      "nng": "DepthwiseConv2D",
+      "target": "NPU",
+      "cycles": 1728.0,
+      "macs": 18432,
+      "util": 0.04166666666666667,
+      "name": "functional_1_1/depthwise_conv2d_1_2/Relu;functional_1_1/depthwise_conv2d_1_2/depthwise"
+     },
+     {
+      "op": "Conv2D",
+      "nng": "Conv2D",
+      "target": "NPU",
+      "cycles": 2704.0,
+      "macs": 131072,
+      "util": 0.1893491124260355,
+      "name": "functional_1_1/conv2d_6_1/Relu;functional_1_1/conv2d_6_1/convolution"
+     },
+     {
+      "op": "Mean",
+      "nng": "DepthwiseConv2D",
+      "target": "NPU",
+      "cycles": 6048.0,
+      "macs": 4096,
+      "util": 0.0026455026455026454,
+      "name": "functional_1_1/global_average_pooling2d_1_1/Mean_intermediate"
+     },
+     {
+      "op": "Mean",
+      "nng": "Mul",
+      "target": "NPU",
+      "cycles": 72.0,
+      "macs": 0,
+      "util": 0.0,
+      "name": "functional_1_1/global_average_pooling2d_1_1/Mean"
+     },
+     {
+      "op": "FullyConnected",
+      "nng": "FullyConnected",
+      "target": "NPU",
+      "cycles": 896.0,
+      "macs": 640,
+      "util": 0.0027901785714285715,
+      "name": "StatefulPartitionedCall_1:0"
+     }
+    ]
+   },
+   "npuloop": {
+    "total_cycles": 10665.70925488512,
+    "total_macs": 428672,
+    "latency_us": 21.331418509770238,
+    "rows": [
+     {
+      "name": "net_0",
+      "kind": "conv",
+      "cycles": 3830.79235559373,
+      "macs": 110592,
+      "util": 0.11277040358744395,
+      "bound": "memory"
+     },
+     {
+      "name": "net_2",
+      "kind": "dwconv",
+      "cycles": 2304.0,
+      "macs": 36864,
+      "util": 0.0625,
+      "bound": "compute"
+     },
+     {
+      "name": "net_4",
+      "kind": "conv",
+      "cycles": 687.137642258965,
+      "macs": 131072,
+      "util": 0.74512,
+      "bound": "memory"
+     },
+     {
+      "name": "net_6",
+      "kind": "dwconv",
+      "cycles": 576.0,
+      "macs": 18432,
+      "util": 0.125,
+      "bound": "compute"
+     },
+     {
+      "name": "net_8",
+      "kind": "conv",
+      "cycles": 2473.695512132274,
+      "macs": 131072,
+      "util": 0.2069777777777778,
+      "bound": "memory"
+     },
+     {
+      "name": "net_10",
+      "kind": "pool",
+      "cycles": 64.0,
+      "macs": 0,
+      "util": 0.0,
+      "bound": "vector"
+     },
+     {
+      "name": "net_12",
+      "kind": "linear",
+      "cycles": 730.0837449001504,
+      "macs": 640,
+      "util": 0.003424264705882353,
+      "bound": "memory"
+     }
+    ]
+   },
+   "mac_match": false,
+   "cycle_ratio": 0.47699951944924507,
+   "per_layer": [
+    {
+     "kind": "conv",
+     "index": 0,
+     "name": "net_0",
+     "vela_cycles": 4064.0,
+     "npuloop_cycles": 3830.79235559373,
+     "vela_macs": 110592,
+     "npuloop_macs": 110592,
+     "vela_util": 0.1062992125984252,
+     "npuloop_util": 0.11277040358744395,
+     "ratio": 0.9426162292307406
+    },
+    {
+     "kind": "conv",
+     "index": 1,
+     "name": "net_4",
+     "vela_cycles": 3648.0,
+     "npuloop_cycles": 687.137642258965,
+     "vela_macs": 131072,
+     "npuloop_macs": 131072,
+     "vela_util": 0.14035087719298245,
+     "npuloop_util": 0.74512,
+     "ratio": 0.18836009930344436
+    },
+    {
+     "kind": "conv",
+     "index": 2,
+     "name": "net_8",
+     "vela_cycles": 2704.0,
+     "npuloop_cycles": 2473.695512132274,
+     "vela_macs": 131072,
+     "npuloop_macs": 131072,
+     "vela_util": 0.1893491124260355,
+     "npuloop_util": 0.2069777777777778,
+     "ratio": 0.914828221942409
+    },
+    {
+     "kind": "dwconv",
+     "index": 0,
+     "name": "net_2",
+     "vela_cycles": 3200.0,
+     "npuloop_cycles": 2304.0,
+     "vela_macs": 36864,
+     "npuloop_macs": 36864,
+     "vela_util": 0.045,
+     "npuloop_util": 0.0625,
+     "ratio": 0.72
+    },
+    {
+     "kind": "dwconv",
+     "index": 1,
+     "name": "net_6",
+     "vela_cycles": 1728.0,
+     "npuloop_cycles": 576.0,
+     "vela_macs": 18432,
+     "npuloop_macs": 18432,
+     "vela_util": 0.04166666666666667,
+     "npuloop_util": 0.125,
+     "ratio": 0.3333333333333333
+    },
+    {
+     "kind": "linear",
+     "index": 0,
+     "name": "net_12",
+     "vela_cycles": 896.0,
+     "npuloop_cycles": 730.0837449001504,
+     "vela_macs": 640,
+     "npuloop_macs": 640,
+     "vela_util": 0.0027901785714285715,
+     "npuloop_util": 0.003424264705882353,
+     "ratio": 0.8148256081474893
+    },
+    {
+     "kind": "pool",
+     "index": 0,
+     "name": "net_10",
+     "vela_cycles": 6048.0,
+     "npuloop_cycles": 64.0,
+     "vela_macs": 4096,
+     "npuloop_macs": 0,
+     "vela_util": 0.0026455026455026454,
+     "npuloop_util": 0.0,
+     "ratio": 0.010582010582010581
+    },
+    {
+     "kind": "pool",
+     "index": -1,
+     "name": "(count mismatch)",
+     "vela_count": 2,
+     "npuloop_count": 1
+    }
+   ],
+   "provenance": "simulated",
+   "timestamp": "2026-09-13T15:35:29"
+  },
+  {
+   "net": "pointwise-heavy",
+   "layers": [
+    [
+     "conv",
+     32,
+     3,
+     2
+    ],
+    [
+     "conv",
+     64,
+     1,
+     1
+    ],
+    [
+     "conv",
+     32,
+     1,
+     1
+    ],
+    [
+     "conv",
+     64,
+     1,
+     1
+    ],
+    [
+     "gap"
+    ],
+    [
+     "fc",
+     10
+    ]
+   ],
+   "vela": {
+    "total_cycles": 44396.0,
+    "total_macs": 1811072,
+    "inference_time_us": 88.792,
+    "npu_passes": 7,
+    "cpu_operator_pct": 0.0,
+    "rows": [
+     {
+      "op": "Conv2D",
+      "nng": "Conv2D",
+      "target": "NPU",
+      "cycles": 5792.0,
+      "macs": 221184,
+      "util": 0.14917127071823205,
+      "name": "functional_2_1/conv2d_7_1/Relu;functional_2_1/conv2d_7_1/convolution"
+     },
+     {
+      "op": "Conv2D",
+      "nng": "Conv2D",
+      "target": "NPU",
+      "cycles": 5440.0,
+      "macs": 524288,
+      "util": 0.3764705882352941,
+      "name": "functional_2_1/conv2d_8_1/Relu;functional_2_1/conv2d_8_1/convolution"
+     },
+     {
+      "op": "Conv2D",
+      "nng": "Conv2D",
+      "target": "NPU",
+      "cycles": 4160.0,
+      "macs": 524288,
+      "util": 0.49230769230769234,
+      "name": "functional_2_1/conv2d_9_1/Relu;functional_2_1/conv2d_9_1/convolution"
+     },
+     {
+      "op": "Conv2D",
+      "nng": "Conv2D",
+      "target": "NPU",
+      "cycles": 5440.0,
+      "macs": 524288,
+      "util": 0.3764705882352941,
+      "name": "functional_2_1/conv2d_10_1/Relu;functional_2_1/conv2d_10_1/convolution"
+     },
+     {
+      "op": "Mean",
+      "nng": "DepthwiseConv2D",
+      "target": "NPU",
+      "cycles": 22596.0,
+      "macs": 16384,
+      "util": 0.00283235970968313,
+      "name": "functional_2_1/global_average_pooling2d_2_1/Mean_intermediate"
+     },
+     {
+      "op": "Mean",
+      "nng": "Mul",
+      "target": "NPU",
+      "cycles": 72.0,
+      "macs": 0,
+      "util": 0.0,
+      "name": "functional_2_1/global_average_pooling2d_2_1/Mean"
+     },
+     {
+      "op": "FullyConnected",
+      "nng": "FullyConnected",
+      "target": "NPU",
+      "cycles": 896.0,
+      "macs": 640,
+      "util": 0.0027901785714285715,
+      "name": "StatefulPartitionedCall_1:0"
+     }
+    ]
+   },
+   "npuloop": {
+    "total_cycles": 12712.798797509126,
+    "total_macs": 1794688,
+    "latency_us": 25.42559759501825,
+    "rows": [
+     {
+      "name": "net_0",
+      "kind": "conv",
+      "cycles": 4363.3240283444275,
+      "macs": 221184,
+      "util": 0.19801417322834647,
+      "bound": "memory"
+     },
+     {
+      "name": "net_2",
+      "kind": "conv",
+      "cycles": 2473.695512132274,
+      "macs": 524288,
+      "util": 0.8279111111111112,
+      "bound": "memory"
+     },
+     {
+      "name": "net_4",
+      "kind": "conv",
+      "cycles": 2416.0,
+      "macs": 524288,
+      "util": 0.847682119205298,
+      "bound": "compute"
+     },
+     {
+      "name": "net_6",
+      "kind": "conv",
+      "cycles": 2473.695512132274,
+      "macs": 524288,
+      "util": 0.8279111111111112,
+      "bound": "memory"
+     },
+     {
+      "name": "net_8",
+      "kind": "pool",
+      "cycles": 256.0,
+      "macs": 0,
+      "util": 0.0,
+      "bound": "vector"
+     },
+     {
+      "name": "net_10",
+      "kind": "linear",
+      "cycles": 730.0837449001504,
+      "macs": 640,
+      "util": 0.003424264705882353,
+      "bound": "memory"
+     }
+    ]
+   },
+   "mac_match": false,
+   "cycle_ratio": 0.28635009454701155,
+   "per_layer": [
+    {
+     "kind": "conv",
+     "index": 0,
+     "name": "net_0",
+     "vela_cycles": 5792.0,
+     "npuloop_cycles": 4363.3240283444275,
+     "vela_macs": 221184,
+     "npuloop_macs": 221184,
+     "vela_util": 0.14917127071823205,
+     "npuloop_util": 0.19801417322834647,
+     "ratio": 0.7533363308605711
+    },
+    {
+     "kind": "conv",
+     "index": 1,
+     "name": "net_2",
+     "vela_cycles": 5440.0,
+     "npuloop_cycles": 2473.695512132274,
+     "vela_macs": 524288,
+     "npuloop_macs": 524288,
+     "vela_util": 0.3764705882352941,
+     "npuloop_util": 0.8279111111111112,
+     "ratio": 0.4547234397301974
+    },
+    {
+     "kind": "conv",
+     "index": 2,
+     "name": "net_4",
+     "vela_cycles": 4160.0,
+     "npuloop_cycles": 2416.0,
+     "vela_macs": 524288,
+     "npuloop_macs": 524288,
+     "vela_util": 0.49230769230769234,
+     "npuloop_util": 0.847682119205298,
+     "ratio": 0.5807692307692308
+    },
+    {
+     "kind": "conv",
+     "index": 3,
+     "name": "net_6",
+     "vela_cycles": 5440.0,
+     "npuloop_cycles": 2473.695512132274,
+     "vela_macs": 524288,
+     "npuloop_macs": 524288,
+     "vela_util": 0.3764705882352941,
+     "npuloop_util": 0.8279111111111112,
+     "ratio": 0.4547234397301974
+    },
+    {
+     "kind": "linear",
+     "index": 0,
+     "name": "net_10",
+     "vela_cycles": 896.0,
+     "npuloop_cycles": 730.0837449001504,
+     "vela_macs": 640,
+     "npuloop_macs": 640,
+     "vela_util": 0.0027901785714285715,
+     "npuloop_util": 0.003424264705882353,
+     "ratio": 0.8148256081474893
+    },
+    {
+     "kind": "pool",
+     "index": 0,
+     "name": "net_8",
+     "vela_cycles": 22596.0,
+     "npuloop_cycles": 256.0,
+     "vela_macs": 16384,
+     "npuloop_macs": 0,
+     "vela_util": 0.00283235970968313,
+     "npuloop_util": 0.0,
+     "ratio": 0.011329438838732518
+    },
+    {
+     "kind": "pool",
+     "index": -1,
+     "name": "(count mismatch)",
+     "vela_count": 2,
+     "npuloop_count": 1
+    }
+   ],
+   "provenance": "simulated",
+   "timestamp": "2026-09-13T15:35:30"
+  },
+  {
+   "net": "wide-late",
+   "layers": [
+    [
+     "conv",
+     16,
+     3,
+     2
+    ],
+    [
+     "conv",
+     32,
+     3,
+     2
+    ],
+    [
+     "conv",
+     128,
+     3,
+     1
+    ],
+    [
+     "gap"
+    ],
+    [
+     "fc",
+     10
+    ]
+   ],
+   "vela": {
+    "total_cycles": 61542.0,
+    "total_macs": 2774272,
+    "inference_time_us": 123.084,
+    "npu_passes": 6,
+    "cpu_operator_pct": 0.0,
+    "rows": [
+     {
+      "op": "Conv2D",
+      "nng": "Conv2D",
+      "target": "NPU",
+      "cycles": 4064.0,
+      "macs": 110592,
+      "util": 0.1062992125984252,
+      "name": "functional_3_1/conv2d_11_1/Relu;functional_3_1/conv2d_11_1/convolution"
+     },
+     {
+      "op": "Conv2D",
+      "nng": "Conv2D",
+      "target": "NPU",
+      "cycles": 5680.0,
+      "macs": 294912,
+      "util": 0.2028169014084507,
+      "name": "functional_3_1/conv2d_12_1/Relu;functional_3_1/conv2d_12_1/convolution"
+     },
+     {
+      "op": "Conv2D",
+      "nng": "Conv2D",
+      "target": "NPU",
+      "cycles": 38160.0,
+      "macs": 2359296,
+      "util": 0.24150943396226418,
+      "name": "functional_3_1/conv2d_13_1/Relu;functional_3_1/conv2d_13_1/convolution"
+     },
+     {
+      "op": "Mean",
+      "nng": "DepthwiseConv2D",
+      "target": "NPU",
+      "cycles": 11830.0,
+      "macs": 8192,
+      "util": 0.002704987320371936,
+      "name": "functional_3_1/global_average_pooling2d_3_1/Mean_intermediate"
+     },
+     {
+      "op": "Mean",
+      "nng": "Mul",
+      "target": "NPU",
+      "cycles": 144.0,
+      "macs": 0,
+      "util": 0.0,
+      "name": "functional_3_1/global_average_pooling2d_3_1/Mean"
+     },
+     {
+      "op": "FullyConnected",
+      "nng": "FullyConnected",
+      "target": "NPU",
+      "cycles": 1664.0,
+      "macs": 1280,
+      "util": 0.003004807692307692,
+      "name": "StatefulPartitionedCall_1:0"
+     }
+    ]
+   },
+   "npuloop": {
+    "total_cycles": 50589.67060339274,
+    "total_macs": 2766080,
+    "latency_us": 101.17934120678548,
+    "rows": [
+     {
+      "name": "net_0",
+      "kind": "conv",
+      "cycles": 3830.79235559373,
+      "macs": 110592,
+      "util": 0.11277040358744395,
+      "bound": "memory"
+     },
+     {
+      "name": "net_2",
+      "kind": "conv",
+      "cycles": 5084.818552716341,
+      "macs": 294912,
+      "util": 0.22655675675675674,
+      "bound": "memory"
+     },
+     {
+      "name": "net_4",
+      "kind": "conv",
+      "cycles": 40128.83830792356,
+      "macs": 2359296,
+      "util": 0.22966027397260272,
+      "bound": "memory"
+     },
+     {
+      "name": "net_6",
+      "kind": "pool",
+      "cycles": 128.0,
+      "macs": 0,
+      "util": 0.0,
+      "bound": "vector"
+     },
+     {
+      "name": "net_8",
+      "kind": "linear",
+      "cycles": 1417.2213871591152,
+      "macs": 1280,
+      "util": 0.0035280303030303032,
+      "bound": "memory"
+     }
+    ]
+   },
+   "mac_match": false,
+   "cycle_ratio": 0.8220348802995148,
+   "per_layer": [
+    {
+     "kind": "conv",
+     "index": 0,
+     "name": "net_0",
+     "vela_cycles": 4064.0,
+     "npuloop_cycles": 3830.79235559373,
+     "vela_macs": 110592,
+     "npuloop_macs": 110592,
+     "vela_util": 0.1062992125984252,
+     "npuloop_util": 0.11277040358744395,
+     "ratio": 0.9426162292307406
+    },
+    {
+     "kind": "conv",
+     "index": 1,
+     "name": "net_2",
+     "vela_cycles": 5680.0,
+     "npuloop_cycles": 5084.818552716341,
+     "vela_macs": 294912,
+     "npuloop_macs": 294912,
+     "vela_util": 0.2028169014084507,
+     "npuloop_util": 0.22655675675675674,
+     "ratio": 0.8952145339289334
+    },
+    {
+     "kind": "conv",
+     "index": 2,
+     "name": "net_4",
+     "vela_cycles": 38160.0,
+     "npuloop_cycles": 40128.83830792356,
+     "vela_macs": 2359296,
+     "npuloop_macs": 2359296,
+     "vela_util": 0.24150943396226418,
+     "npuloop_util": 0.22966027397260272,
+     "ratio": 1.0515942952810156
+    },
+    {
+     "kind": "linear",
+     "index": 0,
+     "name": "net_8",
+     "vela_cycles": 1664.0,
+     "npuloop_cycles": 1417.2213871591152,
+     "vela_macs": 1280,
+     "npuloop_macs": 1280,
+     "vela_util": 0.003004807692307692,
+     "npuloop_util": 0.0035280303030303032,
+     "ratio": 0.8516955451677375
+    },
+    {
+     "kind": "pool",
+     "index": 0,
+     "name": "net_6",
+     "vela_cycles": 11830.0,
+     "npuloop_cycles": 128.0,
+     "vela_macs": 8192,
+     "npuloop_macs": 0,
+     "vela_util": 0.002704987320371936,
+     "npuloop_util": 0.0,
+     "ratio": 0.010819949281487743
+    },
+    {
+     "kind": "pool",
+     "index": -1,
+     "name": "(count mismatch)",
+     "vela_count": 2,
+     "npuloop_count": 1
+    }
+   ],
+   "provenance": "simulated",
+   "timestamp": "2026-09-13T15:35:31"
+  },
+  {
+   "net": "deep-narrow",
+   "layers": [
+    [
+     "conv",
+     8,
+     3,
+     2
+    ],
+    [
+     "conv",
+     8,
+     3,
+     1
+    ],
+    [
+     "conv",
+     8,
+     3,
+     1
+    ],
+    [
+     "conv",
+     8,
+     3,
+     1
+    ],
+    [
+     "conv",
+     8,
+     3,
+     1
+    ],
+    [
+     "conv",
+     8,
+     3,
+     1
+    ],
+    [
+     "gap"
+    ],
+    [
+     "fc",
+     10
+    ]
+   ],
+   "vela": {
+    "total_cycles": 15850.0,
+    "total_macs": 794704,
+    "inference_time_us": 31.7,
+    "npu_passes": 9,
+    "cpu_operator_pct": 0.0,
+    "rows": [
+     {
+      "op": "Conv2D",
+      "nng": "Conv2D",
+      "target": "NPU",
+      "cycles": 3136.0,
+      "macs": 55296,
+      "util": 0.06887755102040816,
+      "name": "functional_4_1/conv2d_14_1/Relu;functional_4_1/conv2d_14_1/convolution"
+     },
+     {
+      "op": "Conv2D",
+      "nng": "Conv2D",
+      "target": "NPU",
+      "cycles": 1856.0,
+      "macs": 147456,
+      "util": 0.3103448275862069,
+      "name": "functional_4_1/conv2d_15_1/Relu;functional_4_1/conv2d_15_1/convolution"
+     },
+     {
+      "op": "Conv2D",
+      "nng": "Conv2D",
+      "target": "NPU",
+      "cycles": 1856.0,
+      "macs": 147456,
+      "util": 0.3103448275862069,
+      "name": "functional_4_1/conv2d_16_1/Relu;functional_4_1/conv2d_16_1/convolution"
+     },
+     {
+      "op": "Conv2D",
+      "nng": "Conv2D",
+      "target": "NPU",
+      "cycles": 1856.0,
+      "macs": 147456,
+      "util": 0.3103448275862069,
+      "name": "functional_4_1/conv2d_17_1/Relu;functional_4_1/conv2d_17_1/convolution"
+     },
+     {
+      "op": "Conv2D",
+      "nng": "Conv2D",
+      "target": "NPU",
+      "cycles": 1856.0,
+      "macs": 147456,
+      "util": 0.3103448275862069,
+      "name": "functional_4_1/conv2d_18_1/Relu;functional_4_1/conv2d_18_1/convolution"
+     },
+     {
+      "op": "Conv2D",
+      "nng": "Conv2D",
+      "target": "NPU",
+      "cycles": 1856.0,
+      "macs": 147456,
+      "util": 0.3103448275862069,
+      "name": "functional_4_1/conv2d_19_1/Relu;functional_4_1/conv2d_19_1/convolution"
+     },
+     {
+      "op": "Mean",
+      "nng": "DepthwiseConv2D",
+      "target": "NPU",
+      "cycles": 2890.0,
+      "macs": 2048,
+      "util": 0.0027681660899653983,
+      "name": "functional_4_1/global_average_pooling2d_4_1/Mean_intermediate"
+     },
+     {
+      "op": "Mean",
+      "nng": "Mul",
+      "target": "NPU",
+      "cycles": 256.0,
+      "macs": 0,
+      "util": 0.0,
+      "name": "functional_4_1/global_average_pooling2d_4_1/Mean"
+     },
+     {
+      "op": "FullyConnected",
+      "nng": "FullyConnected",
+      "target": "NPU",
+      "cycles": 288.0,
+      "macs": 80,
+      "util": 0.0010850694444444445,
+      "name": "StatefulPartitionedCall_1:0"
+     }
+    ]
+   },
+   "npuloop": {
+    "total_cycles": 11275.364827141937,
+    "total_macs": 792656,
+    "latency_us": 22.550729654283877,
+    "rows": [
+     {
+      "name": "net_0",
+      "kind": "conv",
+      "cycles": 3564.526519218381,
+      "macs": 55296,
+      "util": 0.06059710843373494,
+      "bound": "memory"
+     },
+     {
+      "name": "net_2",
+      "kind": "conv",
+      "cycles": 1510.0,
+      "macs": 147456,
+      "util": 0.38145695364238413,
+      "bound": "compute"
+     },
+     {
+      "name": "net_4",
+      "kind": "conv",
+      "cycles": 1510.0,
+      "macs": 147456,
+      "util": 0.38145695364238413,
+      "bound": "compute"
+     },
+     {
+      "name": "net_6",
+      "kind": "conv",
+      "cycles": 1510.0,
+      "macs": 147456,
+      "util": 0.38145695364238413,
+      "bound": "compute"
+     },
+     {
+      "name": "net_8",
+      "kind": "conv",
+      "cycles": 1510.0,
+      "macs": 147456,
+      "util": 0.38145695364238413,
+      "bound": "compute"
+     },
+     {
+      "name": "net_10",
+      "kind": "conv",
+      "cycles": 1510.0,
+      "macs": 147456,
+      "util": 0.38145695364238413,
+      "bound": "compute"
+     },
+     {
+      "name": "net_12",
+      "kind": "pool",
+      "cycles": 32.0,
+      "macs": 0,
+      "util": 0.0,
+      "bound": "vector"
+     },
+     {
+      "name": "net_14",
+      "kind": "linear",
+      "cycles": 128.83830792355593,
+      "macs": 80,
+      "util": 0.0024255208333333333,
+      "bound": "memory"
+     }
+    ]
+   },
+   "mac_match": false,
+   "cycle_ratio": 0.7113794843622673,
+   "per_layer": [
+    {
+     "kind": "conv",
+     "index": 0,
+     "name": "net_0",
+     "vela_cycles": 3136.0,
+     "npuloop_cycles": 3564.526519218381,
+     "vela_macs": 55296,
+     "npuloop_macs": 55296,
+     "vela_util": 0.06887755102040816,
+     "npuloop_util": 0.06059710843373494,
+     "ratio": 1.1366474869956573
+    },
+    {
+     "kind": "conv",
+     "index": 1,
+     "name": "net_2",
+     "vela_cycles": 1856.0,
+     "npuloop_cycles": 1510.0,
+     "vela_macs": 147456,
+     "npuloop_macs": 147456,
+     "vela_util": 0.3103448275862069,
+     "npuloop_util": 0.38145695364238413,
+     "ratio": 0.8135775862068966
+    },
+    {
+     "kind": "conv",
+     "index": 2,
+     "name": "net_4",
+     "vela_cycles": 1856.0,
+     "npuloop_cycles": 1510.0,
+     "vela_macs": 147456,
+     "npuloop_macs": 147456,
+     "vela_util": 0.3103448275862069,
+     "npuloop_util": 0.38145695364238413,
+     "ratio": 0.8135775862068966
+    },
+    {
+     "kind": "conv",
+     "index": 3,
+     "name": "net_6",
+     "vela_cycles": 1856.0,
+     "npuloop_cycles": 1510.0,
+     "vela_macs": 147456,
+     "npuloop_macs": 147456,
+     "vela_util": 0.3103448275862069,
+     "npuloop_util": 0.38145695364238413,
+     "ratio": 0.8135775862068966
+    },
+    {
+     "kind": "conv",
+     "index": 4,
+     "name": "net_8",
+     "vela_cycles": 1856.0,
+     "npuloop_cycles": 1510.0,
+     "vela_macs": 147456,
+     "npuloop_macs": 147456,
+     "vela_util": 0.3103448275862069,
+     "npuloop_util": 0.38145695364238413,
+     "ratio": 0.8135775862068966
+    },
+    {
+     "kind": "conv",
+     "index": 5,
+     "name": "net_10",
+     "vela_cycles": 1856.0,
+     "npuloop_cycles": 1510.0,
+     "vela_macs": 147456,
+     "npuloop_macs": 147456,
+     "vela_util": 0.3103448275862069,
+     "npuloop_util": 0.38145695364238413,
+     "ratio": 0.8135775862068966
+    },
+    {
+     "kind": "linear",
+     "index": 0,
+     "name": "net_14",
+     "vela_cycles": 288.0,
+     "npuloop_cycles": 128.83830792355593,
+     "vela_macs": 80,
+     "npuloop_macs": 80,
+     "vela_util": 0.0010850694444444445,
+     "npuloop_util": 0.0024255208333333333,
+     "ratio": 0.4473552358456803
+    },
+    {
+     "kind": "pool",
+     "index": 0,
+     "name": "net_12",
+     "vela_cycles": 2890.0,
+     "npuloop_cycles": 32.0,
+     "vela_macs": 2048,
+     "npuloop_macs": 0,
+     "vela_util": 0.0027681660899653983,
+     "npuloop_util": 0.0,
+     "ratio": 0.011072664359861591
+    },
+    {
+     "kind": "pool",
+     "index": -1,
+     "name": "(count mismatch)",
+     "vela_count": 2,
+     "npuloop_count": 1
+    }
+   ],
+   "provenance": "simulated",
+   "timestamp": "2026-09-13T15:35:32"
+  }
+ ]
+}

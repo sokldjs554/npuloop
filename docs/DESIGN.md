@@ -49,7 +49,7 @@ model ─►│ graph.trace (fx IR)  │─────────────�
 * global avgpool: int32 합 → 반올림 나눗셈(round half away), 스케일 유지.
 * 입력: 호스트가 float → uint8 (round half to even).
 
-## 실험 계획 (E1–E12)
+## 실험 계획 (E1–E13)
 
 | # | 질문 | 방법 |
 |---|---|---|
@@ -65,6 +65,7 @@ model ─►│ graph.trace (fx IR)  │─────────────�
 | E10 | 검증 엔진은 얼마나 걸리는가 | NumPy·C++ 비트 정확 엔진의 노드별 wall-clock을 호스트 CPU에서 실측해 같은 노드의 비용 모델 사이클 옆에 둠(실측 vs 모델을 섞지 않기 위해) |
 | E11 | 실제 런타임과 비트가 맞는가 | TFLite full-integer 모델의 스케일·가중치·바이어스를 그대로 읽어 IntGraph를 만들고 reference 커널과 모든 텐서를 대조 — conv·pool은 이중 반올림, fc는 단일 반올림으로 1,000장 완전 일치 |
 | E12 | 데이터셋·입력 크기 축 | Imagenette 128×128에서 ResNet-20(stem stride 2)을 학습해 인테이크·PTQ·정수 엔진·실측을 같은 파이프라인으로 |
+| E13 | 비용 모델 vs 벤더 추정기 | 같은 아키텍처에서 INT8 TFLite를 만들어 Arm Vela(Ethos-U55-256)와 `npu.estimate`를 대조. 연산자별 사이클·MAC 활용률·CPU 폴백. 다섯 망 모두에서 이 비용 모델이 낙관적(비율 0.29–0.84) | `experiments/e13_vela.py` |
 
 ## 검증 원칙
 

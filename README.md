@@ -12,7 +12,7 @@
 >
 > 처방을 실제로 적용한 뒤에는 int8 가중치/int32 바이어스/고정소수점 requant로 export한 정수 그래프를 NumPy와 C++ 커널로
 > **비트 단위로 같게** 실행해서, fake-quant가 아니라 진짜 정수 결과로 정확도를 확인합니다.
-> CIFAR-10에서 CNN 3종 + 가상 고객 2곳(ViT 81.0% · concat 분기 CNN 89.6%)으로 12개 실험(E1–E12)을 돌린 결과가 JSON으로 있고,
+> CIFAR-10에서 CNN 3종 + 가상 고객 2곳(ViT 81.0% · concat 분기 CNN 89.6%)으로 13개 실험(E1–E13)을 돌린 결과가 JSON으로 있고,
 > 그 JSON을 읽는 [인터랙티브 데모](#데모)가 있습니다.
 
 
@@ -222,6 +222,47 @@ TFLite 자신의 XNNPACK 델리게이트(최적화 경로)와 reference 커널�
 * **TFLite 자신도 백엔드끼리 비트가 다릅니다.** 최적화 경로(XNNPACK 델리게이트)와 reference 커널은 같은 모델·입력에서 출력 코드가
   15%의 이미지에서 다릅니다(위 표 아래 줄). "fake-quant와 하드웨어가 다르다"는 보고를 받으면 어느 런타임을 기준으로 삼았는지부터 물어야 하는 이유입니다.
 * 범위: conv(스트라이드 1·2, 명시적 패딩)·MEAN·fully-connected. TFLite의 depthwise·add·softmax는 아직 대조하지 않았습니다.
+
+### E13. 벤더 추정기와 대면 — Arm Vela 대조
+
+E8은 비용 모델을 SCALE-Sim과 맞춰 봤지만, SCALE-Sim도 결국 이상화된 systolic 배열의 **연구용 모델**입니다.
+Arm의 [Vela](https://pypi.org/project/ethos-u-vela/)는 성격이 다른 증인입니다. 실제로 판매되는 Ethos-U 실리콘을 위해
+Arm이 출하하는 컴파일러이고, INT8 TFLite를 넣으면 연산자별 사이클·MAC 활용률·SRAM/flash 트래픽에 더해
+**어떤 연산자를 NPU에 못 올렸는지**까지 냅니다. 마지막 항목은 어떤 연구용 시뮬레이터도 내지 않습니다.
+
+같은 아키텍처 명세에서 Keras 모델(→ INT8 TFLite → Vela)과 torch 모델(→ `npuloop`)을 각각 만들어
+같은 형상을 두 추정기에 보여 줬습니다. npuloop 쪽 NPU 명세는 **Vela의 설정 덤프에서 그대로 가져왔고**
+(256 MAC/cycle, 500 MHz, 4 MiB arena, off-chip flash 0.466 GB/s) 사이클이 맞도록 조정하지 않았습니다. 조정하면 순환 논증이 됩니다.
+
+| 네트워크 | Vela 사이클 | npuloop 사이클 | 비율 | MAC 차이 | Vela CPU 폴백 |
+|---|---|---|---|---|---|
+| `conv-stack` | 47,832 | 40,158 | 0.84 | 4,096 | 0% |
+| `dw-separable` | 22,360 | 10,666 | 0.48 | 4,096 | 0% |
+| `pointwise-heavy` | 44,396 | 12,713 | 0.29 | 16,384 | 0% |
+| `wide-late` | 61,542 | 50,590 | 0.82 | 8,192 | 0% |
+| `deep-narrow` | 15,850 | 11,275 | 0.71 | 2,048 | 0% |
+
+**이 비용 모델은 체계적으로 낙관적입니다.** 다섯 중 다섯 모두 Vela보다 적은 사이클을 냈고, 비율은 0.29에서 0.84까지 흩어집니다.
+E8의 0.5% 일치와 나란히 놓으면 그 0.5%가 무엇이었는지가 분명해집니다. 같은 이상화를 공유하는 두 모델이
+**같은 닫힌 식을 같게 구현했다**는 확인이지, 하드웨어 충실도의 증거가 아니었습니다.
+
+어디서 갈리는지는 연산자별로 뚜렷합니다(비율 = npuloop / Vela).
+
+| 연산 | 표본 | 최소 | 중앙값 | 최대 | 원인 |
+|---|---|---|---|---|---|
+| conv | 20 | 0.19 | 0.81 | 1.14 | 1×1 conv에서 가장 낙관적. 배열을 채운다고 보지만 Vela는 가중치 재사용이 없는 대역폭 제약을 계상 |
+| dwconv | 2 | 0.33 | 0.72 | — | depthwise 엔진을 이상적으로 봄 |
+| linear | 5 | 0.45 | 0.81 | 0.85 | |
+| pool | 5 | 0.01 | 0.01 | 0.01 | **100배 과소평가.** Vela는 global average pooling을 depthwise conv + mul로 낮추는데, 이 비용 모델은 벡터 패스 한 번으로 셉니다 |
+
+MAC 수가 항상 정확히 GAP 하나만큼 차이 나는 것도 같은 원인입니다(Vela는 Mean을 depthwise로 낮추며 H×W×C MAC을 계상, 이쪽은 pool에 MAC을 매기지 않음).
+Vela는 이 연산을 둘로 쪼개므로 연산자 개수도 2 대 1로 어긋납니다.
+
+`python experiments/e13_vela.py` (`pip install ethos-u-vela tensorflow` 필요). 결과는 `results/e13_vela.json`.
+
+**주의.** 양쪽 다 해석적 추정기입니다. Vela 문서도 자신의 성능 추정을 EXPERIMENTAL로 표시하고 실제 성능 수치로 받아들이지 말라고 적습니다.
+그리고 Vela는 **컴파일된 스케줄**(fusion·타일링·cascading)을 계상하는 반면 `npu.estimate`는 컴파일러 없이 레이어를 하나씩 셉니다.
+그 차이가 위 비율의 상당 부분을 설명하며, 이 실험이 재는 것은 "실리콘까지 몇 %"가 아니라 **두 독립 추정기가 어디서 구조적으로 갈리는가**입니다.
 
 ### E2. PTQ 스킴 그리드 — fake-quant는 정수 엔진을 얼마나 잘 예측하는가
 
@@ -510,7 +551,7 @@ npuloop/
 ├── prune/structured.py  fx 그래프에서 찾은 채널 그룹(체인·concat 브랜치·MLP 은닉)에 uniform · aligned · cost-greedy(비용 모델 in-the-loop) 프루닝
 ├── zoo/                 npz 로더(CIFAR-10·Imagenette, 층화 검증 분할), 모델, 재현 가능한 트레이너(val 기준 선택, resume)
 └── cli.py               npuloop cost | lint | intake | quantize | export | bench
-experiments/             E1–E12 스크립트 (재개 가능, results/*.json에 provenance 라벨과 함께 저장)
+experiments/             E1–E13 스크립트 (재개 가능, results/*.json에 provenance 라벨과 함께 저장)
 results/                 실험 결과 JSON
 demo/                    build.py + index.template.html → 인라인 JSON 데모 페이지 (docs/index.html)
 tests/                   pytest 69개 (참조 구현 대조, 비트 동일성, 정확성 회귀)
