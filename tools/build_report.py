@@ -188,7 +188,7 @@ pcie-80tops, edge-10tops-strict). 캘리브레이션은 학습 분할에서 512�
 {table(e7_rows, ["RequantConfig (ResNet-20 ReLU)", "정확도", "기준과 top-1 일치", "포화 횟수"])}
 
 반올림 모드(single/half-even)는 무관하지만 truncate/floor는 1~3%p를 잃고, 3비트 곱셈기는 ResNet-20 ReLU에서 −8%p, 바이어스 int16은 최대 −10%p,
-누산기 int16은 모델을 무너뜨린다(1,115만 회 포화). 이 순서는 세 모델에서 같다.
+누산기 int16은 모델을 무너뜨린다(1,115만 회 포화). 세 모델에서 등급 구분(무손실 · 손실 · 붕괴)은 같지만 손실 등급 안의 순서는 모델마다 다르다(ReLU: 바이어스 int16 > 3비트 곱셈기 > floor > truncate, SiLU: floor ≈ truncate > 3비트 > 바이어스 int16, MobileNetV2: truncate > 3비트 > floor > 바이어스 int16).
 
 ### 4.3 transformer에서 차이를 만드는 곳은 LayerNorm이다 (E9)
 
