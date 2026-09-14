@@ -1,5 +1,6 @@
 """Generate the markdown result tables for README.md from results/*.json (run after the experiments)."""
 import json, os, sys, statistics
+import numpy as np
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 R = os.path.join(ROOT, "results")
 LABEL = {"resnet20_relu": "ResNet-20 ReLU", "resnet20_silu": "ResNet-20 SiLU", "resnet20_hswish": "ResNet-20 HardSwish",
@@ -255,7 +256,80 @@ def e12():
     return "\n".join(out)
 
 
-TABLES = [("E1", e1), ("E2", e2), ("E3", e3), ("E4", e4), ("E5", e5), ("E6", e6), ("E7", e7), ("E8", e8), ("E9", e9), ("E10", e10), ("E11", e11), ("E12", e12)]
+def _pm(delta, se):
+    return f"{delta*100:+.2f} ± {se*100:.2f}%p"
+
+
+def e15():
+    rs = load("e15_fidelity")["records"]
+    if not rs: return ""
+    out = ["| 모델 | 데이터셋 | 스킴 | test 장수 | FP32 | fake-quant | 정수 엔진 | 정수 − fake (쌍 SE) | 95% CI | 정답 여부가 갈린 장수 | top-1 일치 | 출력 코드 불일치 (전체) | 첫 분기 |",
+           "|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
+    for r in rs:
+        p = r["int_vs_fake"]; oc = r["output_codes"]
+        out.append(f"| {LABEL.get(r['model'], r['model'])} | {r['dataset']} | {r['scheme']} | {r['n_test']:,} | {pct(r['float_acc'])} | {pct(r['fake_acc'])} | {pct(r['int_acc'])} | "
+                   f"{_pm(p['delta'], p['se'])} | [{p['ci95'][0]*100:+.2f}, {p['ci95'][1]*100:+.2f}] | {p['n_correctness_disagree']:,} | {pct(p['top1_agreement'], 2)} | "
+                   f"{pct(oc['mismatch_frac'], 1)} ({oc['images_with_any_mismatch']:,}장) | {r['agreement_batch'].get('first_divergence')} |")
+    n = rs[0]["agreement_batch"]["images"]
+    out.append(f"\n쌍 SE = 같은 이미지에서 잰 (정수 정답 − fake 정답)의 표본 표준편차 / √n. 출력 코드 불일치는 test 전체의 로짓 코드(클래스 × 이미지) 기준, 첫 분기는 {n}장 배치의 전파 비교에서 처음 코드가 달라지는 노드.")
+    out += ["", "| 모델 | 스킴 | conv/linear 국소 불일치 최대 | 국소 불일치가 가장 큰 노드 | 마지막 compute 노드의 전파 불일치 |", "|---|---|---|---|---|"]
+    for r in rs:
+        rows = [x for x in r["per_layer_agreement"] if x["op"] not in ("input", "output", "flatten", "transpose", "reshape")]
+        if not rows: continue
+        cl = [x for x in rows if x["op"] in ("conv", "linear")]
+        worst = max(rows, key=lambda x: x["local_mismatch_frac"])
+        out.append(f"| {LABEL.get(r['model'], r['model'])} | {r['scheme']} | {pct(max(x['local_mismatch_frac'] for x in cl), 3) if cl else '—'} | "
+                   f"{worst['name']} ({worst['op']}, {pct(worst['local_mismatch_frac'], 2)}) | {pct(rows[-1]['mismatch_frac'], 1)} |")
+    return "\n".join(out)
+
+
+def e16():
+    rs = load("e16_ln_emulation")["records"]
+    if not rs: return ""
+    out = ["| 모델 | 스킴 | fake-quant의 LayerNorm | fake-quant | 정수 엔진 | 정수 − fake (쌍 SE) | top-1 일치 | 출력 코드 불일치 (test 전체) | 로짓 평균 |차| | LN 국소 불일치 | softmax 국소 | matmul 국소 | linear 국소 |",
+           "|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
+    for r in rs:
+        p = r["int_vs_fake"]; po = r["per_op"]
+        def loc(op):
+            return pct(po[op]["local_mean"], 2) if op in po else "—"
+        ln = "float32 (기존)" if r["variant"] == "float-ln" else f"정수 에뮬레이션 ({r['layernorms_emulated']}개)"
+        out.append(f"| {LABEL.get(r['model'], r['model'])} | {r['scheme']} | {ln} | {pct(r['fake_acc'])} | {pct(r['int_acc'])} | "
+                   f"{_pm(p['delta'], p['se'])} | {pct(p['top1_agreement'], 2)} | {pct(r['output_codes']['mismatch_frac'], 1)} | {r['logit_mean_abs_diff']:.3f} | "
+                   f"{loc('layernorm')} | {loc('softmax')} | {loc('matmul')} | {loc('linear')} |")
+    out.append(f"\ntest {rs[0]['n_test']:,}장 전체. 국소 불일치는 {rs[0]['agreement_batch']['images']}장 배치에서 연산 종류별 평균(teacher-forced). 정수 엔진 쪽은 두 행에서 같은 정수 프로그램이다(export가 바뀌지 않음을 실험이 assert).")
+    return "\n".join(out)
+
+
+def e14():
+    d = load("e14_rounding_seeds"); rs = d["records"]
+    if not rs: return ""
+    models = list(dict.fromkeys(r["model"] for r in rs)); rounds = d["meta"].get("roundings") or list(dict.fromkeys(r["rounding"] for r in rs))
+    out = ["| 반올림 (2단계) | " + " | ".join(f"{LABEL.get(m, m)}: 기준 대비 Δacc, 시드 평균 ± 시드 표준편차 (시드별)" for m in models) + " |", "|---|" + "---|" * len(models)]
+    for rd in rounds:
+        if rd == "tflite": continue
+        cells = []
+        for m in models:
+            xs = sorted([r for r in rs if r["model"] == m and r["rounding"] == rd], key=lambda r: r["seed"])
+            if not xs: cells.append("—"); continue
+            ds_ = np.array([r["vs_reference"]["delta"] for r in xs]) * 100
+            sd = ds_.std(ddof=1) if len(ds_) > 1 else float("nan")
+            cells.append(f"{ds_.mean():+.2f} ± {sd:.2f}%p ({', '.join(f'{v:+.2f}' for v in ds_)}; n={len(ds_)})")
+        out.append(f"| `{rd}` | " + " | ".join(cells) + " |")
+    out += ["", "| 모델 | 시드 | FP32 | fake-quant | 기준 정수 (`tflite`) | `single` | `half_even` | `truncate` | `floor` |", "|---|---|---|---|---|---|---|---|---|"]
+    for m in models:
+        for seed in sorted({r["seed"] for r in rs if r["model"] == m}):
+            xs = {r["rounding"]: r for r in rs if r["model"] == m and r["seed"] == seed}
+            ref = xs.get("tflite")
+            if not ref: continue
+            def cell(rd):
+                r = xs.get(rd)
+                return f"{pct(r['int_acc'])} ({_pm(r['vs_reference']['delta'], r['vs_reference']['se'])}, 일치 {pct(r['vs_reference']['top1_agreement'], 1)})" if r else "—"
+            out.append(f"| {LABEL.get(m, m)} | {seed} | {pct(ref['float_acc'])} | {pct(ref['fake_acc'])} | {pct(ref['int_acc'])} | {cell('single')} | {cell('half_even')} | {cell('truncate')} | {cell('floor')} |")
+    out.append(f"\ntest {d['meta'].get('n_test', 10000):,}장 전체, 스킴 npu-default, 캘리브레이션 512장(seed 0)은 시드마다 그 시드의 체크포인트로 다시 수집. Δacc의 쌍 SE는 같은 이미지에서 기준 구현과 비교한 값.")
+    return "\n".join(out)
+
+
+TABLES = [("E1", e1), ("E2", e2), ("E3", e3), ("E4", e4), ("E5", e5), ("E6", e6), ("E7", e7), ("E8", e8), ("E9", e9), ("E10", e10), ("E11", e11), ("E12", e12), ("E14", e14), ("E15", e15), ("E16", e16)]
 
 
 def inject(readme_path: str) -> int:

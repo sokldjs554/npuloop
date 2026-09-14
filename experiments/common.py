@@ -102,3 +102,34 @@ def _default(o):
 
 def log(msg: str):
     print(f"[{time.strftime('%H:%M:%S')}] {msg}", flush=True)
+
+
+# ---- per-image statistics shared by E14/E15/E16 -------------------------------------------------------------
+
+def predict_labels(predict, ds, batch_size: int = 200, limit: int | None = None) -> tuple[np.ndarray, np.ndarray]:
+    """(predicted labels, true labels) over the test split; `predict` maps a float batch (N,3,H,W) to logits."""
+    preds, ys = [], []
+    for xb, yb in ds.batches("test", batch_size):
+        preds.append(np.asarray(predict(xb)).argmax(1)); ys.append(yb.numpy())
+        if limit and sum(len(y) for y in ys) >= limit:
+            break
+    p, y = np.concatenate(preds), np.concatenate(ys)
+    return (p[:limit], y[:limit]) if limit else (p, y)
+
+
+def torch_predict(model):
+    def f(xb):
+        with torch.no_grad():
+            return model(xb).numpy()
+    return f
+
+
+def paired_stats(a_labels: np.ndarray, b_labels: np.ndarray, y: np.ndarray) -> dict:
+    """Accuracy of a and b on the same images, their paired difference with its exact standard error and 95% CI."""
+    ca, cb = (a_labels == y).astype(np.float64), (b_labels == y).astype(np.float64)
+    d = cb - ca
+    n = len(y)
+    se = float(d.std(ddof=1) / np.sqrt(n)) if n > 1 else float("nan")
+    return dict(n=int(n), acc_a=float(ca.mean()), acc_b=float(cb.mean()), delta=float(d.mean()), se=se,
+                ci95=[float(d.mean() - 1.96 * se), float(d.mean() + 1.96 * se)],
+                n_correctness_disagree=int((d != 0).sum()), top1_agreement=float((a_labels == b_labels).mean()))
