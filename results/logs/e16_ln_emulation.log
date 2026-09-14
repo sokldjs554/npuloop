@@ -1,0 +1,4 @@
+[02:23:42] cust_vit npu-default  float-ln fake=0.8087 int=0.8097 int-fake=+0.10±0.13%p agree=0.9793 codes≠=72.7% LN local=24.77% (426s)
+[02:27:26] cust_vit npu-default  int-ln   fake=0.8072 int=0.8097 int-fake=+0.25±0.11%p agree=0.9829 codes≠=65.7% LN local=0.00% (224s)
+[02:32:45] cust_vit per-tensor   float-ln fake=0.8077 int=0.8097 int-fake=+0.20±0.12%p agree=0.9807 codes≠=72.6% LN local=24.76% (320s)
+[02:36:30] cust_vit per-tensor   int-ln   fake=0.8084 int=0.8097 int-fake=+0.13±0.10%p agree=0.9860 codes≠=66.0% LN local=0.00% (224s)

@@ -49,7 +49,7 @@ def main():
             for r in ROUNDINGS:
                 t = time.time()
                 eng = CppEngine(export_int_graph(qm, RequantConfig(rounding=r)))
-                labels[r], _ = predict_labels(eng.predict_batch if hasattr(eng, "predict_batch") else (lambda xb, e=eng: e.predict(xb.numpy())), ds, 500)
+                labels[r], _ = predict_labels(lambda xb, e=eng: e.predict(xb.numpy()), ds, 500)
                 if res.has(model=name, seed=seed, rounding=r):
                     continue
                 rec = dict(model=name, seed=seed, rounding=r, config=RequantConfig(rounding=r).tag, n_test=int(len(y)),

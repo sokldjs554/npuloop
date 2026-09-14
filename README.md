@@ -12,7 +12,7 @@
 >
 > 처방을 실제로 적용한 뒤에는 int8 가중치/int32 바이어스/고정소수점 requant로 export한 정수 그래프를 NumPy와 C++ 커널로
 > **비트 단위로 같게** 실행해서, fake-quant가 아니라 진짜 정수 결과로 정확도를 확인합니다.
-> CIFAR-10에서 CNN 3종 + 가상 고객 2곳(ViT 81.0% · concat 분기 CNN 89.6%)으로 13개 실험(E1–E13)을 돌린 결과가 JSON으로 있고,
+> CIFAR-10에서 CNN 3종 + 가상 고객 2곳(ViT 81.0% · concat 분기 CNN 89.6%)으로 16개 실험(E1–E16)을 돌린 결과가 JSON으로 있고,
 > 그 JSON을 읽는 [인터랙티브 데모](#데모)가 있습니다.
 
 
@@ -119,6 +119,30 @@ QAT·healing·프루닝 후 미세조정은 마지막 epoch 모델을 그대로 
 
 온칩 실행 = 모든 op가 NPU에서 실행됨(호스트 폴백 없음). strict = LUT·softmax·layernorm 지원이 없는 프리셋.
 <!-- /TABLE:E9 -->
+
+### E16. LayerNorm을 정수로 에뮬레이션하면 격차가 얼마나 닫히는가
+
+E9의 진단은 "ViT의 fake-quant ↔ 정수 격차는 LayerNorm에서 태어난다"였습니다. 진단이 맞는지 확인하는 가장 직접적인 방법은 원인을 없애 보는 것입니다.
+`npuloop.quant.emulate.emulate_integer_layernorm(qm)`은 캘리브레이션된 fake-quant 그래프의 `nn.LayerNorm`을 정수 엔진과 **같은 함수**(int64 합, 정확한 정수 제곱근, Q15 정규화, 고정소수점 requant)로
+입력 코드 위에서 계산하는 모듈로 바꿉니다. 구성상 비트 일치이고 export되는 정수 프로그램은 바뀌지 않습니다(실험이 assert). test 10,000장 전체에서 쟀습니다.
+
+<!-- TABLE:E16 -->
+| 모델 | 스킴 | fake-quant의 LayerNorm | fake-quant | 정수 엔진 | 정수 − fake (쌍 SE) | top-1 일치 | 출력 코드 불일치 (test 전체) | 로짓 평균 |차| | LN 국소 불일치 | softmax 국소 | matmul 국소 | linear 국소 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 고객 A · ViT-128/6 | npu-default | float32 (기존) | 80.87% | 80.97% | +0.10 ± 0.13%p | 97.93% | 72.7% | 0.119 | 24.77% | 0.50% | 0.27% | 0.08% |
+| 고객 A · ViT-128/6 | npu-default | 정수 에뮬레이션 (13개) | 80.72% | 80.97% | +0.25 ± 0.11%p | 98.29% | 65.7% | 0.091 | 0.00% | 0.50% | 0.27% | 0.08% |
+| 고객 A · ViT-128/6 | per-tensor | float32 (기존) | 80.77% | 80.97% | +0.20 ± 0.12%p | 98.07% | 72.6% | 0.118 | 24.76% | 0.50% | 0.27% | 0.14% |
+| 고객 A · ViT-128/6 | per-tensor | 정수 에뮬레이션 (13개) | 80.84% | 80.97% | +0.13 ± 0.10%p | 98.60% | 66.0% | 0.093 | 0.00% | 0.50% | 0.27% | 0.14% |
+
+test 10,000장 전체. 국소 불일치는 250장 배치에서 연산 종류별 평균(teacher-forced). 정수 엔진 쪽은 두 행에서 같은 정수 프로그램이다(export가 바뀌지 않음을 실험이 assert).
+<!-- /TABLE:E16 -->
+
+* **원인은 사라졌지만 결과는 대부분 남았습니다.** LayerNorm의 국소 불일치는 24.77% → **0.00%**가 됐는데 최종 출력 코드 불일치는 72.7% → **65.7%**, top-1 일치는 97.93% → 98.29%, 로짓 평균 |차|는 0.119 → 0.091입니다(per-tensor 스킴도 같은 그림: 72.6% → 66.0%, 98.07% → 98.60%).
+  가장 큰 국소 원천 하나를 통째로 없애도 전파 불일치의 1/10만 줄어듭니다. 남은 것은 linear 0.08%, matmul 0.27%, softmax 0.50%, pool 0.7%의 ±1 LSB가 6개 블록을 지나며 증폭된 것이고, 첫 분기점은 여전히 patch_embed(conv 국소 0.04%)입니다.
+* **텐서가 가까워져도 정확도 차이는 잡음 안에서 움직입니다.** npu-default에서는 fake-quant 80.87% → 80.72%(정수 엔진은 80.97%로 동일)로 정수 − fake가 +0.10 ± 0.13%p에서 +0.25 ± 0.11%p로 오히려 벌어지고, per-tensor에서는 +0.20 ± 0.12에서 +0.13 ± 0.10%p로 좁혀집니다. 둘 다 2 SE 언저리라 방향을 읽을 수 없습니다 — 정확도는 텐서 충실도의 지표가 아니라는 E2의 결론을 반대 방향에서 다시 봅니다.
+* **그래서 골든 벡터는 fake-quant를 연산자 하나씩 고쳐서 얻을 수 없습니다.** 국소 오차가 0.1% 미만인 연산자들만 남아도 출력의 2/3가 다릅니다. 텐서 단위 검증 벡터는 비트 정확 정수 엔진에서 나와야 하고, 그것이 이 저장소가 정수 엔진 두 개(NumPy·C++)와 독립 러너를 유지하는 이유입니다.
+
+`python experiments/e16_ln_emulation.py`. 결과는 `results/e16_ln_emulation.json`, 모듈은 `npuloop/quant/emulate.py`(테스트 `tests/test_emulate.py`).
 
 ### E1. 베이스라인과 정적 분석
 
@@ -358,8 +382,8 @@ Vela는 이 연산을 둘로 쪼개므로 연산자 개수도 2 대 1로 어긋�
 
 * **반올림 모드**: TFLite single rounding과 half-even은 기준(gemmlowp 이중 반올림)과 99%대로 일치하고 정확도 차이는 잡음 수준입니다. **truncate/floor는 일치율이 91~96%로 떨어지고 0.7~2.6%p를 잃습니다.** requant에서 "그냥 시프트"는 공짜가 아닙니다.
 * **곱셈기 비트**: 15비트·7비트까지는 손실이 없고(일치율 99%대), **3비트(사실상 2의 거듭제곱 곱셈기)에서는 모델에 따라 −1.6~−8.2%p(일치율 86~95%)**로 ResNet-20 ReLU가 가장 크게 무너집니다 — 스케일을 2의 거듭제곱으로 제한하는 NPU라면 QAT 때 그 제약을 같이 학습시켜야 하는 근거입니다.
-* **바이어스 폭이 가장 위험합니다.** 바이어스는 `s_in·s_w[c]` 단위의 정수라 값이 크고, int16으로 자르면 모델에 따라 **−0.2~−10.6%p**(ResNet-20 ReLU가 최악, 일치율 83%), int12면 세 모델 모두 무너집니다(13~19%). 포화 카운터는 0인데 정확도가 떨어지는 이유는 포화가 바이어스 양자화 시점(export)에 일어나기 때문입니다.
-* **누산기 폭**: int24·int20은 포화 0회(MobileNetV2의 int20만 78회)에 기준과 100% 일치 — ResNet-20의 K=576 레이어도 실제 누산값은 20비트 안에 듭니다. **int16은 ResNet-20 ReLU에서 1,115만 회 포화하며 16.8%로, SiLU는 59.1%, MobileNetV2는 16.1%로 붕괴**합니다. "최악 케이스 K·127·255 = 25비트"라는 정적 계산과 실제 분포(20비트) 사이의 여유를 이렇게 숫자로 볼 수 있습니다.
+* **바이어스 폭 — 단, 이 knob은 "클리핑"을 잽니다.** 바이어스는 `s_in·s_w[c]` 단위의 정수라 값이 크고, 이 ablation은 그 int32 값을 스케일 조정 없이 int16/int12 범위로 **잘라냅니다**(export 시점, 그래서 포화 카운터는 0). int16이면 모델에 따라 **−0.2~−10.6%p**(ResNet-20 ReLU가 최악, 일치율 83%), int12면 세 모델 모두 무너집니다(13~19%). 모델마다 다른 이유는 잘리는 바이어스의 비율입니다 — |b| > 2¹⁵인 코드가 ReLU 4.7%, SiLU 1.0%, MobileNetV2 0.4%. 바이어스에 별도 지수(shift)를 두는 실제 설계의 비용이 아니라 지수 없는 구현의 비용이며, 시판 NPU는 오히려 더 넓게 잡습니다(Arm Vela는 Ethos-U 바이어스를 40비트로 패킹).
+* **누산기 폭**: int24·int20은 포화 0회(MobileNetV2의 int20만 78회)에 기준과 100% 일치 — ResNet-20의 K=576 레이어도 실제 누산값은 20비트 안에 듭니다. **int16은 ResNet-20 ReLU에서 1,115만 회 포화하며 16.8%로, SiLU는 59.1%, MobileNetV2는 16.1%로 붕괴**합니다. "최악 케이스 K·127·255 = 25비트"라는 정적 계산과 실제 분포(20비트) 사이의 여유를 이렇게 숫자로 볼 수 있습니다. 두 가지 한정이 붙습니다: 포화는 부분합마다가 아니라 **K개를 다 더한 뒤 한 번** 적용되므로(NumPy·C++ 커널 모두) 부분합에서 포화·랩되는 실제 좁은 누산기보다 낙관적인 최선 경우이고, K ≤ 1,280(ResNet-20 576, MobileNetV2-0.5 1,280)인 **이 모델들에서의** 결과라 ImageNet 규모(ResNet-50 K = 4,608)로는 옮겨지지 않습니다. 누산기 폭을 학습으로 보장하는 선행 연구는 A2Q/A2Q+(`docs/RELATED.md`)입니다.
 
 ### E3. 정적 lint는 실제 손실을 예측하는가
 
@@ -551,10 +575,10 @@ npuloop/
 ├── prune/structured.py  fx 그래프에서 찾은 채널 그룹(체인·concat 브랜치·MLP 은닉)에 uniform · aligned · cost-greedy(비용 모델 in-the-loop) 프루닝
 ├── zoo/                 npz 로더(CIFAR-10·Imagenette, 층화 검증 분할), 모델, 재현 가능한 트레이너(val 기준 선택, resume)
 └── cli.py               npuloop cost | lint | intake | quantize | export | bench
-experiments/             E1–E13 스크립트 (재개 가능, results/*.json에 provenance 라벨과 함께 저장)
+experiments/             E1–E16 스크립트 (재개 가능, results/*.json에 provenance 라벨과 함께 저장)
 results/                 실험 결과 JSON
 demo/                    build.py + index.template.html → 인라인 JSON 데모 페이지 (docs/index.html)
-tests/                   pytest 69개 (참조 구현 대조, 비트 동일성, 정확성 회귀)
+tests/                   pytest 85개 (참조 구현 대조, 비트 동일성, 정확성 회귀)
 examples/                walkthrough.py · quickstart/ (번들 체크포인트 2개 + CIFAR-10 샘플 1,012장: `make quickstart`)
 tools/                   README 표 생성, CIFAR-10/Imagenette npz 준비, 처방 갱신, oneDNN 버그 재현 스크립트
 docs/                    DESIGN.md · INTEGER_DATAPATH.md · RELATED.md · upstream/ (oneDNN 버그 보고서·패치)
@@ -565,7 +589,7 @@ docs/                    DESIGN.md · INTEGER_DATAPATH.md · RELATED.md · upstr
 ```bash
 pip install -e .[dev]           # torch(CPU), numpy, pytest
 make quickstart                 # 데이터·학습 없이 40초: 번들 체크포인트로 intake → quantize/verify → export + C++ runner
-python -m pytest -q             # 80 tests, ~25 s (C++ 커널은 첫 실행 때 g++로 컴파일되어 처음엔 더 걸립니다)
+python -m pytest -q             # 85 tests, ~25 s (C++ 커널은 첫 실행 때 g++로 컴파일되어 처음엔 더 걸립니다)
 
 # CIFAR-10 (npz 한 파일) 준비: tools/prepare_cifar10.py 참고
 python -m npuloop.zoo.train --arch resnet --act relu --epochs 30 --out runs/resnet20_relu --data data/cifar10.npz

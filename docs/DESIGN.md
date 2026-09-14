@@ -49,7 +49,7 @@ model ─►│ graph.trace (fx IR)  │─────────────�
 * global avgpool: int32 합 → 반올림 나눗셈(round half away), 스케일 유지.
 * 입력: 호스트가 float → uint8 (round half to even).
 
-## 실험 계획 (E1–E13)
+## 실험 계획 (E1–E16)
 
 | # | 질문 | 방법 |
 |---|---|---|
@@ -66,6 +66,9 @@ model ─►│ graph.trace (fx IR)  │─────────────�
 | E11 | 실제 런타임과 비트가 맞는가 | TFLite full-integer 모델의 스케일·가중치·바이어스를 그대로 읽어 IntGraph를 만들고 reference 커널과 모든 텐서를 대조 — conv·pool은 이중 반올림, fc는 단일 반올림으로 1,000장 완전 일치 |
 | E12 | 데이터셋·입력 크기 축 | Imagenette 128×128에서 ResNet-20(stem stride 2)을 학습해 인테이크·PTQ·정수 엔진·실측을 같은 파이프라인으로 |
 | E13 | 비용 모델 vs 벤더 추정기 | 같은 아키텍처에서 INT8 TFLite를 만들어 Arm Vela(Ethos-U55-256)와 `npu.estimate`를 대조. 연산자별 사이클·MAC 활용률·CPU 폴백. 다섯 망 모두에서 이 비용 모델이 낙관적(비율 0.29–0.84) | `experiments/e13_vela.py` |
+| E14 | E7의 반올림 축은 시드에 강건한가 | ResNet-20 ReLU/SiLU, MobileNetV2-0.5를 시드 1·2로 다시 학습(`experiments/run_seeds.sh`)해 2단계 반올림 5모드를 3시드 × test 10,000장에서, 기준 구현·fake-quant 대비 **같은 이미지의 쌍 표준오차**와 함께 | `experiments/e14_rounding_seeds.py` |
+| E15 | fake-quant ↔ 정수 차이에 오차 막대를 붙이면 | 5개 CIFAR 모델 + Imagenette-128 ResNet-20을 test 전체에서 FP32·fake·정수로 세 번 평가해 (정수 정답 − fake 정답)의 표본 표준편차로 쌍 SE·95% CI, test 전체의 출력 코드 불일치, 국소/전파 분해 | `experiments/e15_fidelity.py` |
+| E16 | LayerNorm을 정수로 에뮬레이션하면 transformer 격차가 닫히는가 | `npuloop.quant.emulate`로 fake-quant의 LayerNorm을 정수 엔진 산술로 바꾸고(export 불변) ViT-128/6에서 국소·전파 불일치·top-1 일치·정확도 차이를 재측정 — 국소 24.8% → 0이지만 출력 코드 불일치는 72.7% → 65.7% | `experiments/e16_ln_emulation.py` |
 
 ## 검증 원칙
 
