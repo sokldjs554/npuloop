@@ -36,7 +36,7 @@ def main():
     names = available_baselines()
     if not names:
         sys.exit(f"no trained checkpoints under {os.environ.get('NPULOOP_RUNS', os.path.join(ROOT, 'runs'))} — "
-                 "train baselines first (see README) or set NPULOOP_RUNS; refusing to overwrite the built pages "
+                 "train baselines first (see docs/USAGE.md) or set NPULOOP_RUNS; refusing to overwrite the built pages "
                  "with a model-less one")
     for name in names:
         m = load_model(name)

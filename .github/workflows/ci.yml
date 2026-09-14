@@ -43,3 +43,16 @@ jobs:
             echo "::endgroup::"
           fi
           wait $PID
+
+  tables-fresh:
+    # Every table in README.md and docs/EXPERIMENTS.md is generated from results/*.json. Regenerate them here and
+    # fail if the committed files differ: a table whose marker lost its home would otherwise freeze unnoticed.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install numpy
+      - run: python tools/readme_tables.py --inject README.md docs/EXPERIMENTS.md
+      - run: git diff --exit-code README.md docs/EXPERIMENTS.md

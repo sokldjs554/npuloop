@@ -51,24 +51,26 @@ model ─►│ graph.trace (fx IR)  │─────────────�
 
 ## 실험 계획 (E1–E16)
 
+결과 전문은 [EXPERIMENTS.md](EXPERIMENTS.md), 각 행의 링크는 그 실험의 절로 갑니다.
+
 | # | 질문 | 방법 |
 |---|---|---|
-| E1 | 베이스라인 | ResNet-20 {ReLU, SiLU}, MobileNetV2-0.5 (ReLU6), 30 epochs OneCycle, seed 0 (계획했던 HardSwish·GELU 베이스라인은 CPU 시간 때문에 제외) |
-| E2 | PTQ 스킴별 INT8 정확도와 fake-quant↔정수 엔진 일치 | 스킴 × 모델, fake-quant 정확도 + 비트 정확 정수 엔진 정확도 |
-| E3 | 정적 lint 점수가 실제 INT8 손실을 예측하는가 | 모델/스킴별 quant-robustness 점수 vs 측정된 정확도 손실 |
-| E4 | 수술(CLE·BC·활성함수 교체·QAT)이 손실을 얼마나 회복하는가 | per-tensor MobileNetV2에 CLE+BC, SiLU→ReLU/HardSwish 교체 후 healing, QAT |
-| E5 | 캘리브레이션 세트 크기/구성 | N ∈ {8…2048}, 무작위 vs 클래스 균형, 시드 3개 |
-| E6 | PE-array 정렬 프루닝 | uniform vs aligned vs cost-greedy: 정확도(짧은 fine-tune) vs 비용 모델 사이클 vs FLOPs |
-| E7 | 정수 구현 선택의 정확도 비용 | RequantConfig ablation: 반올림 모드, 곱셈기 비트, 누산기/바이어스 폭 |
-| E8 | 비용 모델은 믿을 만한가 | SCALE-Sim v3(weight-stationary, 사이클 정확) 대조: 총 사이클과 레이어별 오차 |
-| E9 | 고객 모델 인테이크 | 가상 고객 2곳(ViT, concat 분기 CNN)을 접수 → 진단 → 처방 → 적용까지 돌려 예측 절감과 실측 정확도를 나란히 |
-| E10 | 검증 엔진은 얼마나 걸리는가 | NumPy·C++ 비트 정확 엔진의 노드별 wall-clock을 호스트 CPU에서 실측해 같은 노드의 비용 모델 사이클 옆에 둠(실측 vs 모델을 섞지 않기 위해) |
-| E11 | 실제 런타임과 비트가 맞는가 | TFLite full-integer 모델의 스케일·가중치·바이어스를 그대로 읽어 IntGraph를 만들고 reference 커널과 모든 텐서를 대조 — conv·pool은 이중 반올림, fc는 단일 반올림으로 1,000장 완전 일치 |
-| E12 | 데이터셋·입력 크기 축 | Imagenette 128×128에서 ResNet-20(stem stride 2)을 학습해 인테이크·PTQ·정수 엔진·실측을 같은 파이프라인으로 |
-| E13 | 비용 모델 vs 벤더 추정기 | 같은 아키텍처에서 INT8 TFLite를 만들어 Arm Vela(Ethos-U55-256)와 `npu.estimate`를 대조. 연산자별 사이클·MAC 활용률·CPU 폴백. 다섯 망 모두에서 이 비용 모델이 낙관적(비율 0.29–0.84) | `experiments/e13_vela.py` |
-| E14 | E7의 반올림 축은 시드에 강건한가 | ResNet-20 ReLU/SiLU, MobileNetV2-0.5를 시드 1·2로 다시 학습(`experiments/run_seeds.sh`)해 2단계 반올림 5모드를 3시드 × test 10,000장에서, 기준 구현·fake-quant 대비 **같은 이미지의 쌍 표준오차**와 함께 | `experiments/e14_rounding_seeds.py` |
-| E15 | fake-quant ↔ 정수 차이에 오차 막대를 붙이면 | 5개 CIFAR 모델 + Imagenette-128 ResNet-20을 test 전체에서 FP32·fake·정수로 세 번 평가해 (정수 정답 − fake 정답)의 표본 표준편차로 쌍 SE·95% CI, test 전체의 출력 코드 불일치, 국소/전파 분해 | `experiments/e15_fidelity.py` |
-| E16 | LayerNorm을 정수로 에뮬레이션하면 transformer 격차가 닫히는가 | `npuloop.quant.emulate`로 fake-quant의 LayerNorm을 정수 엔진 산술로 바꾸고(export 불변) ViT-128/6에서 국소·전파 불일치·top-1 일치·정확도 차이를 재측정 — 국소 24.8% → 0이지만 출력 코드 불일치는 72.7% → 65.7% | `experiments/e16_ln_emulation.py` |
+| [E1](EXPERIMENTS.md#e1) | 베이스라인 | ResNet-20 {ReLU, SiLU}, MobileNetV2-0.5 (ReLU6), 30 epochs OneCycle, seed 0 (계획했던 HardSwish·GELU 베이스라인은 CPU 시간 때문에 제외) |
+| [E2](EXPERIMENTS.md#e2) | PTQ 스킴별 INT8 정확도와 fake-quant↔정수 엔진 일치 | 스킴 × 모델, fake-quant 정확도 + 비트 정확 정수 엔진 정확도 |
+| [E3](EXPERIMENTS.md#e3) | 정적 lint 점수가 실제 INT8 손실을 예측하는가 | 모델/스킴별 quant-robustness 점수 vs 측정된 정확도 손실 |
+| [E4](EXPERIMENTS.md#e4) | 수술(CLE·BC·활성함수 교체·QAT)이 손실을 얼마나 회복하는가 | per-tensor MobileNetV2에 CLE+BC, SiLU→ReLU/HardSwish 교체 후 healing, QAT |
+| [E5](EXPERIMENTS.md#e5) | 캘리브레이션 세트 크기/구성 | N ∈ {8…2048}, 무작위 vs 클래스 균형, 시드 3개 |
+| [E6](EXPERIMENTS.md#e6) | PE-array 정렬 프루닝 | uniform vs aligned vs cost-greedy: 정확도(짧은 fine-tune) vs 비용 모델 사이클 vs FLOPs |
+| [E7](EXPERIMENTS.md#e7) | 정수 구현 선택의 정확도 비용 | RequantConfig ablation: 반올림 모드, 곱셈기 비트, 누산기/바이어스 폭 |
+| [E8](EXPERIMENTS.md#e8) | 비용 모델은 믿을 만한가 | SCALE-Sim v3(weight-stationary, 사이클 정확) 대조: 총 사이클과 레이어별 오차 |
+| [E9](EXPERIMENTS.md#e9) | 고객 모델 인테이크 | 가상 고객 2곳(ViT, concat 분기 CNN)을 접수 → 진단 → 처방 → 적용까지 돌려 예측 절감과 실측 정확도를 나란히 |
+| [E10](EXPERIMENTS.md#e10) | 검증 엔진은 얼마나 걸리는가 | NumPy·C++ 비트 정확 엔진의 노드별 wall-clock을 호스트 CPU에서 실측해 같은 노드의 비용 모델 사이클 옆에 둠(실측 vs 모델을 섞지 않기 위해) |
+| [E11](EXPERIMENTS.md#e11) | 실제 런타임과 비트가 맞는가 | TFLite full-integer 모델의 스케일·가중치·바이어스를 그대로 읽어 IntGraph를 만들고 reference 커널과 모든 텐서를 대조 — conv·pool은 이중 반올림, fc는 단일 반올림으로 1,000장 완전 일치 |
+| [E12](EXPERIMENTS.md#e12) | 데이터셋·입력 크기 축 | Imagenette 128×128에서 ResNet-20(stem stride 2)을 학습해 인테이크·PTQ·정수 엔진·실측을 같은 파이프라인으로 |
+| [E13](EXPERIMENTS.md#e13) | 비용 모델 vs 벤더 추정기 | 같은 아키텍처에서 INT8 TFLite를 만들어 Arm Vela(Ethos-U55-256)와 `npu.estimate`를 대조. 연산자별 사이클·MAC 활용률·CPU 폴백. 다섯 망 모두에서 이 비용 모델이 낙관적(비율 0.29–0.84) | `experiments/e13_vela.py` |
+| [E14](EXPERIMENTS.md#e14) | E7의 반올림 축은 시드에 강건한가 | ResNet-20 ReLU/SiLU, MobileNetV2-0.5를 시드 1·2로 다시 학습(`experiments/run_seeds.sh`)해 2단계 반올림 5모드를 3시드 × test 10,000장에서, 기준 구현·fake-quant 대비 **같은 이미지의 쌍 표준오차**와 함께 | `experiments/e14_rounding_seeds.py` |
+| [E15](EXPERIMENTS.md#e15) | fake-quant ↔ 정수 차이에 오차 막대를 붙이면 | 5개 CIFAR 모델 + Imagenette-128 ResNet-20을 test 전체에서 FP32·fake·정수로 세 번 평가해 (정수 정답 − fake 정답)의 표본 표준편차로 쌍 SE·95% CI, test 전체의 출력 코드 불일치, 국소/전파 분해 | `experiments/e15_fidelity.py` |
+| [E16](EXPERIMENTS.md#e16) | LayerNorm을 정수로 에뮬레이션하면 transformer 격차가 닫히는가 | `npuloop.quant.emulate`로 fake-quant의 LayerNorm을 정수 엔진 산술로 바꾸고(export 불변) ViT-128/6에서 국소·전파 불일치·top-1 일치·정확도 차이를 재측정 — 국소 24.8% → 0이지만 출력 코드 불일치는 72.7% → 65.7% | `experiments/e16_ln_emulation.py` |
 
 ## 검증 원칙
 

@@ -21,6 +21,81 @@ def pp(v, d=2):
     return f"{v*100:+.{d}f}%p"
 
 
+def headline():
+    """The one table the README leads with: what each question is answered by, and what is NOT verified.
+
+    Every number comes from results/*.json; the caveat in the third column is a literal that lives in the same
+    row as the number it qualifies, so the two cannot drift apart through an edit. A row whose result file is
+    missing or malformed degrades to a dash instead of taking the whole injection down with it.
+    """
+    def row(q, fn, caveat):
+        try:
+            return f"| {q} | {fn()} | {caveat} |"
+        except Exception:
+            return f"| {q} | — | {caveat} |"
+
+    def e11_answer():
+        rs = load("e11_tflite_crosscheck")
+        best = next(r for r in rs["records"] if r["engine"] == "numpy" and r["output_mismatch_elems"] == 0)
+        return (f"TFLite reference 커널과 **{best['images']:,}장 × 모든 텐서 0 불일치**"
+                f"(conv·pool은 gemmlowp 이중 반올림, fc는 단일 반올림)")
+    def e8_answer():
+        rs = load("e8_scalesim")["records"]
+        return (f"SCALE-Sim v3와 {len(rs)}개 (모델, 배열) 조합에서 합계 오차 ≤ {max(abs(r['ratio'] - 1) for r in rs) * 100:.2f}%, "
+                f"최악 레이어 {max(r['max_layer_abs_err'] for r in rs) * 100:.1f}%")
+    def e13_answer():
+        rs = load("e13_vela")["records"]
+        v = [r["cycle_ratio"] for r in rs]
+        return f"Arm Vela 대비 **{len(v)}/{len(v)} 낙관적**(사이클 비 {min(v):.2f}~{max(v):.2f})"
+    def e2_answer():
+        rs = load("e15_fidelity")["records"]
+        p = [r["int_vs_fake"] for r in rs]
+        z = max(abs(x["delta"] / x["se"]) for x in p if x["se"])
+        return (f"{len(rs)}행 전부 95% 신뢰구간이 0을 품고 \\|Δ\\|/SE ≤ {z:.1f} — fake-quant 정확도는 정수 실행을 맞힙니다"
+                f"(\\|Δ\\| ≤ {max(abs(x['delta']) for x in p) * 100:.2f}%p, test 전체)")
+    def e15_answer():
+        rs = load("e15_fidelity")["records"]
+        c = [r["output_codes"]["mismatch_frac"] for r in rs]
+        e16 = load("e16_ln_emulation")["records"]
+        a = next(r for r in e16 if r["scheme"] == "npu-default" and r["variant"] == "float-ln")
+        b = next(r for r in e16 if r["scheme"] == "npu-default" and r["variant"] == "int-ln")
+        return (f"그러나 출력 코드는 {min(c) * 100:.1f}~{max(c) * 100:.1f}%가 다릅니다. 가장 큰 국소 원천(ViT의 LayerNorm)을 "
+                f"정수 산술로 바꿔 국소 불일치를 {pct(a['per_op']['layernorm']['local_mean'], 2)} → {pct(b['per_op']['layernorm']['local_mean'], 2)}로 없애도 "
+                f"출력 코드 불일치는 {pct(a['output_codes']['mismatch_frac'], 1)} → {pct(b['output_codes']['mismatch_frac'], 1)}까지만 내려갑니다")
+    def e14_answer():
+        rs = [r for r in load("e14_rounding_seeds")["records"] if r["rounding"] in ("truncate", "floor")]
+        d = [r["vs_reference"]["delta"] * 100 for r in rs]
+        z = [abs(r["vs_reference"]["delta"] / r["vs_reference"]["se"]) for r in rs if r["vs_reference"]["se"]]
+        return (f"requant에서 반올림 대신 시프트를 쓰면 {len(rs)}개 (모델, 시드, 모드) 조합 "
+                f"**{sum(1 for x in d if x < 0)}개 전부**에서 손해입니다({min(d):+.2f}~{max(d):+.2f}%p, \\|Δ\\|/SE {min(z):.1f}~{max(z):.1f})")
+    def e7_answer():
+        rs = [r for r in load("e7_requant_ablation")["records"] if r["model"] == "resnet20_relu"]
+        lossless = [r for r in rs if r["top1_agreement_vs_reference"] > 0.98]
+        collapse = [r for r in rs if r["int_acc"] < 0.5]
+        return (f"{len(rs)}개 구현 구성 중 {len(lossless)}개는 무손실, {len(collapse)}개는 모델을 무너뜨립니다 "
+                f"(곱셈기 7비트·누산기 20비트까지는 공짜, 바이어스 12비트·누산기 16비트는 붕괴)")
+
+    rows = [
+        ("**정수 엔진을 믿어도 되는가** ([E11](docs/EXPERIMENTS.md#e11))", e11_answer,
+         "대조 범위는 conv(stride 1·2)·MEAN·fully-connected. depthwise·add·softmax는 미대조이고, TFLite 자신도 XNNPACK 경로와 reference가 155/1,000장 다릅니다"),
+        ("**비용 모델이 맞는가** ([E8](docs/EXPERIMENTS.md#e8))", e8_answer,
+         "검증된 것은 dense conv·linear의 연산 사이클(단일 코어, 메모리 스톨 없음). depthwise·벡터 패스·멀티코어·DRAM roofline은 검증되지 않았습니다"),
+        ("**그럼 실리콘에 가까운가** ([E13](docs/EXPERIMENTS.md#e13))", e13_answer,
+         "**아니오.** 둘 다 해석적 추정기이고 Vela는 컴파일된 스케줄(fusion·타일링)을, 이쪽은 레이어를 하나씩 셉니다. E8의 일치는 하드웨어 충실도가 아니라 같은 이상화를 공유하는 두 모델이 같은 식을 같게 구현했다는 확인입니다"),
+        ("**fake-quant 정확도를 믿어도 되는가** ([E2](docs/EXPERIMENTS.md#e2)·[E15](docs/EXPERIMENTS.md#e15))", e2_answer,
+         "E15·E16의 16개 비교를 다중비교 보정하지 않은 값입니다(E16까지 합치면 최대 \\|Δ\\|/SE 2.2). 모델 5개 + Imagenette 1개, 스킴 2개 범위"),
+        ("**텐서도 같은가** ([E15](docs/EXPERIMENTS.md#e15)·[E16](docs/EXPERIMENTS.md#e16))", e15_answer,
+         "출력 코드 불일치는 test 전체, 국소 불일치는 125/250장 배치의 teacher-forced 값입니다 — 두 수를 같은 문장에서 섞지 마세요"),
+        ("**싸구려 반올림의 값** ([E14](docs/EXPERIMENTS.md#e14))", e14_answer,
+         "강건한 것은 부호와 유의성이고 **크기는 아닙니다**: SiLU의 truncate는 시드에 따라 −1.36~−2.98%p(시드 SD가 효과의 37%). 한 시드 숫자를 그 모드의 비용으로 인용하면 안 됩니다"),
+        ("**그 밖의 정수 구현 세부** ([E7](docs/EXPERIMENTS.md#e7))", e7_answer,
+         "바이어스 폭 축은 지수 조정 없는 **클리핑**을 재고(시판 NPU는 더 넓습니다 — Vela는 40비트), 누산기 포화는 부분합이 아니라 최종합에 한 번만 걸리며, 결과는 K ≤ 1,280인 이 모델들에 한정됩니다"),
+    ]
+    out = ["| 질문 | `results/*.json`이 답하는 것 | 단, 검증되지 않은 것 |", "|---|---|---|"]
+    out += [row(q, fn, c) for q, fn, c in rows]
+    return "\n".join(out)
+
+
 def e1():
     rs = load("e1_baselines")["records"]
     if not rs: return ""
@@ -399,26 +474,37 @@ def e14_summary(rs, models):
     return out
 
 
-TABLES = [("E1", e1), ("E2", e2), ("E3", e3), ("E4", e4), ("E5", e5), ("E6", e6), ("E7", e7), ("E8", e8), ("E9", e9), ("E10", e10), ("E11", e11), ("E12", e12), ("E14", e14), ("E15", e15), ("E16", e16)]
+TABLES = [("HEADLINE", headline), ("E1", e1), ("E2", e2), ("E3", e3), ("E4", e4), ("E5", e5), ("E6", e6), ("E7", e7), ("E8", e8), ("E9", e9), ("E10", e10), ("E11", e11), ("E12", e12), ("E14", e14), ("E15", e15), ("E16", e16)]
 
 
-def inject(readme_path: str) -> int:
-    """Replace the text between <!-- TABLE:Ex --> and <!-- /TABLE:Ex --> markers in README with fresh tables."""
+def inject(path: str) -> tuple[int, set]:
+    """Replace the text between <!-- TABLE:Ex --> and <!-- /TABLE:Ex --> markers with fresh tables.
+
+    Returns (how many were replaced, which marker names this file carried). The caller uses the names to check
+    that no table lost its home — a marker that exists in no file would silently freeze on the day it moved.
+    """
     import re
-    src = open(readme_path, encoding="utf-8").read()
-    n = 0
+    src = open(path, encoding="utf-8").read()
+    n, names = 0, set()
     for name, fn in TABLES:
         t = fn()
         pat = re.compile(rf"(<!-- TABLE:{name} -->)(.*?)(<!-- /TABLE:{name} -->)", re.S)
         if pat.search(src):
-            src = pat.sub(lambda m: f"{m.group(1)}\n{t if t else '_(아직 실행되지 않음)_'}\n{m.group(3)}", src); n += 1
-    open(readme_path, "w", encoding="utf-8").write(src)
-    return n
+            src = pat.sub(lambda m: f"{m.group(1)}\n{t if t else '_(아직 실행되지 않음)_'}\n{m.group(3)}", src)
+            n += 1; names.add(name)
+    open(path, "w", encoding="utf-8").write(src)
+    return n, names
 
 
 if __name__ == "__main__":
     if len(sys.argv) > 2 and sys.argv[1] == "--inject":
-        print(f"injected {inject(sys.argv[2])} tables")
+        seen = set()
+        for path in sys.argv[2:]:
+            n, names = inject(path); seen |= names
+            print(f"injected {n} tables into {path}")
+        homeless = [name for name, fn in TABLES if name not in seen and fn()]
+        if homeless:
+            sys.exit(f"no marker found for: {', '.join(homeless)} — a generated table lost its home and would freeze")
     else:
         for name, fn in TABLES:
             t = fn()
