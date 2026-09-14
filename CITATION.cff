@@ -5,7 +5,6 @@ type: software
 authors:
   - name: "sokldjs554"
 repository-code: "https://github.com/sokldjs554/npuloop"
-license: Apache-2.0
 version: 0.1.0
 date-released: 2026-09-07
 keywords: [npu, quantization, pruning, systolic-array, cost-model, integer-inference, cifar-10]

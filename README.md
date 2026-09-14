@@ -1,7 +1,6 @@
 # npuloop — NPU에 올려보고 고르는 양자화·프루닝 툴킷
 
 [![tests](https://github.com/sokldjs554/npuloop/actions/workflows/ci.yml/badge.svg)](https://github.com/sokldjs554/npuloop/actions/workflows/ci.yml)
-[![license](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
 > **고객이 체크포인트를 보내왔을 때 NPU 회사의 모델 팀이 하는 일을, 감이 아니라 숫자로 하는 툴킷입니다.**
 >
@@ -204,7 +203,7 @@ docs/                    EXPERIMENTS · USAGE · DESIGN · INTEGER_DATAPATH · R
 | [docs/upstream/](docs/upstream/) | oneDNN 버그 보고서와 패치 |
 | [라이브 데모](https://sokldjs554.github.io/npuloop/) | `results/*.json`을 읽는 인터랙티브 페이지 |
 
-## 라이선스
+## 데이터와 외부 도구
 
-[Apache License 2.0](LICENSE). 데이터: CIFAR-10 (Krizhevsky, 2009), Imagenette (fast.ai).
+데이터: CIFAR-10 (Krizhevsky, 2009), Imagenette (fast.ai).
 SCALE-Sim은 E8, ethos-u-vela는 E13 검증 실험에서만 사용합니다.
