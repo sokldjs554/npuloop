@@ -62,6 +62,45 @@ def test_following_quantizer_is_idempotent_and_float_path_survives(vit_q):
     assert emu.active
 
 
+def test_training_and_calibration_fall_back_to_float(vit_q):
+    """The integer path is a NumPy round trip with no gradient, so it must not be taken while training."""
+    emulate_integer_layernorm(vit_q)
+    emu = next(m for m in vit_q.modules() if isinstance(m, IntLayerNormEmu))
+    s_in, zp_in = emu.in_fq.qparams()
+    x = ((torch.randint(emu.in_fq.qmin, emu.in_fq.qmax + 1, (2, 16, 64)) - zp_in) * s_in).float()
+    vit_q.eval()
+    with torch.no_grad():
+        integer_path = emu(x)
+    vit_q.train()
+    with torch.no_grad():
+        assert not torch.equal(emu(x), integer_path)                       # train() -> float LayerNorm
+        emu.in_fq.calibrating = emu.out_fq.calibrating = True
+        vit_q.eval()
+        assert not torch.equal(emu(x), integer_path)                       # calibrating -> float LayerNorm
+        emu.in_fq.calibrating = emu.out_fq.calibrating = False
+        assert torch.equal(emu(x), integer_path)
+    vit_q.train()
+    xr = x.clone().requires_grad_(True)
+    emu(xr).sum().backward()
+    assert xr.grad is not None and float(xr.grad.abs().sum()) > 0          # gradients survive the fallback
+
+
+def test_cached_integer_parameters_follow_gamma_beta_and_eps(vit_q):
+    emulate_integer_layernorm(vit_q)
+    emu = next(m for m in vit_q.modules() if isinstance(m, IntLayerNormEmu))
+    s_in, zp_in = emu.in_fq.qparams()
+    x = ((torch.randint(emu.in_fq.qmin, emu.in_fq.qmax + 1, (2, 16, 64)) - zp_in) * s_in).float()
+    vit_q.eval()
+    with torch.no_grad():
+        before = emu(x).clone()
+        emu.weight.mul_(1.7)
+        assert not torch.equal(emu(x), before)        # gamma feeds the fixed-point multipliers
+        emu.weight.div_(1.7)
+        assert torch.equal(emu(x), before)
+        emu.bias.add_(0.5)
+        assert not torch.equal(emu(x), before)        # beta feeds bias_int
+
+
 def test_emulation_needs_quantizers_around_the_layernorm():
     torch.manual_seed(0)
     m = build_model(VIT).eval()

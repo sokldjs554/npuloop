@@ -104,7 +104,11 @@ def fig_fidelity():
         ax.set_xlabel("node (graph order)", fontsize=7)
     for ax in axes.flat[n:]: ax.axis("off")
     axes[0][0].set_ylabel("codes that differ (%)", fontsize=8)
-    h, l = axes[0][0].get_legend_handles_labels(); fig.legend(h, l, loc="lower right", fontsize=7, ncol=3, frameon=False)
+    seen = {}
+    for ax in axes.flat:                                          # collect one handle per label across panels (the LN marker only exists on the ViT)
+        for h, l in zip(*ax.get_legend_handles_labels()):
+            seen.setdefault(l, h)
+    fig.legend(list(seen.values()), list(seen.keys()), loc="lower right", fontsize=7, ncol=3, frameon=False)
     fig.suptitle("E15: where the fake-quant / integer gap is born (local) and where it goes (propagated)", fontsize=9)
     fig.tight_layout(rect=(0, 0.04, 1, 0.96))
     return fig_to_b64(fig)
@@ -128,7 +132,9 @@ def fig_rounding_seeds():
             ax.errorbar(xs, ys, yerr=es, fmt="o", ms=3, color=f"C{i}", capsize=2, lw=.8, label=LABEL.get(m, m) if j == 0 else None)
     ax.axhline(0, color="k", lw=.6); ax.set_xticks(np.arange(len(rounds)) + w * (len(models) - 1) / 2); ax.set_xticklabels(rounds)
     ax.set_ylabel("top-1 change vs reference (%p)"); ax.grid(axis="y", alpha=.3); ax.legend(fontsize=8)
-    ax.set_title(f"E14: requantization rounding mode, {len(seeds)} seeds x {d['meta'].get('n_test', 10000):,} images, paired SE", fontsize=10)
+    per_model = sorted({len({r["seed"] for r in rs if r["model"] == m}) for m in models})
+    sd_txt = f"{per_model[0]}" if len(per_model) == 1 else f"{per_model[0]}-{per_model[-1]}"
+    ax.set_title(f"E14: requantization rounding mode, {sd_txt} seeds per model x {d['meta'].get('n_test', 10000):,} images, paired SE", fontsize=10)
     return fig_to_b64(fig)
 
 
@@ -178,8 +184,11 @@ def build_markdown():
     e15_max_gap = max((abs(r["int_vs_fake"]["delta"]) for r in e15), default=0.0)
     e15_max_z = max((abs(r["int_vs_fake"]["delta"]) / r["int_vs_fake"]["se"] for r in e15 if r["int_vs_fake"]["se"] > 0), default=0.0)
     e15_codes = [r["output_codes"]["mismatch_frac"] for r in e15]
-    _conv_loc = [x["local_mismatch_frac"] for r in e15 if r["scheme"] == "npu-default" for x in r["per_layer_agreement"] if x["op"] == "conv"]
+    _conv_loc = [x["local_mismatch_frac"] for r in e15 for x in r["per_layer_agreement"] if x["op"] == "conv"]
     e15_conv_range = f"{min(_conv_loc) * 100:.2f}~{max(_conv_loc) * 100:.2f}%" if _conv_loc else "0.03~0.2%"
+    e15_batches = sorted({r["agreement_batch"]["images"] for r in e15})
+    e16_z = [abs(r["int_vs_fake"]["delta"] / r["int_vs_fake"]["se"]) for r in e16 if r["int_vs_fake"]["se"]]
+    e16_max_z = max(e16_z) if e16_z else 0.0
     # E16 LayerNorm emulation
     e16_rows = [[r["scheme"], "float32" if r["variant"] == "float-ln" else f"정수 에뮬레이션 ({r['layernorms_emulated']}개)", pct(r["fake_acc"]), pct(r["int_acc"]),
                  f"{r['int_vs_fake']['delta'] * 100:+.2f} ± {r['int_vs_fake']['se'] * 100:.2f}%p", pct(r["int_vs_fake"]["top1_agreement"], 2),
@@ -201,6 +210,24 @@ def build_markdown():
             cells.append(f"{ds_.mean():+.2f} ± {ds_.std(ddof=1):.2f} ({', '.join(f'{v:+.2f}' for v in ds_)})" if len(ds_) > 1 else (f"{ds_[0]:+.2f} (n=1)" if len(ds_) else "—"))
         e14_rows.append(cells)
     e14_seeds = sorted({r["seed"] for r in e14["records"]})
+    _lossy = [r for r in e14["records"] if r["rounding"] in ("truncate", "floor")]
+    _lz = [abs(r["vs_reference"]["delta"] / r["vs_reference"]["se"]) for r in _lossy if r["vs_reference"]["se"]]
+    _spread = []
+    for m in e14_models:
+        for rd in ("truncate", "floor"):
+            v = np.array([r["vs_reference"]["delta"] for r in e14["records"] if r["model"] == m and r["rounding"] == rd]) * 100
+            if len(v) > 1:
+                _spread.append((abs(v.std(ddof=1) / v.mean()), LABEL.get(m, m), rd, v.mean(), v.std(ddof=1), v.min(), v.max()))
+    _spread.sort()
+    _flip = [(m, sd) for m in e14_models for sd in sorted({r["seed"] for r in e14["records"] if r["model"] == m})]
+    _pairs = [(next((r for r in e14["records"] if r["model"] == m and r["seed"] == sd and r["rounding"] == "floor"), None),
+               next((r for r in e14["records"] if r["model"] == m and r["seed"] == sd and r["rounding"] == "truncate"), None)) for m, sd in _flip]
+    _pairs = [(f, t) for f, t in _pairs if f and t]
+    _floor_worse = sum(1 for f, t in _pairs if f["vs_reference"]["delta"] < t["vs_reference"]["delta"])
+    e14_per_model = {m: len({r["seed"] for r in e14["records"] if r["model"] == m}) for m in e14_models}
+    e14_seed_desc = (f"{min(e14_per_model.values())}~{max(e14_per_model.values())}개(모델마다 다름: "
+                     + ", ".join(f"{LABEL.get(m, m)} {n}" for m, n in e14_per_model.items()) + ")"
+                     ) if e14_per_model and len(set(e14_per_model.values())) > 1 else f"{len(e14_seeds)}개"
 
     figs = dict(requant=fig_requant(), attribution=fig_attribution(), tflite=fig_tflite(), fidelity=fig_fidelity(), rounding_seeds=fig_rounding_seeds())
     img = lambda k, alt: f'![{alt}](data:image/png;base64,{figs[k]})' if figs.get(k) else ""
@@ -318,11 +345,13 @@ TFLite 자신의 XNNPACK 델리게이트는 reference 커널과 {xnn.get('output
 
 {img('fidelity', 'E15 local vs propagated per node')}
 
+{("그림과 국소/전파 열은 " + ("배치 " + str(max(e15_batches)) + "장(Imagenette는 " + str(min(e15_batches)) + "장)" if len(e15_batches) > 1 else "배치 " + str(e15_batches[0]) + "장") + "에서, 표의 정확도·코드 열은 test 전체에서 잰 값이다.") if e15_batches else ""}
+
 {table(e15_rows, ["모델", "데이터셋", "스킴", "test", "fake-quant", "정수 엔진", "정수 − fake (쌍 SE)", "정답 여부가 갈린 장수", "top-1 일치", "출력 코드 불일치 (전체)"]) if e15_rows else "_(아직 실행되지 않음)_"}
 
 4.1의 차이에는 표준오차가 없었다. 여기서는 test 전체를 같은 이미지에서 세 번(FP32·fake-quant·정수) 평가해 (정수 정답 − fake 정답)의 표본
-표준편차로 쌍 표준오차를 구했다. {"가장 큰 정확도 차이는 " + f"{e15_max_gap * 100:.2f}%p, 가장 큰 |Δ|/SE는 {e15_max_z:.1f}" + "이다 — " + ("어느 모델·스킴에서도 2를 넘지 않으므로 fake-quant와 정수 정확도의 차이는 이 표본 크기에서 0과 구분되지 않는다." if e15_max_z < 2 else "일부는 2를 넘는다: 그 행의 차이는 잡음이 아니다.") if e15 else ""}
-{("출력 코드는 test 전체에서 " + f"{min(e15_codes) * 100:.0f}~{max(e15_codes) * 100:.0f}%가 다르다") if e15_codes else ""}{("; Imagenette 128×128의 ResNet-20도 같은 그림이다(" + next((f"코드 {pct(r['output_codes']['mismatch_frac'], 0)}, top-1 일치 {pct(r['int_vs_fake']['top1_agreement'], 1)}" for r in e15 if r['dataset'] != 'CIFAR-10' and r['scheme'] == 'npu-default'), '') + ").") if any(r['dataset'] != 'CIFAR-10' for r in e15) else "."}
+표준편차로 쌍 표준오차를 구했다. {"이 표에서 가장 큰 정확도 차이는 " + f"{e15_max_gap * 100:.2f}%p, 가장 큰 |Δ|/SE는 {e15_max_z:.1f}로 " + ("12행 모두 2 미만이다" if e15_max_z < 2 else "일부 행이 2를 넘는다") + f"(4.9의 LayerNorm 에뮬레이션 표까지 합치면 최대 {max(e15_max_z, e16_max_z):.1f}). E15·E16 {len(e15) + len(e16)}개 비교를 다중비교 보정하지 않은 값이므로, 이 표본 크기에서 fake-quant와 정수 정확도의 차이는 잡음과 구분되지 않는다." if e15 else ""}
+{("출력 코드는 test 전체에서 " + f"{min(e15_codes) * 100:.0f}~{max(e15_codes) * 100:.0f}%가 다르다") if e15_codes else ""}{("; Imagenette 128×128의 ResNet-20도 같은 그림이다(" + next((f"코드 {pct(r['output_codes']['mismatch_frac'], 0)}, top-1 일치 {pct(r['int_vs_fake']['top1_agreement'], 1)}" for r in e15 if r['dataset'] != 'CIFAR-10' and r['scheme'] == 'npu-default'), '') + "). 이 표는 모든 모델을 512장으로 통일해 다시 캘리브레이션했으므로 4.7(E12, Imagenette 256장)의 정확도와 소수점 이하가 다르다.") if any(r['dataset'] != 'CIFAR-10' for r in e15) else "."}
 
 ### 4.9 LayerNorm을 정수로 에뮬레이션하면 (E16)
 
@@ -332,6 +361,7 @@ TFLite 자신의 XNNPACK 델리게이트는 reference 커널과 {xnn.get('output
 캘리브레이션된 그래프의 LayerNorm을 정수 엔진과 같은 함수로 계산하는 모듈로 바꾼다(export는 그대로, 엔진 쪽 정수 프로그램은 동일).
 {(lambda a, b: f"ViT-128/6(npu-default)에서 LayerNorm 국소 불일치는 {pct(a['per_op']['layernorm']['local_mean'], 2)} → {pct(b['per_op']['layernorm']['local_mean'], 2)}, 출력 코드 불일치는 {pct(a['output_codes']['mismatch_frac'], 1)} → {pct(b['output_codes']['mismatch_frac'], 1)}, top-1 일치는 {pct(a['int_vs_fake']['top1_agreement'], 2)} → {pct(b['int_vs_fake']['top1_agreement'], 2)}, 정확도 차이는 {a['int_vs_fake']['delta'] * 100:+.2f} ± {a['int_vs_fake']['se'] * 100:.2f} → {b['int_vs_fake']['delta'] * 100:+.2f} ± {b['int_vs_fake']['se'] * 100:.2f}%p가 된다.")(*e16_main) if e16_main else ""}
 남는 격차는 softmax·matmul·linear의 국소 ±1 LSB와 그 전파다.
+{("정확도·쌍 SE·top-1 일치·출력 코드 열은 test " + f"{e16[0]['n_test']:,}장 전체에서, 국소 불일치 열은 {e16[0]['agreement_batch']['images']}장 배치의 teacher-forced 비교에서 나온 값이다.") if e16 else ""}
 
 ### 4.10 반올림 모드, 시드 셋 (E14)
 
@@ -339,8 +369,8 @@ TFLite 자신의 XNNPACK 델리게이트는 reference 커널과 {xnn.get('output
 
 {table(e14_rows, ["2단계 반올림"] + [f"{LABEL.get(m, m)}: 기준 대비 Δacc, 시드 평균 ± 표준편차 (시드별)" for m in e14_models]) if e14_rows else "_(아직 실행되지 않음)_"}
 
-4.2의 반올림 축을 시드 {len(e14_seeds)}개 × test {e14["meta"].get("n_test", 10000):,}장에서 다시 쟀다(기준: gemmlowp 이중 반올림, 같은 이미지의 쌍 SE).
-5장의 경고대로 체크포인트마다 크기가 달라지므로 시드 평균과 표준편차를 함께 적는다.
+4.2의 반올림 축을 시드 {e14_seed_desc} × test {e14["meta"].get("n_test", 10000):,}장에서 다시 쟀다(기준: gemmlowp 이중 반올림, 같은 이미지의 쌍 SE).
+{("강건한 것은 부호와 유의성이다: truncate·floor는 측정한 " + f"{len(_lossy)}개 조합 모두에서 기준보다 나쁘고 |Δ|/SE가 {min(_lz):.1f}~{max(_lz):.1f}다. " if _lossy and _lz else "")}{("크기는 그렇지 않다 — 시드 표준편차가 가장 작은 " + f"{_spread[0][1]}의 {_spread[0][2]}는 {_spread[0][3]:+.2f} ± {_spread[0][4]:.2f}%p인 반면 가장 큰 {_spread[-1][1]}의 {_spread[-1][2]}는 {_spread[-1][3]:+.2f} ± {_spread[-1][4]:.2f}%p({_spread[-1][5]:+.2f}~{_spread[-1][6]:+.2f})로, 시드 표준편차가 효과의 {abs(_spread[-1][4] / _spread[-1][3]) * 100:.0f}%에 이른다. " if len(_spread) > 1 else "")}{("두 모드의 순서도 고정되지 않는다: " + f"{len(_pairs)}개 (모델, 시드) 중 floor가 더 나쁜 경우는 {_floor_worse}개다. " if _pairs else "")}5장이 E7에 대해 적은 경고("체크포인트를 바꾸면 크기가 달라진다")가 반올림 축에서도 성립하므로, 한 시드의 손실값을 그 모드의 비용으로 인용해서는 안 된다.
 
 ## 5. 한계
 

@@ -46,8 +46,8 @@ def main():
             continue
         m = load_model(name)
         for sname in SCHEMES:
-            if res.has(model=name, scheme=sname, variant="int-ln"):
-                continue
+            if all(res.has(model=name, scheme=sname, variant=v) for v in ("float-ln", "int-ln")):
+                continue                      # both rows of this (model, scheme) are already stored
             t = time.time()
             qm = prepare(m, PRESET_SCHEMES[sname]); calibrate(qm, calib)
             ig = export_int_graph(qm)
@@ -81,6 +81,8 @@ def main():
                            logit_mean_abs_diff=float(np.abs(fake_logits - int_logits).mean()),
                            agreement_batch=dict(images=int(len(x_agree)), **summ), per_op=per_op([r.to_dict() for r in rows]),
                            per_layer_agreement=[r.to_dict() for r in rows], seconds=time.time() - t)
+                if res.has(model=name, scheme=sname, variant=variant):
+                    continue                  # resumed run: this row already exists, do not duplicate it
                 res.add(rec)
                 p = rec["int_vs_fake"]
                 log(f"{name} {sname:12s} {variant:8s} fake={rec['fake_acc']:.4f} int={rec['int_acc']:.4f} int-fake={p['delta']*100:+.2f}±{p['se']*100:.2f}%p "

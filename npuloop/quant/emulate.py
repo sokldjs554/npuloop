@@ -42,7 +42,11 @@ class IntLayerNormEmu(nn.LayerNorm):
         return super().extra_repr() + f", integer_emulation={'on' if self.active else 'off'}"
 
     def _integer_params(self, s_in: float, s_out: float):
-        key = (s_in, s_out, self.requant)
+        w, b = self.weight, self.bias
+        # gamma/beta/eps enter the multipliers and the bias, so a change to any of them must rebuild them
+        key = (s_in, s_out, self.requant, self.eps,
+               None if w is None else (w.data_ptr(), w._version, int(w.numel())),
+               None if b is None else (b.data_ptr(), b._version, int(b.numel())))
         if self._cache_key != key:
             c = int(self.normalized_shape[0])
             gamma = self.weight.detach().double().numpy() if self.weight is not None else np.ones(c)
@@ -70,7 +74,10 @@ class IntLayerNormEmu(nn.LayerNorm):
         return np.clip(y, self.out_fq.qmin, self.out_fq.qmax)
 
     def forward(self, x):
-        ready = self.active and self.in_fq.enabled and self.out_fq.enabled and bool(self.out_fq.initialized)
+        # inference only: the integer path is a NumPy round trip, so it carries no gradient. Training,
+        # calibration and disabled quantizers all fall back to float LayerNorm (see the module docstring).
+        ready = (self.active and not self.training and self.in_fq.enabled and self.out_fq.enabled
+                 and not self.in_fq.calibrating and not self.out_fq.calibrating and bool(self.out_fq.initialized))
         if not ready or x.shape[-1] != self.normalized_shape[0]:
             return super().forward(x)
         s_in, _ = self.in_fq.qparams()
@@ -96,6 +103,7 @@ def emulate_integer_layernorm(gm: fx.GraphModule, requant: RequantConfig = Requa
         if not (len(users) == 1 and users[0].op == "call_module" and isinstance(modules[users[0].target], FakeQuantAct)):
             raise ValueError(f"{node.name}: LayerNorm output must feed exactly one quantizer")
         emu = IntLayerNormEmu(modules[node.target], modules[src.target], modules[users[0].target], requant)
+        emu.train(modules[node.target].training)   # a freshly constructed module defaults to train(); inherit the graph's mode
         _set_module(gm, node.target, emu)
         swapped += 1
     return swapped

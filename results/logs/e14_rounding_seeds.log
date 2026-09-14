@@ -14,3 +14,28 @@
 [04:08:50] resnet20_silu   s0 half_even int=0.9036 vs-ref=+0.10±0.09%p agree=0.9896 (184s)
 [04:10:57] resnet20_silu   s0 truncate  int=0.8728 vs-ref=-2.98±0.28%p agree=0.9048 (127s)
 [04:13:19] resnet20_silu   s0 floor     int=0.8689 vs-ref=-3.37±0.29%p agree=0.9012 (142s)
+[04:17:15] resnet20_silu   s1 tflite    int=0.9045 vs-ref=+0.00±0.00%p agree=1.0000 (154s)
+[04:19:26] resnet20_silu   s1 single    int=0.9046 vs-ref=+0.01±0.08%p agree=0.9918 (131s)
+[04:22:27] resnet20_silu   s1 half_even int=0.9049 vs-ref=+0.04±0.08%p agree=0.9930 (181s)
+[04:24:35] resnet20_silu   s1 truncate  int=0.8785 vs-ref=-2.60±0.25%p agree=0.9220 (128s)
+[04:27:02] resnet20_silu   s1 floor     int=0.8788 vs-ref=-2.57±0.26%p agree=0.9204 (147s)
+[04:27:02] resnet20_silu seed 2: no checkpoint yet
+[04:40:02] mnv2_050_relu6  s0 tflite    int=0.9029 vs-ref=+0.00±0.00%p agree=1.0000 (402s)
+[04:46:01] mnv2_050_relu6  s0 single    int=0.9017 vs-ref=-0.12±0.08%p agree=0.9921 (360s)
+[04:53:39] mnv2_050_relu6  s0 half_even int=0.9039 vs-ref=+0.10±0.07%p agree=0.9934 (457s)
+[04:59:14] mnv2_050_relu6  s0 truncate  int=0.8795 vs-ref=-2.34±0.25%p agree=0.9270 (335s)
+[05:05:44] mnv2_050_relu6  s0 floor     int=0.8843 vs-ref=-1.86±0.23%p agree=0.9390 (390s)
+[05:05:44] mnv2_050_relu6 seed 1: no checkpoint yet
+[05:05:44] mnv2_050_relu6 seed 2: no checkpoint yet
+[07:34:47] resnet20_relu   s2 tflite    int=0.9000 vs-ref=+0.00±0.00%p agree=1.0000 (143s)
+[07:36:59] resnet20_relu   s2 single    int=0.9001 vs-ref=+0.01±0.07%p agree=0.9932 (133s)
+[07:39:49] resnet20_relu   s2 half_even int=0.8987 vs-ref=-0.13±0.07%p agree=0.9938 (170s)
+[07:41:52] resnet20_relu   s2 truncate  int=0.8908 vs-ref=-0.92±0.20%p agree=0.9503 (124s)
+[07:44:05] resnet20_relu   s2 floor     int=0.8852 vs-ref=-1.48±0.22%p agree=0.9391 (133s)
+[07:48:06] resnet20_silu   s2 tflite    int=0.9007 vs-ref=+0.00±0.00%p agree=1.0000 (153s)
+[07:50:18] resnet20_silu   s2 single    int=0.9010 vs-ref=+0.03±0.08%p agree=0.9928 (133s)
+[07:53:24] resnet20_silu   s2 half_even int=0.8999 vs-ref=-0.08±0.08%p agree=0.9923 (186s)
+[07:55:34] resnet20_silu   s2 truncate  int=0.8871 vs-ref=-1.36±0.23%p agree=0.9351 (130s)
+[07:58:04] resnet20_silu   s2 floor     int=0.8876 vs-ref=-1.31±0.23%p agree=0.9359 (150s)
+[07:58:04] mnv2_050_relu6 seed 1: no checkpoint yet
+[07:58:04] mnv2_050_relu6 seed 2: no checkpoint yet

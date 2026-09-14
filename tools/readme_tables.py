@@ -270,8 +270,11 @@ def e15():
         out.append(f"| {LABEL.get(r['model'], r['model'])} | {r['dataset']} | {r['scheme']} | {r['n_test']:,} | {pct(r['float_acc'])} | {pct(r['fake_acc'])} | {pct(r['int_acc'])} | "
                    f"{_pm(p['delta'], p['se'])} | [{p['ci95'][0]*100:+.2f}, {p['ci95'][1]*100:+.2f}] | {p['n_correctness_disagree']:,} | {pct(p['top1_agreement'], 2)} | "
                    f"{pct(oc['mismatch_frac'], 1)} ({oc['images_with_any_mismatch']:,}장) | {r['agreement_batch'].get('first_divergence')} |")
-    n = rs[0]["agreement_batch"]["images"]
-    out.append(f"\n쌍 SE = 같은 이미지에서 잰 (정수 정답 − fake 정답)의 표본 표준편차 / √n. 출력 코드 불일치는 test 전체의 로짓 코드(클래스 × 이미지) 기준, 첫 분기는 {n}장 배치의 전파 비교에서 처음 코드가 달라지는 노드.")
+    batches = sorted({r["agreement_batch"]["images"] for r in rs})
+    nb = "/".join(str(b) for b in batches) + "장"
+    out.append(f"\n쌍 SE = 같은 이미지에서 잰 (정수 정답 − fake 정답)의 표본 표준편차 / √n. 정확도·출력 코드 열은 test 전체(로짓 코드 = 클래스 × 이미지)에서, "
+               f"첫 분기 열과 아래의 국소/전파 표는 {nb} 배치의 전파·teacher-forced 비교에서 나온 값입니다"
+               + (f" (CIFAR-10 {max(batches)}장, Imagenette {min(batches)}장)." if len(batches) > 1 else "."))
     out += ["", "| 모델 | 스킴 | conv/linear 국소 불일치 최대 | 국소 불일치가 가장 큰 노드 | 마지막 compute 노드의 전파 불일치 |", "|---|---|---|---|---|"]
     for r in rs:
         rows = [x for x in r["per_layer_agreement"] if x["op"] not in ("input", "output", "flatten", "transpose", "reshape")]
@@ -280,7 +283,28 @@ def e15():
         worst = max(rows, key=lambda x: x["local_mismatch_frac"])
         out.append(f"| {LABEL.get(r['model'], r['model'])} | {r['scheme']} | {pct(max(x['local_mismatch_frac'] for x in cl), 3) if cl else '—'} | "
                    f"{worst['name']} ({worst['op']}, {pct(worst['local_mismatch_frac'], 2)}) | {pct(rows[-1]['mismatch_frac'], 1)} |")
+    out += [""] + e15_summary(rs)
     return "\n".join(out)
+
+
+def e15_summary(rs):
+    """The numeric claims of the E15 section, derived from the records."""
+    p = [r["int_vs_fake"] for r in rs]
+    z = [abs(x["delta"] / x["se"]) for x in p if x["se"]]
+    codes = [r["output_codes"]["mismatch_frac"] for r in rs]
+    anyimg = [r["output_codes"]["images_with_any_mismatch"] / r["n_test"] for r in rs]
+    dis = [x["n_correctness_disagree"] for x in p]
+    ci_zero = sum(1 for x in p if x["ci95"][0] <= 0 <= x["ci95"][1])
+    conv = [x["local_mismatch_frac"] for r in rs for x in r["per_layer_agreement"] if x["op"] == "conv"]
+    lin = [x["local_mismatch_frac"] for r in rs for x in r["per_layer_agreement"] if x["op"] == "linear"]
+    first = sorted({r["agreement_batch"].get("first_divergence") for r in rs})
+    out = [f"* **정확도 차이**: {len(rs)}행 모두 |정수 − fake| ≤ {max(abs(x['delta']) for x in p) * 100:.2f}%p, |Δ|/SE ≤ {max(z):.1f}, "
+           f"95% 신뢰구간이 0을 품는 행 {ci_zero}/{len(p)}. 정답 여부가 갈린 이미지는 {min(dis):,}~{max(dis):,}장.",
+           f"* **출력 코드**: test 전체에서 코드의 {min(codes) * 100:.1f}~{max(codes) * 100:.1f}%가 다르고, 코드가 하나라도 다른 이미지는 "
+           f"{min(anyimg) * 100:.0f}~{max(anyimg) * 100:.0f}%.",
+           f"* **국소 원천**: conv {min(conv) * 100:.2f}~{max(conv) * 100:.2f}%, linear {min(lin) * 100:.2f}~{max(lin) * 100:.2f}%, "
+           f"첫 분기 노드는 {', '.join(x for x in first if x)}."]
+    return out
 
 
 def e16():
@@ -326,7 +350,53 @@ def e14():
                 return f"{pct(r['int_acc'])} ({_pm(r['vs_reference']['delta'], r['vs_reference']['se'])}, 일치 {pct(r['vs_reference']['top1_agreement'], 1)})" if r else "—"
             out.append(f"| {LABEL.get(m, m)} | {seed} | {pct(ref['float_acc'])} | {pct(ref['fake_acc'])} | {pct(ref['int_acc'])} | {cell('single')} | {cell('half_even')} | {cell('truncate')} | {cell('floor')} |")
     out.append(f"\ntest {d['meta'].get('n_test', 10000):,}장 전체, 스킴 npu-default, 캘리브레이션 512장(seed 0)은 시드마다 그 시드의 체크포인트로 다시 수집. Δacc의 쌍 SE는 같은 이미지에서 기준 구현과 비교한 값.")
+    out += [""] + e14_summary(rs, models)
     return "\n".join(out)
+
+
+def e14_summary(rs, models):
+    """The numeric claims of the E14 section, derived from the records so they cannot go stale."""
+    LOSSY = ("truncate", "floor")
+    lossy = [r for r in rs if r["rounding"] in LOSSY]
+    out = []
+    if lossy:
+        z = [abs(r["vs_reference"]["delta"] / r["vs_reference"]["se"]) for r in lossy if r["vs_reference"]["se"]]
+        dl = [r["vs_reference"]["delta"] * 100 for r in lossy]
+        n_worse = sum(1 for v in dl if v < 0)
+        out.append(f"* **부호와 유의성**: truncate·floor는 측정한 {len(lossy)}개 (모델, 시드, 모드) 조합 중 {n_worse}개에서 기준보다 나쁩니다 — "
+                   f"{min(dl):+.2f}~{max(dl):+.2f}%p, |Δ|/SE {min(z):.1f}~{max(z):.1f}.")
+    spread = []
+    for m in models:
+        parts = []
+        for rd in LOSSY:
+            xs = sorted([r for r in rs if r["model"] == m and r["rounding"] == rd], key=lambda r: r["seed"])
+            if len(xs) < 2:
+                continue
+            v = np.array([r["vs_reference"]["delta"] for r in xs]) * 100
+            parts.append(f"{rd} {v.mean():+.2f} ± {v.std(ddof=1):.2f}%p (시드별 폭 {v.max() - v.min():.2f}%p, n={len(v)})")
+        if parts:
+            spread.append(f"{LABEL.get(m, m)} — " + ", ".join(parts))
+    if spread:
+        out.append("* **크기의 시드 분산**: " + " / ".join(spread) + ".")
+    pairs = [(m, sd) for m in models for sd in sorted({r["seed"] for r in rs if r["model"] == m})]
+    cmp_rows = []
+    for m, sd in pairs:
+        f = next((r for r in rs if r["model"] == m and r["seed"] == sd and r["rounding"] == "floor"), None)
+        t = next((r for r in rs if r["model"] == m and r["seed"] == sd and r["rounding"] == "truncate"), None)
+        if f and t:
+            cmp_rows.append((m, sd, f["vs_reference"]["delta"] - t["vs_reference"]["delta"], f["vs_reference"]["se"] + t["vs_reference"]["se"]))
+    if cmp_rows:
+        n_floor_worse = sum(1 for _, _, diff, _ in cmp_rows if diff < 0)
+        n_sep = sum(1 for _, _, diff, se in cmp_rows if abs(diff) > se)
+        out.append(f"* **floor vs truncate**: {len(cmp_rows)}개 (모델, 시드) 중 floor가 더 나쁜 경우 {n_floor_worse}개, "
+                   f"두 모드의 차이가 각자의 쌍 SE 합보다 큰 경우 {n_sep}개.")
+    lossless = [r for r in rs if r["rounding"] in ("single", "half_even") and r["vs_reference"]["se"]]
+    if lossless:
+        zz = [abs(r["vs_reference"]["delta"] / r["vs_reference"]["se"]) for r in lossless]
+        dd = [abs(r["vs_reference"]["delta"]) * 100 for r in lossless]
+        out.append(f"* **single / half_even**: {len(lossless)}개 조합 모두 |Δ| ≤ {max(dd):.2f}%p, |Δ|/SE ≤ {max(zz):.1f}, 기준과 이미지 단위 일치 "
+                   f"{min(r['vs_reference']['top1_agreement'] for r in lossless) * 100:.1f}~{max(r['vs_reference']['top1_agreement'] for r in lossless) * 100:.1f}%.")
+    return out
 
 
 TABLES = [("E1", e1), ("E2", e2), ("E3", e3), ("E4", e4), ("E5", e5), ("E6", e6), ("E7", e7), ("E8", e8), ("E9", e9), ("E10", e10), ("E11", e11), ("E12", e12), ("E14", e14), ("E15", e15), ("E16", e16)]

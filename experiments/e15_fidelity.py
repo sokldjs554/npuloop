@@ -35,7 +35,8 @@ def models():
 def main():
     torch.set_num_threads(int(os.environ.get("NPULOOP_THREADS", "2")))
     cifar = dataset()
-    res = Results("e15_fidelity", meta=dict(calib="512 random train images (seed 0)", int_engine="cpp", agree_images=AGREE_IMAGES,
+    res = Results("e15_fidelity", meta=dict(calib="512 random train images (seed 0), re-collected per model — E12 used 256 for Imagenette",
+                                            int_engine="cpp", agree_images=f"{AGREE_IMAGES} (half of it for inputs larger than 64px; the per-record value is agreement_batch.images)",
                                             schemes=SCHEMES, note="paired SE = std of per-image correctness differences / sqrt(n)"))
     for name, dsname, m, data_path in models():
         ds = cifar if data_path is None else CIFAR10NPZ(data_path)

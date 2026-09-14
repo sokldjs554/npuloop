@@ -4,3 +4,5 @@
 skip resnet20_relu_s1
 === train resnet20_silu_s1 03:34:23
 === train resnet20_relu_s2 04:10:34
+=== train resnet20_silu_s2 04:58:12
+=== train mnv2_050_relu6_s1 05:50:04
