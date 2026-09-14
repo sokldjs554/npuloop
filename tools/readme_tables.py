@@ -5,7 +5,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 R = os.path.join(ROOT, "results")
 LABEL = {"resnet20_relu": "ResNet-20 ReLU", "resnet20_silu": "ResNet-20 SiLU", "resnet20_hswish": "ResNet-20 HardSwish",
          "resnet20_gelu": "ResNet-20 GELU", "mnv2_050_relu6": "MobileNetV2-0.5 ReLU6",
-         "cust_vit": "고객 A · ViT-128/6", "cust_inception": "고객 B · Inception-32"}
+         "cust_vit": "고객 A · ViT-128/6", "cust_inception": "고객 B · Inception-32", "imagenette_resnet20": "ResNet-20 (Imagenette-128)"}
 
 
 def load(name):
@@ -312,8 +312,8 @@ def e14():
             xs = sorted([r for r in rs if r["model"] == m and r["rounding"] == rd], key=lambda r: r["seed"])
             if not xs: cells.append("—"); continue
             ds_ = np.array([r["vs_reference"]["delta"] for r in xs]) * 100
-            sd = ds_.std(ddof=1) if len(ds_) > 1 else float("nan")
-            cells.append(f"{ds_.mean():+.2f} ± {sd:.2f}%p ({', '.join(f'{v:+.2f}' for v in ds_)}; n={len(ds_)})")
+            sd = f"{ds_.std(ddof=1):.2f}" if len(ds_) > 1 else "—"
+            cells.append(f"{ds_.mean():+.2f} ± {sd}%p ({', '.join(f'{v:+.2f}' for v in ds_)}; n={len(ds_)})")
         out.append(f"| `{rd}` | " + " | ".join(cells) + " |")
     out += ["", "| 모델 | 시드 | FP32 | fake-quant | 기준 정수 (`tflite`) | `single` | `half_even` | `truncate` | `floor` |", "|---|---|---|---|---|---|---|---|---|"]
     for m in models:

@@ -78,6 +78,10 @@ def fig_tflite():
     return fig_to_b64(fig)
 
 
+FIG_LABEL = {"resnet20_relu": "ResNet-20 ReLU (CIFAR-10)", "resnet20_silu": "ResNet-20 SiLU (CIFAR-10)", "mnv2_050_relu6": "MobileNetV2-0.5 ReLU6 (CIFAR-10)",
+             "cust_vit": "ViT-128/6, customer A (CIFAR-10)", "cust_inception": "Inception-32, customer B (CIFAR-10)", "imagenette_resnet20": "ResNet-20 (Imagenette 128x128)"}
+
+
 def fig_fidelity():
     """E15: per-node local (teacher-forced) vs propagated mismatch, one panel per model (npu-default)."""
     import matplotlib; matplotlib.use("Agg")
@@ -91,11 +95,12 @@ def fig_fidelity():
         i = np.arange(len(rows))
         prop = np.array([x["mismatch_frac"] for x in rows]) * 100; loc = np.array([x["local_mismatch_frac"] for x in rows]) * 100
         ax.plot(i, np.maximum(prop, 1e-3), "-", lw=1.2, label="propagated")
-        ax.plot(i, np.maximum(loc, 1e-3), ".", ms=4, label="local (teacher-forced)")
-        ln = [k for k, x in enumerate(rows) if x["op"] == "layernorm"]
-        if ln: ax.plot(ln, np.maximum(loc[ln], 1e-3), "s", ms=4, color="C3", label="layernorm (local)")
-        ax.set_yscale("log"); ax.set_ylim(1e-3, 100); ax.grid(alpha=.3, which="both", lw=.4)
-        ax.set_title(f"{LABEL.get(r['model'], r['model'])} ({r['dataset']})", fontsize=8); ax.tick_params(labelsize=7)
+        nz = loc > 0                                              # nodes with zero local mismatch (LUT, add) are left out
+        ax.plot(i[nz], loc[nz], ".", ms=4, label="local (teacher-forced), non-zero nodes")
+        ln = [k for k, x in enumerate(rows) if x["op"] == "layernorm" and loc[k] > 0]
+        if ln: ax.plot(ln, loc[ln], "s", ms=4, color="C3", label="layernorm (local)")
+        ax.set_yscale("log"); ax.set_ylim(1e-2, 100); ax.grid(alpha=.3, which="both", lw=.4)
+        ax.set_title(FIG_LABEL.get(r["model"], r["model"]), fontsize=8); ax.tick_params(labelsize=7)
         ax.set_xlabel("node (graph order)", fontsize=7)
     for ax in axes.flat[n:]: ax.axis("off")
     axes[0][0].set_ylabel("codes that differ (%)", fontsize=8)
@@ -173,6 +178,8 @@ def build_markdown():
     e15_max_gap = max((abs(r["int_vs_fake"]["delta"]) for r in e15), default=0.0)
     e15_max_z = max((abs(r["int_vs_fake"]["delta"]) / r["int_vs_fake"]["se"] for r in e15 if r["int_vs_fake"]["se"] > 0), default=0.0)
     e15_codes = [r["output_codes"]["mismatch_frac"] for r in e15]
+    _conv_loc = [x["local_mismatch_frac"] for r in e15 if r["scheme"] == "npu-default" for x in r["per_layer_agreement"] if x["op"] == "conv"]
+    e15_conv_range = f"{min(_conv_loc) * 100:.2f}~{max(_conv_loc) * 100:.2f}%" if _conv_loc else "0.03~0.2%"
     # E16 LayerNorm emulation
     e16_rows = [[r["scheme"], "float32" if r["variant"] == "float-ln" else f"정수 에뮬레이션 ({r['layernorms_emulated']}개)", pct(r["fake_acc"]), pct(r["int_acc"]),
                  f"{r['int_vs_fake']['delta'] * 100:+.2f} ± {r['int_vs_fake']['se'] * 100:.2f}%p", pct(r["int_vs_fake"]["top1_agreement"], 2),
@@ -191,7 +198,7 @@ def build_markdown():
         for m in e14_models:
             xs = sorted([r for r in e14["records"] if r["model"] == m and r["rounding"] == rd], key=lambda r: r["seed"])
             ds_ = np.array([r["vs_reference"]["delta"] for r in xs]) * 100
-            cells.append(f"{ds_.mean():+.2f} ± {ds_.std(ddof=1):.2f} ({', '.join(f'{v:+.2f}' for v in ds_)})" if len(ds_) > 1 else (f"{ds_[0]:+.2f}" if len(ds_) else "—"))
+            cells.append(f"{ds_.mean():+.2f} ± {ds_.std(ddof=1):.2f} ({', '.join(f'{v:+.2f}' for v in ds_)})" if len(ds_) > 1 else (f"{ds_[0]:+.2f} (n=1)" if len(ds_) else "—"))
         e14_rows.append(cells)
     e14_seeds = sorted({r["seed"] for r in e14["records"]})
 
@@ -258,7 +265,7 @@ pcie-80tops, edge-10tops-strict). 캘리브레이션은 학습 분할에서 512�
 {table(e2_rows, ["모델", "스킴", "이미지", "fake-quant", "정수 엔진", "차이", "top-1 일치", "출력 코드 불일치"])}
 
 주 스킴에서 정확도 차이는 최대 {max(gaps) * 100:.2f}%p, 이미지 단위 top-1 일치는 {min(top1) * 100:.1f}~{max(top1) * 100:.1f}%다. 그러나 출력
-코드는 {min(out_mis) * 100:.0f}~{max(out_mis) * 100:.0f}%가 다르다. 각 conv의 국소 불일치는 0.03~0.2%(±1 LSB)뿐이며 나머지는 나비효과다.
+코드는 {min(out_mis) * 100:.0f}~{max(out_mis) * 100:.0f}%가 다르다. 각 conv의 국소 불일치는 {e15_conv_range}(±1 LSB)뿐이며 나머지는 나비효과다.
 
 ### 4.2 정수 구현 세부의 비용 (E7)
 

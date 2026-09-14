@@ -1,2 +1,6 @@
 === train resnet20_relu_s1 02:10:02
 === train resnet20_relu_s1 02:23:10
+=== train resnet20_silu_s1 03:11:50
+skip resnet20_relu_s1
+=== train resnet20_silu_s1 03:34:23
+=== train resnet20_relu_s2 04:10:34

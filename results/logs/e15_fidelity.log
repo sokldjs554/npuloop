@@ -1,0 +1,13 @@
+[02:40:21] resnet20_relu        npu-default  float=0.8959 fake=0.8954 int=0.8955 int-fake=+0.01%p ± 0.08 agree=0.9937 codes≠=50.1% (217s)
+[02:42:45] resnet20_relu        per-tensor   float=0.8959 fake=0.8961 int=0.8967 int-fake=+0.06%p ± 0.08 agree=0.9918 codes≠=51.7% (144s)
+[02:45:33] resnet20_silu        npu-default  float=0.9034 fake=0.9035 int=0.9026 int-fake=-0.09%p ± 0.09 agree=0.9906 codes≠=61.6% (168s)
+[02:48:08] resnet20_silu        per-tensor   float=0.9034 fake=0.9017 int=0.9026 int-fake=+0.09%p ± 0.09 agree=0.9907 codes≠=62.9% (155s)
+[02:58:15] mnv2_050_relu6       npu-default  float=0.9023 fake=0.9030 int=0.9029 int-fake=-0.01%p ± 0.08 agree=0.9928 codes≠=50.4% (606s)
+[03:06:10] mnv2_050_relu6       per-tensor   float=0.9023 fake=0.9023 int=0.9027 int-fake=+0.04%p ± 0.07 agree=0.9937 codes≠=51.4% (475s)
+[03:11:33] cust_vit             npu-default  float=0.8098 fake=0.8087 int=0.8097 int-fake=+0.10%p ± 0.13 agree=0.9793 codes≠=72.7% (323s)
+[03:16:56] cust_vit             per-tensor   float=0.8098 fake=0.8077 int=0.8097 int-fake=+0.20%p ± 0.12 agree=0.9807 codes≠=72.6% (323s)
+[03:20:04] cust_inception       npu-default  float=0.8959 fake=0.8955 int=0.8956 int-fake=+0.01%p ± 0.05 agree=0.9969 codes≠=28.5% (188s)
+[03:22:58] cust_inception       per-tensor   float=0.8959 fake=0.8952 int=0.8947 int-fake=-0.05%p ± 0.06 agree=0.9952 codes≠=31.1% (174s)
+[03:28:36] imagenette_resnet20  npu-default  float=0.8397 fake=0.8405 int=0.8397 int-fake=-0.08%p ± 0.10 agree=0.9952 codes≠=35.7% (297s)
+[03:33:12] imagenette_resnet20  per-tensor   float=0.8397 fake=0.8400 int=0.8405 int-fake=+0.05%p ± 0.11 agree=0.9931 codes≠=36.2% (277s)
+E15 exit 0
