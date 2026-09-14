@@ -1,6 +1,11 @@
 """Reusable trainer (FP32 baselines, QAT fine-tuning, pruning recovery, activation-surgery healing).
 
-Deterministic given the seed; resumable from <out>/state.pt; logs JSON per epoch.
+Deterministic given the seed (the CLI seeds the RNG before the model is built, so weight init, data order
+and augmentation all follow --seed); resumable from <out>/state.pt; logs JSON per epoch.
+
+`fit()` re-seeds with the same value, so a caller that builds its own model controls that model's init itself.
+The checkpoints in runs/ predate this: they were trained when main() seeded only inside fit(), so their weight
+init came from an unseeded RNG. They are valid independent replicates but cannot be regenerated bit-for-bit.
 """
 from __future__ import annotations
 import argparse, json, os, time
@@ -164,6 +169,7 @@ def main():
         cfg.update(dim=a.dim, depth=a.depth, heads=a.heads, patch=a.patch, mlp_ratio=a.mlp_ratio)
     else:
         cfg.update(width=a.width)
+    torch.manual_seed(a.seed)       # before build_model: weight init must be part of what --seed controls
     model = build_model(cfg)
     print(f"model {model.config} params={count_params(model):,}", flush=True)
     log = fit(model, ds, epochs=1 if a.smoke else a.epochs, lr=a.lr, wd=a.wd, bs=a.bs, seed=a.seed, out=a.out, resume=a.resume,

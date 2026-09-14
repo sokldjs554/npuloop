@@ -28,3 +28,5 @@ model {'arch': 'mobilenetv2', 'width_mult': 0.5, 'act': 'relu6', 'num_classes': 
 {"epoch": 27, "train_loss": 0.2248525451178904, "train_acc": 0.9219862891737892, "val_acc": 0.8976, "lr": 0.0034666816252555237, "epoch_sec": 351.42888379096985}
 {"epoch": 28, "train_loss": 0.19078599818666436, "train_acc": 0.9334490740740741, "val_acc": 0.9038, "lr": 0.0016043696686971393, "epoch_sec": 350.54757833480835}
 {"epoch": 29, "train_loss": 0.1687840375401865, "train_acc": 0.9408164173789174, "val_acc": 0.9018, "lr": 0.00047644408520493064, "epoch_sec": 346.6144335269928}
+{"epoch": 30, "train_loss": 0.1590239270842313, "train_acc": 0.9448005698005698, "val_acc": 0.9048, "lr": 0.00010000307688060381, "epoch_sec": 355.44789695739746}
+done: selected epoch 30 (val 0.9048) test=0.8997 final-epoch test=0.8997 minutes=181.9
