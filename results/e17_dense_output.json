@@ -1,0 +1,246 @@
+{
+ "meta": {
+  "model": "espcn_x2",
+  "dataset": "Imagenette-128",
+  "task": "x2 super-resolution",
+  "metric": "per-image PSNR (dB) on [0,1], prediction clipped as a deployment would",
+  "calib": "512 random LR training images (seed 0)",
+  "int_engine": "cpp",
+  "schemes": [
+   "npu-default",
+   "per-tensor"
+  ],
+  "agree_images": 64,
+  "note": "output codes here are pixels, not logits: 3x128x128 per image instead of 10"
+ },
+ "records": [
+  {
+   "model": "espcn_x2",
+   "scheme": "npu-default",
+   "n_test": 3925,
+   "input_shape": [
+    3,
+    64,
+    64
+   ],
+   "float_psnr": 30.234268209553726,
+   "fake_psnr": 29.955574471434456,
+   "int_psnr": 29.954936272901545,
+   "int_vs_fake": {
+    "n": 3925,
+    "mean_a": 29.955574471434456,
+    "mean_b": 29.954936272901545,
+    "delta": -0.0006381985329097339,
+    "se": 3.622514604391673e-05,
+    "ci95": [
+     -0.0007091998191558107,
+     -0.0005671972466636571
+    ],
+    "max_abs_delta": 0.012894243209132128,
+    "n_worse": 2400,
+    "n_better": 1525
+   },
+   "int_vs_float": {
+    "n": 3925,
+    "mean_a": 30.234268209553726,
+    "mean_b": 29.954936272901545,
+    "delta": -0.27933193665218276,
+    "se": 0.005013571196781394,
+    "ci95": [
+     -0.2891585361978743,
+     -0.2695053371064912
+    ],
+    "max_abs_delta": 4.813191821039439,
+    "n_worse": 3922,
+    "n_better": 3
+   },
+   "fake_vs_float": {
+    "n": 3925,
+    "mean_a": 30.234268209553726,
+    "mean_b": 29.955574471434456,
+    "delta": -0.278693738119273,
+    "se": 0.005004104935189789,
+    "ci95": [
+     -0.288501783792245,
+     -0.268885692446301
+    ],
+    "max_abs_delta": 4.804249029854766,
+    "n_worse": 3923,
+    "n_better": 2
+   },
+   "output_codes": {
+    "mismatch_frac": 0.06255107256004512,
+    "images_with_any_mismatch": 3925,
+    "images": 3925,
+    "values_per_image": 49152,
+    "max_abs_code_diff": 3
+   },
+   "agreement_batch": {
+    "images": 64,
+    "top1_agreement": 0.9932212829589844,
+    "logit_max_abs_diff": 0.011912536807358265,
+    "first_divergence": "conv1",
+    "output_mismatch_frac": 0.06253623962402344
+   },
+   "per_layer_agreement": [
+    {
+     "name": "x",
+     "op": "input",
+     "n": 786432,
+     "mismatch_frac": 0.0,
+     "max_abs": 0,
+     "mean_abs": 0.0,
+     "local_mismatch_frac": 0.0,
+     "local_max_abs": 0
+    },
+    {
+     "name": "conv1",
+     "op": "conv",
+     "n": 8388608,
+     "mismatch_frac": 0.0005959272384643555,
+     "max_abs": 1,
+     "mean_abs": 0.0005959272384643555,
+     "local_mismatch_frac": 0.0005959272384643555,
+     "local_max_abs": 1
+    },
+    {
+     "name": "conv2",
+     "op": "conv",
+     "n": 4194304,
+     "mismatch_frac": 0.0065975189208984375,
+     "max_abs": 1,
+     "mean_abs": 0.0065975189208984375,
+     "local_mismatch_frac": 0.0008916854858398438,
+     "local_max_abs": 1
+    },
+    {
+     "name": "conv3",
+     "op": "conv",
+     "n": 3145728,
+     "mismatch_frac": 0.06253623962402344,
+     "max_abs": 2,
+     "mean_abs": 0.06257883707682292,
+     "local_mismatch_frac": 0.0026330947875976562,
+     "local_max_abs": 1
+    }
+   ],
+   "seconds": 52.66977095603943,
+   "provenance": "measured",
+   "timestamp": "2026-09-15T02:00:59"
+  },
+  {
+   "model": "espcn_x2",
+   "scheme": "per-tensor",
+   "n_test": 3925,
+   "input_shape": [
+    3,
+    64,
+    64
+   ],
+   "float_psnr": 30.234268209553726,
+   "fake_psnr": 29.567288860512832,
+   "int_psnr": 29.567555080230154,
+   "int_vs_fake": {
+    "n": 3925,
+    "mean_a": 29.567288860512832,
+    "mean_b": 29.567555080230154,
+    "delta": 0.0002662197173205953,
+    "se": 5.8193068908547695e-05,
+    "ci95": [
+     0.0001521613022598418,
+     0.0003802781323813488
+    ],
+    "max_abs_delta": 0.02130652543879563,
+    "n_worse": 1831,
+    "n_better": 2094
+   },
+   "int_vs_float": {
+    "n": 3925,
+    "mean_a": 30.234268209553726,
+    "mean_b": 29.567555080230154,
+    "delta": -0.6667131293235714,
+    "se": 0.011387286421597063,
+    "ci95": [
+     -0.6890322107099016,
+     -0.6443940479372412
+    ],
+    "max_abs_delta": 8.887691733387541,
+    "n_worse": 3925,
+    "n_better": 0
+   },
+   "fake_vs_float": {
+    "n": 3925,
+    "mean_a": 30.234268209553726,
+    "mean_b": 29.567288860512832,
+    "delta": -0.6669793490408918,
+    "se": 0.011391481399462612,
+    "ci95": [
+     -0.6893066525838386,
+     -0.6446520454979451
+    ],
+    "max_abs_delta": 8.888031762872053,
+    "n_worse": 3925,
+    "n_better": 0
+   },
+   "output_codes": {
+    "mismatch_frac": 0.18178113285396763,
+    "images_with_any_mismatch": 3925,
+    "images": 3925,
+    "values_per_image": 49152,
+    "max_abs_code_diff": 3
+   },
+   "agreement_batch": {
+    "images": 64,
+    "top1_agreement": 0.9839754104614258,
+    "logit_max_abs_diff": 0.01786874793469906,
+    "first_divergence": "conv1",
+    "output_mismatch_frac": 0.18233744303385416
+   },
+   "per_layer_agreement": [
+    {
+     "name": "x",
+     "op": "input",
+     "n": 786432,
+     "mismatch_frac": 0.0,
+     "max_abs": 0,
+     "mean_abs": 0.0,
+     "local_mismatch_frac": 0.0,
+     "local_max_abs": 0
+    },
+    {
+     "name": "conv1",
+     "op": "conv",
+     "n": 8388608,
+     "mismatch_frac": 0.0029259920120239258,
+     "max_abs": 1,
+     "mean_abs": 0.0029259920120239258,
+     "local_mismatch_frac": 0.0029259920120239258,
+     "local_max_abs": 1
+    },
+    {
+     "name": "conv2",
+     "op": "conv",
+     "n": 4194304,
+     "mismatch_frac": 0.0252988338470459,
+     "max_abs": 1,
+     "mean_abs": 0.0252988338470459,
+     "local_mismatch_frac": 0.001676797866821289,
+     "local_max_abs": 1
+    },
+    {
+     "name": "conv3",
+     "op": "conv",
+     "n": 3145728,
+     "mismatch_frac": 0.18233744303385416,
+     "max_abs": 3,
+     "mean_abs": 0.18277740478515625,
+     "local_mismatch_frac": 0.004048983256022136,
+     "local_max_abs": 1
+    }
+   ],
+   "seconds": 49.63970899581909,
+   "provenance": "measured",
+   "timestamp": "2026-09-15T02:01:49"
+  }
+ ]
+}

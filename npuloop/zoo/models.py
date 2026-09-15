@@ -282,6 +282,41 @@ class InceptionCIFAR(nn.Module):
         return self.fc(self.flatten(self.pool(x)))
 
 
+class ESPCN(nn.Module):
+    """Sub-pixel super-resolution head (Shi et al., CVPR 2016).
+
+    The smallest dense-output network that exercises the whole pipeline. It matters here because the
+    deliverable is the output tensor itself, not an argmax over it: a code that lands one LSB off changes
+    the picture, where in a classifier it usually changes nothing.
+
+    Two departures from the classifiers above. There is no BatchNorm -- SR networks do not use it, and the
+    folding pass simply finds nothing to fold. And the pixel shuffle is written out as view/permute/reshape
+    against a static shape: nn.PixelShuffle reads x.shape, which fx records as a getattr node the tracer
+    rejects, while the explicit form maps onto the reshape and transpose ops the IR already has.
+    """
+
+    def __init__(self, lr_size: int = 64, scale: int = 2, feat: int = 32, channels: int = 3, act: str = "relu"):
+        super().__init__()
+        self.lr_size = lr_size; self.scale = scale; self.channels = channels
+        self.conv1 = nn.Conv2d(channels, feat, 5, 1, 2); self.act1 = make_act(act)
+        self.conv2 = nn.Conv2d(feat, feat // 2, 3, 1, 1); self.act2 = make_act(act)
+        self.conv3 = nn.Conv2d(feat // 2, channels * scale * scale, 3, 1, 1)
+        self.config = dict(arch="espcn", lr_size=lr_size, scale=scale, feat=feat, channels=channels, act=act)
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
+                nn.init.zeros_(m.bias)
+
+    def forward(self, x):
+        x = self.act1(self.conv1(x))
+        x = self.act2(self.conv2(x))
+        x = self.conv3(x)
+        c, r, h = self.channels, self.scale, self.lr_size
+        x = x.view(-1, c, r, r, h, h)
+        x = x.permute(0, 1, 4, 2, 5, 3)
+        return x.reshape(-1, c, h * r, h * r)
+
+
 def build_model(config: dict) -> nn.Module:
     cfg = dict(config)
     arch = cfg.pop("arch")
@@ -294,6 +329,8 @@ def build_model(config: dict) -> nn.Module:
         return ViTCIFAR(**cfg)
     if arch == "inception":
         return InceptionCIFAR(**cfg)
+    if arch == "espcn":
+        return ESPCN(**cfg)
     raise ValueError(arch)
 
 

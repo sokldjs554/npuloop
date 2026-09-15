@@ -124,6 +124,21 @@ def torch_predict(model):
     return f
 
 
+def paired_delta(a: np.ndarray, b: np.ndarray) -> dict:
+    """Paired difference (b - a) of a continuous per-image metric, with its exact standard error and 95% CI.
+
+    The counterpart of paired_stats() for a task scored by a number per image (PSNR) rather than by a hit or
+    a miss; the same images go through both programs, so the difference is paired and its SE is exact.
+    """
+    a, b = np.asarray(a, dtype=np.float64), np.asarray(b, dtype=np.float64)
+    d = b - a
+    n = len(d)
+    se = float(d.std(ddof=1) / np.sqrt(n)) if n > 1 else float("nan")
+    return dict(n=int(n), mean_a=float(a.mean()), mean_b=float(b.mean()), delta=float(d.mean()), se=se,
+                ci95=[float(d.mean() - 1.96 * se), float(d.mean() + 1.96 * se)],
+                max_abs_delta=float(np.abs(d).max()), n_worse=int((d < 0).sum()), n_better=int((d > 0).sum()))
+
+
 def paired_stats(a_labels: np.ndarray, b_labels: np.ndarray, y: np.ndarray) -> dict:
     """Accuracy of a and b on the same images, their paired difference with its exact standard error and 95% CI."""
     ca, cb = (a_labels == y).astype(np.float64), (b_labels == y).astype(np.float64)

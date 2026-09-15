@@ -85,6 +85,76 @@ class CIFAR10NPZ:
         return self.to_tensor(self.x_train[idx])
 
 
+class SRPairs:
+    """(low-resolution, high-resolution) pairs built from an image-classification npz.
+
+    The stored image is the HR target and the LR input is an exact r x r box average of it, so the pair needs
+    no extra data and no resampling library. Pixels stay in [0,1]: PSNR is reported on that range, and the
+    per-channel mean/std normalization the classifiers use would only get in the way of reading it.
+
+    Splits follow CIFAR10NPZ exactly -- the same stratified validation hold-out (so a model never selects on
+    the test split) and the same fixed test permutation.
+    """
+
+    def __init__(self, path: str, scale: int = 2, val_per_class: int | None = None, val_seed: int = VAL_SEED):
+        d = np.load(path)
+        x_all, y_all = d["x_train"], d["y_train"]
+        if val_per_class is None:
+            val_per_class = int(d["val_per_class"]) if "val_per_class" in d else VAL_PER_CLASS
+        self.scale = scale
+        self.hr_size = int(x_all.shape[1])
+        if self.hr_size % scale:
+            raise ValueError(f"image size {self.hr_size} is not a multiple of scale {scale}")
+        self.lr_size = self.hr_size // scale
+        self.val_idx = stratified_holdout(y_all, val_per_class, val_seed)
+        keep = np.ones(len(y_all), dtype=bool); keep[self.val_idx] = False
+        self.x_train = x_all[keep]
+        self.x_val = x_all[self.val_idx]
+        order = np.random.default_rng(1234).permutation(len(d["x_test"]))
+        self.x_test = d["x_test"][order]
+
+    def pair(self, x_uint8: np.ndarray) -> tuple[torch.Tensor, torch.Tensor]:
+        """(LR, HR) float tensors in [0,1]; LR is the exact box average of HR over r x r blocks."""
+        hr = np.ascontiguousarray(x_uint8.astype(np.float32).transpose(0, 3, 1, 2)) / 255.0
+        n, c, h, w = hr.shape; r = self.scale
+        lr = hr.reshape(n, c, h // r, r, w // r, r).mean(axis=(3, 5))
+        return torch.from_numpy(np.ascontiguousarray(lr)), torch.from_numpy(hr)
+
+    def batches(self, split: str, batch_size: int = 100):
+        x = {"val": self.x_val, "test": self.x_test, "train": self.x_train}[split]
+        for i in range(0, len(x), batch_size):
+            yield self.pair(x[i:i + batch_size])
+
+    def val_batches(self, batch_size: int = 100):
+        return self.batches("val", batch_size)
+
+    def test_batches(self, batch_size: int = 100):
+        return self.batches("test", batch_size)
+
+    def train_batches(self, batch_size: int, rng: np.random.Generator, augment: bool = True):
+        perm = rng.permutation(len(self.x_train))
+        for i in range(0, len(perm) - batch_size + 1, batch_size):
+            xb = self.x_train[perm[i:i + batch_size]]
+            if augment:
+                flip = rng.random(len(xb)) < 0.5
+                xb = np.where(flip[:, None, None, None], xb[:, :, ::-1], xb)
+            yield self.pair(xb)
+
+    def calib_batch(self, n: int = 512, seed: int = 0) -> torch.Tensor:
+        """LR inputs for quantizer calibration, drawn from the training split only."""
+        rng = np.random.default_rng(seed)
+        idx = rng.choice(len(self.x_train), size=min(n, len(self.x_train)), replace=False)
+        return self.pair(self.x_train[idx])[0]
+
+
+def psnr(pred: np.ndarray, target: np.ndarray) -> np.ndarray:
+    """Per-image PSNR in dB on the [0,1] range, with the prediction clipped as a deployment would."""
+    p = np.clip(pred, 0.0, 1.0).reshape(len(pred), -1).astype(np.float64)
+    t = target.reshape(len(target), -1).astype(np.float64)
+    mse = np.maximum(((p - t) ** 2).mean(axis=1), 1e-12)
+    return 10.0 * np.log10(1.0 / mse)
+
+
 def stratified_holdout(y: np.ndarray, per_class: int, seed: int) -> np.ndarray:
     """Indices of a class-balanced hold-out set (`per_class` images of every class), shuffled with the same seed
     so that any prefix of the validation split is class-mixed."""

@@ -14,8 +14,17 @@ from .requant import multiply_by_quantized_multiplier, saturate, isqrt64, round_
 
 
 def quantize_input(x: np.ndarray, q: QParams) -> np.ndarray:
-    """Float input -> uint8/int8 codes (round half to even, like the fake-quant model)."""
-    codes = np.rint(x.astype(np.float64) / q.scale) + q.zero_point
+    """Float input -> uint8/int8 codes, rounded exactly as the fake-quant model rounds it.
+
+    The division and the rounding happen in float32, mirroring `round_ste(x / scale) + zp` on a float32
+    PyTorch graph. Both paths round half to even, so this only matters for a value that is a tie in one
+    precision and not in the other -- but that is not hypothetical. An input that is itself a box average of
+    8-bit pixels (a downsampled image feeding a super-resolution or segmentation network) lands one value in
+    four exactly on a tie, and promoting to float64 here made 7.2% of the input codes differ from the
+    simulator's before a single kernel had run. Classifier inputs, normalized by a per-channel mean and
+    standard deviation, never land on ties, which is why this stayed invisible until E17.
+    """
+    codes = np.rint(x.astype(np.float32) / np.float32(q.scale)) + q.zero_point
     return np.clip(codes, q.qmin, q.qmax).astype(np.int64)
 
 

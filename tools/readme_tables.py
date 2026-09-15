@@ -3,7 +3,7 @@ import json, os, sys, statistics
 import numpy as np
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 R = os.path.join(ROOT, "results")
-LABEL = {"resnet20_relu": "ResNet-20 ReLU", "resnet20_silu": "ResNet-20 SiLU", "resnet20_hswish": "ResNet-20 HardSwish",
+LABEL = {"espcn_x2": "ESPCN ×2 (초해상)", "resnet20_relu": "ResNet-20 ReLU", "resnet20_silu": "ResNet-20 SiLU", "resnet20_hswish": "ResNet-20 HardSwish",
          "resnet20_gelu": "ResNet-20 GELU", "mnv2_050_relu6": "MobileNetV2-0.5 ReLU6",
          "cust_vit": "고객 A · ViT-128/6", "cust_inception": "고객 B · Inception-32", "imagenette_resnet20": "ResNet-20 (Imagenette-128)"}
 
@@ -399,6 +399,25 @@ def e16():
     return "\n".join(out)
 
 
+def e17():
+    rs = load("e17_dense_output")["records"]
+    if not rs: return ""
+    out = ["| 스킴 | float32 | fake-quant | 정수 엔진 | 정수 − fake (쌍 SE) | 양자화 비용 (fake − float) | 출력 픽셀 코드 불일치 | 코드가 다른 이미지 | 최대 \\|Δ코드\\| | conv 국소 불일치 |",
+           "|---|---|---|---|---|---|---|---|---|---|"]
+    for r in rs:
+        p_, oc = r["int_vs_fake"], r["output_codes"]
+        loc = [row["local_mismatch_frac"] * 100 for row in r["per_layer_agreement"] if row["op"] == "conv"]
+        out.append(f"| {r['scheme']} | {r['float_psnr']:.3f} dB | {r['fake_psnr']:.3f} dB | {r['int_psnr']:.3f} dB | "
+                   f"{p_['delta']:+.5f} ± {p_['se']:.5f} dB | {r['fake_vs_float']['delta']:+.3f} dB | "
+                   f"{pct(oc['mismatch_frac'], 1)} | {oc['images_with_any_mismatch']:,} / {oc['images']:,} | "
+                   f"{oc['max_abs_code_diff']} | {min(loc):.2f}–{max(loc):.2f}% |")
+    r0 = rs[0]
+    out.append(f"\ntest {r0['n_test']:,}장 전체, 이미지당 출력값 {r0['output_codes']['values_per_image']:,}개(3×128×128 픽셀). "
+               f"PSNR은 [0,1] 범위에서 이미지별로 재고 배포와 똑같이 출력을 clip한 뒤 평균한 값이다. "
+               f"국소 불일치는 {r0['agreement_batch']['images']}장 배치의 teacher-forced 평균.")
+    return "\n".join(out)
+
+
 def e14():
     d = load("e14_rounding_seeds"); rs = d["records"]
     if not rs: return ""
@@ -474,7 +493,7 @@ def e14_summary(rs, models):
     return out
 
 
-TABLES = [("HEADLINE", headline), ("E1", e1), ("E2", e2), ("E3", e3), ("E4", e4), ("E5", e5), ("E6", e6), ("E7", e7), ("E8", e8), ("E9", e9), ("E10", e10), ("E11", e11), ("E12", e12), ("E14", e14), ("E15", e15), ("E16", e16)]
+TABLES = [("HEADLINE", headline), ("E1", e1), ("E2", e2), ("E3", e3), ("E4", e4), ("E5", e5), ("E6", e6), ("E7", e7), ("E8", e8), ("E9", e9), ("E10", e10), ("E11", e11), ("E12", e12), ("E14", e14), ("E15", e15), ("E16", e16), ("E17", e17)]
 
 
 def inject(path: str) -> tuple[int, set]:

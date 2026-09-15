@@ -111,7 +111,7 @@ CPU 학습 중 만난 [oneDNN의 1×1 conv backward-weights 오버플로](docs/u
 2줄 패치까지 검증해 보고서로 정리했습니다. 이 저장소의 실험 모델들은 stride > 1인 1×1 conv의 입력 채널이 모두 16 이상이라 결과와 무관하며,
 CI는 `ONEDNN_MAX_CPU_ISA=AVX2`로도 전체 스위트를 돌립니다.
 
-## 실험 16개 (E1–E16)
+## 실험 17개 (E1–E17)
 
 전문과 표는 [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md), 논문 형식 정리는 [기술 보고서](docs/report/npuloop_report.md)에 있습니다.
 
@@ -133,6 +133,7 @@ CI는 `ONEDNN_MAX_CPU_ISA=AVX2`로도 전체 스위트를 돌립니다.
 | E14 | 반올림 모드의 비용은 체크포인트에 강건한가 — 시드 3개 × 10,000장 | [→](docs/EXPERIMENTS.md#e14) |
 | E15 | fake-quant ↔ 정수 차이에 쌍 표준오차를 붙이면 | [→](docs/EXPERIMENTS.md#e15) |
 | E16 | LayerNorm을 정수로 에뮬레이션하면 transformer 격차가 닫히는가 | [→](docs/EXPERIMENTS.md#e16) |
+| E17 | 출력 텐서가 결과물인 과제(초해상)에서는 격차가 어떻게 보이는가 | [→](docs/EXPERIMENTS.md#e17) |
 
 ## 설계에서 신경 쓴 것
 
@@ -181,7 +182,7 @@ npuloop/
 ├── prune/               fx 그래프 채널 그룹에 uniform · aligned · cost-greedy(비용 모델 in-the-loop) 프루닝
 ├── zoo/                 npz 로더(CIFAR-10·Imagenette) · 모델 · 재현 가능한 트레이너
 └── cli.py
-experiments/             E1–E16 스크립트 (재개 가능)
+experiments/             E1–E17 스크립트 (재개 가능)
 results/                 실험 결과 JSON (provenance 라벨 포함)
 demo/                    build.py + 템플릿 → docs/index.html
 tests/                   pytest 87개
@@ -194,7 +195,7 @@ docs/                    EXPERIMENTS · USAGE · DESIGN · INTEGER_DATAPATH · R
 
 | 문서 | 내용 |
 |---|---|
-| [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md) | 실험 E1–E16 전문과 생성된 표 |
+| [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md) | 실험 E1–E17 전문과 생성된 표 |
 | [docs/report/npuloop_report.md](docs/report/npuloop_report.md) | 논문 형식 기술 보고서 ([PDF](docs/report/npuloop_report.pdf)) |
 | [docs/DESIGN.md](docs/DESIGN.md) | 아키텍처, 모듈, 실험 계획, 검증 원칙 |
 | [docs/INTEGER_DATAPATH.md](docs/INTEGER_DATAPATH.md) | 양자화 지점과 정수 데이터패스의 대응 |

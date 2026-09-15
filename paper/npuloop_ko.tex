@@ -85,6 +85,8 @@ $24.8\%$에서 어긋난다. 시뮬레이터의 LayerNorm을 정수에 충실하
 시뮬레이터를 연산자 하나씩 고쳐서 비트 정확한 벡터의 공급원으로 만들 수는 없다는 뜻이다. 아울러 정확도
 대리지표가 값을 매기지 못하는 재양자화 선택 하나를 측정한다. 반올림을 절사로 바꾸면 18개 (모델, 시드, 방식)
 조합 전부에서 $0.90$--$3.37$~\%p를 잃으며, 그 손해의 부호는 시드를 넘어 옮겨 가지만 크기는 옮겨 가지 않는다.
+argmax를 걷어내도 이 분리는 그대로다. 출력 텐서 자체가 결과물인 신경망에서 품질 지표는 $6\times10^{-4}$~dB 안쪽으로
+충실한 반면, 내보내는 픽셀 코드의 $6.3$--$18.2\%$가 다르다.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -107,7 +109,7 @@ INT8 배포는 서로 다른 두 프로그램이 결정한다. 질문에 답하�
 
 이 질문들에 답하려면 기존 계층별 오차 분석이 제공하지 않는 분해가 필요하다. 연산자 자신의 정수 연산이 만드는
 몫(\emph{국소} 불일치, 교사 강제로 분리)과 종단간 실행에서 살아남는 몫(\emph{전파} 불일치)을 갈라내는
-분해다. 전체 테스트셋에서 대응 표준오차와 함께 보고하는 이 분해가 이 논문의 방법론적 기여이고, 발견 1--5가
+분해다. 전체 테스트셋에서 대응 표준오차와 함께 보고하는 이 분해가 이 논문의 방법론적 기여이고, 발견 1--6이
 실험적 기여다.
 
 \begin{table*}[!t]
@@ -163,8 +165,8 @@ TensorFlow Lite 자신의 최적화 델리게이트와 참조 커널은 $1000$�
 쓴다.
 
 CIFAR-10 신경망 5종 --- ReLU를 쓰는 ResNet-20과 SiLU를 쓰는 ResNet-20, MobileNetV2-0.5(깊이별 합성곱), 분기를
-연결하는 Inception 계열 CNN, ViT-128/6(어텐션 블록 12개, LayerNorm 13개) --- 과 Imagenette를 $128\times128$로
-학습한 ResNet-20 1종을 쓴다. 학습 후 양자화 방식은 둘이다. 채널별 가중치에 비대칭 활성화를 쓰는
+연결하는 Inception 계열 CNN, ViT-128/6(어텐션 블록 12개, LayerNorm 13개) --- 과 Imagenette를 $128\times128$로 쓰는 신경망
+2종(ResNet-20과 \ref{sec:dense}절의 초해상 신경망)을 쓴다. 학습 후 양자화 방식은 둘이다. 채널별 가중치에 비대칭 활성화를 쓰는
 방식(\textsc{pc})과 텐서별 가중치를 쓰는 방식(\textsc{pt})이며, 둘 다 학습 이미지 $512$장으로 보정했다. 학습과
 평가는 모두 CPU에서 수행했고, 아래의 모든 수치는 저장소에 커밋된 결과 파일에서 스크립트가 만들어 낸다.
 
@@ -181,6 +183,35 @@ $28.5\%$(Inception-32)에서 $72.7\%$(ViT-128/6)가 다르고, 이미지의 $95$
 \finding{1} 정확도 일치와 텐서 일치는 두 자릿수 이상 분리되어 있으며, 모든 신경망과 두 방식 모두에서 그렇다.
 
 \implication 정확도가 $99\%$ 일치한다는 보고는 시뮬레이터가 검증 벡터를 공급할 수 있다는 증거가 되지 못한다.
+
+\begin{table}[!t]
+\caption{출력 텐서가 결과물인 과제: Imagenette에서의 ESPCN $\times 2$, 이미지 $3{,}925$장, 이미지당 출력값
+$49{,}152$개. PSNR은 $[0,1]$ 범위의 dB. 양자화 자체는 float32 대비 $0.279$~dB(\textsc{pc})와
+$0.667$~dB(\textsc{pt})를 잃으며, 이는 옆 칸의 모의-정수 차이보다 세 자릿수 크다.}
+\label{tab:dense}
+\centering
+\footnotesize
+\input{tab4_rows_ko}
+\end{table}
+
+\subsection{RQ1: 텐서 자체가 결과물일 때}
+\label{sec:dense}
+위의 신경망은 모두 분류기여서 출력 텐서와 답 사이에 argmax가 하나 서 있다. 그것을 걷어내기 위해 부분 픽셀 초해상
+신경망~\cite{espcn}을 쓴다. 합성곱 3개로 Imagenette를 $64 \rightarrow 128$로 올리며, 최근접 이웃 확대의
+$27.26$~dB에 대해 $30.23$~dB이고, 출력이 곧 그림 \emph{그 자체}다. 새 연산자 지원은 필요 없었다. 픽셀 셔플은
+reshape와 transpose다.
+
+표~\ref{tab:dense}는 같은 그림을 반복한다. 양자화 비용은 $0.279$~dB(\textsc{pc})와 $0.667$~dB(\textsc{pt})이고
+시뮬레이터는 그 비용을 $6\times10^{-4}$~dB 안쪽으로 맞힌다. 이 표본 크기에서는 분해되는 차이지만
+($|\Delta|/\mathrm{SE} = 17.6$) 맞히려는 비용보다 세 자릿수 작다. 그런데도 출력 픽셀 코드의 $6.3\%$와 $18.2\%$가
+$3{,}925$장 전부에서 다르고, 최대 3레벨까지 벌어진다. 연산자별 구조는 CNN과 같다. 합성곱의 국소 불일치는
+$0.06$--$0.40\%$이고 모두 최하위 비트 $\pm 1$이며, 첫 분기점도 첫 합성곱이다. 전파 값이 더 작은 것은 이 신경망이
+3층이라는 깊이 효과이지 과제의 성질이 아니다.
+
+\finding{2} 이 분리는 분류 과제의 인공물이 아니다. 출력 텐서가 결과물인 경우에도 품질 지표는
+$6\times10^{-4}$~dB 안쪽으로 충실한 반면 내보내는 픽셀의 $6.3$--$18.2\%$가 다르다.
+
+\implication 시뮬레이터는 기준 로짓 벡터를 공급할 수 없듯이 기준 이미지도 공급할 수 없다.
 
 \begin{figure}[!t]
 \centering
@@ -201,10 +232,10 @@ $0.02$--$0.93\%$, 선형 계층은 $0.03$--$0.96\%$, 평균 풀링은 $0.1$--$2.
 인스턴스 중 최댓값은 $26.2\%$다. 정수 구현은 int64 합과 정확한 정수 제곱근으로 정규화하는 반면 시뮬레이터는
 float32로 계산한 뒤 격자에 스냅하므로, 대략 원소 넷 중 하나가 반올림 경계의 반대편에 떨어진다.
 
-\finding{2} LayerNorm을 빼면 어떤 연산자도 자기 코드의 $1\%$ 미만에서만 어긋나고, 그 어긋남은 모두 최하위 비트
+\finding{3} LayerNorm을 빼면 어떤 연산자도 자기 코드의 $1\%$ 미만에서만 어긋나고, 그 어긋남은 모두 최하위 비트
 $\pm 1$이다. 종단간 격차는 특정 커널이 만든 것이 아니라 전파가 키운 것이다.
 
-\finding{3} 정수 LayerNorm은 유일하게 큰 국소 원천으로, 다른 모든 연산자보다 두 자릿수 크다.
+\finding{4} 정수 LayerNorm은 유일하게 큰 국소 원천으로, 다른 모든 연산자보다 두 자릿수 크다.
 
 \implication 트랜스포머를 INT8로 옮길 때는 LayerNorm을 가장 먼저 의심하고, 나머지에서는 $\pm 1$ LSB를 예상하라.
 
@@ -228,7 +259,7 @@ LayerNorm을, 입력 코드 위에서 엔진의 연산을 그대로 수행하여
 $72.6\% \rightarrow 66.0\%$). 정확도는 어느 방향으로든 대응 표준오차 두 배 안쪽에서 움직이므로 개선으로 읽을 수
 없다.
 
-\finding{4} 가장 큰 국소 원천 하나를 완전히 없애도 전파 격차의 10분의 1 정도만 회수된다. 남는 것이 개별적으로는
+\finding{5} 가장 큰 국소 원천 하나를 완전히 없애도 전파 격차의 10분의 1 정도만 회수된다. 남는 것이 개별적으로는
 코드의 $1\%$ 미만에서만 어긋나는 연산자들의 $\pm 1$ LSB 사건이 증폭된 결과이기 때문이다.
 
 \implication 골든 벡터는 외부 기준에 대해 검증된 정수 구현에서 나와야 한다. 부동소수점 시뮬레이터를 연산자
@@ -263,16 +294,15 @@ $37\%$에 이르는 반면, ResNet-20 ReLU는 효과의 10분의 1 이내에 머
 연산의 성질이 아니라 신경망의 성질이다. ResNet-20 ReLU는 세 시드 모두에서 \texttt{floor}가, MobileNetV2는 세
 시드 모두에서 \texttt{truncate}가 더 많이 잃는다.
 
-\finding{5} 반올림 방식 비용의 부호와 유의성은 시드에 강건하지만 크기는 그렇지 않다. 같은 구조의 시드 3개에서
+\finding{6} 반올림 방식 비용의 부호와 유의성은 시드에 강건하지만 크기는 그렇지 않다. 같은 구조의 시드 3개에서
 효과 크기의 $37\%$까지 벌어진다.
 
 \implication 반올림 방식의 비용을 시드 하나의 수치로 인용해서는 안 된다.
 
 \section{타당성 위협}
-\emph{외적 타당성.} 신경망은 CIFAR-10 규모에 $128\times128$ Imagenette 모델 하나를 더한 것이고, 여섯 모델 모두
-분류기다. 따라서 결론은 격차의 구조에 관한 것이지 ImageNet 규모 그래프에서의 정확한 크기에 관한 것이 아니다.
-출력 텐서 자체가 결과물인 밀집 출력 과제 --- 초해상, 분할, 검출 --- 라면 여기서 정확도가 가린 텐서 격차가 더
-직접 드러날 것이다.
+\emph{외적 타당성.} 신경망은 CIFAR-10 규모에 $128\times128$ Imagenette 모델 둘을 더한 것이다. 따라서 결론은
+격차의 구조에 관한 것이지 ImageNet 규모 그래프에서의 정확한 크기에 관한 것이 아니며, 밀집 출력 신경망은 3층뿐이라
+그 전파 값은 더 깊은 신경망에서 나올 값의 하한이다.
 
 \emph{구성 타당성.} 국소 불일치는 교사 강제로 재므로 연산자의 연산만 떼어 보고 상류 오차와의 상호작용은 보지
 않는다. 그 상호작용을 담는 것은 전파 열이다.
@@ -285,18 +315,19 @@ $37\%$에 이르는 반면, ResNet-20 ReLU는 효과의 10분의 1 이내에 머
 덧셈·소프트맥스는 덮지 않는다.
 
 \section{재현 자료}
-모든 수치는 커밋된 결과 파일에서 스크립트가 출력하며, 스크립트와 학습된 체크포인트와 그 결과 파일은 모두 공개되어
-있다. \texttt{make\_tables.py}가 표~\ref{tab:fidelity}--\ref{tab:rounding}을, \texttt{make\_figs.py}가
+모든 수치는 커밋된 결과 파일에서 스크립트가 출력하며, 스크립트와 결과 파일과 체크포인트를 만드는 학습 명령은 모두
+공개되어 있다(데이터 없이 돌려 볼 수 있도록 체크포인트 2개는 저장소에 함께 들어 있다). \texttt{make\_tables.py}가 표~\ref{tab:fidelity}--\ref{tab:rounding}을, \texttt{make\_figs.py}가
 그림~\ref{fig:decomposition}--\ref{fig:rounding}을 다시 만든다. 지속적 통합 작업이 커밋마다 생성기를 다시 돌려,
 커밋된 표가 결과 파일이 함의하는 표와 다르면 실패시킨다. 측정 자체는 \texttt{e15\_fidelity.py}(표~\ref{tab:fidelity},
 그림~\ref{fig:decomposition}), \texttt{e16\_ln\_emulation.py}(표~\ref{tab:layernorm}),
-\texttt{e14\_rounding\_seeds.py}(그림~\ref{fig:rounding}, 표~\ref{tab:rounding})에 있고, 외부 검증은
-\texttt{e11\_tflite\_crosscheck.py}다. 시드를 쓴 측정에는 단서가 하나 붙는다. 이 체크포인트들을 만들 당시 학습기의
+\texttt{e14\_rounding\_seeds.py}(그림~\ref{fig:rounding}, 표~\ref{tab:rounding}),
+\texttt{e17\_dense\_output.py}(표~\ref{tab:dense})에 있고, 외부 검증은 \texttt{e11\_tflite\_crosscheck.py}다. 시드를 쓴 측정에는 단서가 하나 붙는다. 이 체크포인트들을 만들 당시 학습기의
 시드는 데이터 순서만 통제하고 가중치 초기화는 통제하지 못했으므로, 세 반복은 서로 독립인 표본이지만 같은 명령으로
 비트 단위까지 재현되지는 않는다.
 
 \section{결론}
-모의 양자화는 INT8 정확도는 잘 맞히고 INT8 텐서는 잘 못 맞히며, 두 사실은 서로 독립이다. 격차를 옮기는 연산자는
+모의 양자화는 INT8 품질은 잘 맞히고 INT8 텐서는 잘 못 맞힌다. 분류기에서도, 출력이 곧 결과물인 신경망에서도
+그렇고, 두 사실은 서로 독립이다. 격차를 옮기는 연산자는
 하나가 아니다. 개별적으로는 코드의 $1\%$ 미만에서만 어긋나는 연산자들에서 최하위 비트 $\pm 1$ 사건으로 태어나
 전파로 자라며, 그래서 가장 나쁜 국소 원천을 없애도 10분의 1밖에 회수되지 않는다. 골든 벡터가 필요한 팀은 외부
 기준에 대해 검증된 정수 구현에서 그것을 만들어야 하고, 재양자화의 세부를 바꾸는 팀은 여러 시드에서 측정해야 한다.
@@ -306,7 +337,7 @@ $37\%$에 이르는 반면, ResNet-20 ReLU는 효과의 10분의 1 이내에 머
 % IEEE는 AI 사용 공개를 요구하지만, 문구는 저자가 정합니다.
 저자는 이 원고의 준비 과정에서 AI 코딩 도구(Claude Code)를 사용했으며, 모든 내용에 대한 책임은 저자에게 있다.
 
-\IEEEtriggeratref{3}
+% \IEEEtriggeratref는 쓰지 않는다: 4쪽을 지키려면 참고문헌이 자유롭게 흘러야 한다.
 \begin{thebibliography}{10}
 \bibitem{jacob2018} B.~Jacob \emph{et al.}, ``Quantization and training of neural networks for efficient integer-arithmetic-only
 inference,'' in \emph{Proc. IEEE/CVF Conf. Comput. Vis. Pattern Recognit. (CVPR)}, 2018, pp. 2704--2713.
@@ -321,6 +352,9 @@ Available: \url{https://github.com/google/gemmlowp}
 2021, pp. 5506--5518.
 \bibitem{fqvit} Y.~Lin \emph{et al.}, ``FQ-ViT: Post-training quantization for fully quantized vision transformer,'' in
 \emph{Proc. Int. Joint Conf. Artif. Intell. (IJCAI)}, 2022, pp. 1173--1179.
+\bibitem{espcn} W.~Shi \emph{et al.}, ``Real-time single image and video super-resolution using an efficient
+sub-pixel convolutional neural network,'' in \emph{Proc. IEEE Conf. Comput. Vis. Pattern Recognit. (CVPR)}, 2016,
+pp. 1874--1883.
 \bibitem{a2q} I.~Colbert \emph{et al.}, ``A2Q: Accumulator-aware quantization with guaranteed overflow avoidance,'' in
 \emph{Proc. IEEE/CVF Int. Conf. Comput. Vis. (ICCV)}, 2023, pp. 16989--16998.
 \end{thebibliography}
@@ -342,7 +376,9 @@ while integer LayerNorm disagrees on $24.8\%$. Making the simulator integer-fait
 that source entirely ($24.77\% \rightarrow 0.00\%$) but moves the propagated output mismatch only from
 $72.7\%$ to $65.7\%$. We also price a requantization choice the accuracy proxy cannot see: replacing
 rounding with truncation costs $0.90$--$3.37$~pp in all 18 (model, seed, mode) combinations, and the sign of
-that cost transfers across seeds while its magnitude does not.
+that cost transfers across seeds while its magnitude does not. The decoupling survives the removal of the
+argmax: on a dense-output network the quality metric is faithful to $6\times10^{-4}$~dB while $6.3$--$18.2\%$ of
+the delivered pixel codes differ.
 
 \smallskip
 \noindent\textbf{Index Terms}---Quantization, integer arithmetic, embedded inference, neural processing

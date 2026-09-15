@@ -6,6 +6,7 @@ from npuloop.intengine import export_int_graph, NumpyEngine, RequantConfig, quan
 from npuloop.intengine.requant import _srdhm, _rdbpot
 from npuloop.intengine.numpy_engine import quantize_input
 from npuloop.intengine.verify import compare
+from npuloop.quant.fake import FakeQuantAct
 from npuloop.intengine.cpp_engine import CppEngine, load_library
 
 
@@ -103,6 +104,38 @@ def test_saturation_counter_and_narrow_accumulator(small_resnet, calib_batches, 
     ig12 = export_int_graph(qm, RequantConfig(acc_bits=12))
     e12 = NumpyEngine(ig12); e12.predict(batch.numpy())
     assert sum(e12.saturations.values()) > 0
+
+
+def test_input_quantization_matches_the_simulator_on_rounding_ties():
+    """The engine must quantize the input exactly as the fake-quant graph does, ties included.
+
+    A box average of 8-bit pixels -- the low-resolution input of a super-resolution network -- sits on a
+    quarter-LSB grid against a 1/255 input scale, so a large share of its values fall on rounding ties. The
+    engine used to divide in float64 while the simulator divides in float32; both round half to even, but
+    they split those ties differently, and 7.2% of the input codes differed before a single kernel had run
+    (found by E17, the dense-output measurement). The guard below asserts that the old path really would
+    disagree here, so the test cannot pass vacuously.
+    """
+    torch.manual_seed(0)
+    m = torch.nn.Sequential(torch.nn.Conv2d(3, 4, 3, padding=1), torch.nn.ReLU()).eval()
+    rng = np.random.default_rng(0)
+    hr = rng.integers(0, 256, size=(4, 3, 16, 16)).astype(np.float32) / 255.0
+    lr = torch.from_numpy(hr.reshape(4, 3, 8, 2, 8, 2).mean(axis=(3, 5)).astype(np.float32))
+    lr[0, 0, 0, 0] = 0.0; lr[0, 0, 0, 1] = 1.0          # pin the observer range to [0,1] -> scale 1/255
+
+    qm = prepare(m); calibrate(qm, [lr])
+    ig = export_int_graph(qm, input_shape=(3, 8, 8))
+    q = ig.input_q
+
+    fq = next(mod for mod in qm.modules() if isinstance(mod, FakeQuantAct))
+    s_t, z_t = fq.qparams()
+    with torch.no_grad():
+        sim = (torch.round(lr / s_t) + z_t).clamp(q.qmin, q.qmax).numpy().astype(np.int64)
+
+    float64_path = np.clip(np.rint(lr.numpy().astype(np.float64) / q.scale) + q.zero_point,
+                           q.qmin, q.qmax).astype(np.int64)
+    assert (float64_path != sim).mean() > 0.01, "test is vacuous: this input does not exercise the tie split"
+    assert np.array_equal(quantize_input(lr.numpy(), q), sim)
 
 
 def test_cpp_engine_bit_exact(small_resnet, small_silu_resnet, small_mobilenet, calib_batches, batch):
