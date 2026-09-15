@@ -1,8 +1,8 @@
 % Draft for IEEE Embedded Systems Letters (4 pages incl. figures and references).
 % Numbers, tables and figures come from results/*.json in https://github.com/sokldjs554/npuloop
 %   python paper/make_figs.py        # regenerates fig1/fig2
-%   python paper/make_tables.py      # regenerates tab1/tab2/tab3 row files
-% Build: pdflatex npuloop_esl && bibtex-free (references are inline)
+%   python paper/make_tables.py      # regenerates tab1/tab2/tab3
+% Build: pdflatex npuloop_esl (twice; references are inline, no bibtex)
 \documentclass[journal]{IEEEtran}
 
 \usepackage{graphicx}
@@ -10,6 +10,9 @@
 \usepackage{booktabs}
 \usepackage{url}
 \usepackage[hidelinks]{hyperref}
+
+\newcommand{\finding}[1]{\smallskip\noindent\textbf{Finding~#1.}~}
+\newcommand{\implication}{\emph{Implication.}~}
 
 \begin{document}
 
@@ -27,19 +30,20 @@
 \maketitle
 
 \begin{abstract}
-Simulated (``fake'') quantization is how INT8 deployment decisions are made: the network is evaluated in floating point with
-quantize--dequantize nodes inserted, and the resulting accuracy is taken as a proxy for what the integer target will produce.
-We measure how good that proxy is, separately for accuracy and for tensors, using an integer engine that is bit-exact with the
-TensorFlow Lite reference kernels. Over six networks (CNN, depthwise, concatenation-branch, transformer) and two quantization
-schemes, on full test splits, the accuracy proxy holds: every fake-versus-integer difference is within $0.20$~pp and all twelve
-$95\%$ confidence intervals contain zero. The tensors do not: $28.5$--$72.7\%$ of the output codes differ, and $95$--$100\%$ of
-the images have at least one differing code. A teacher-forced decomposition attributes the divergence per operator: convolution,
-linear and pooling each disagree on less than $1\%$ of their codes, while integer LayerNorm disagrees on $24.8\%$. Making the
-simulator integer-faithful at LayerNorm removes that source entirely ($24.77\% \rightarrow 0.00\%$) yet moves the propagated
-output-code mismatch only from $72.7\%$ to $65.7\%$, which shows that a simulator cannot be repaired into a source of bit-accurate
-vectors one operator at a time. We also quantify a requantization choice that the proxy hides: replacing rounding with truncation
-costs $0.90$--$3.37$~pp in all 18 (model, seed, mode) combinations, and while the sign of that cost is seed-robust its magnitude
-is not.
+INT8 deployment decisions are made on a simulator. The network runs in floating point with
+quantize--dequantize (``fake-quantization'') nodes inserted, and its accuracy stands in for the accuracy
+of the integer target. We measure how far that stand-in holds --- for accuracy and for tensors separately
+--- against an integer engine that is bit-exact with the TensorFlow Lite reference kernels. On six
+networks, two quantization schemes and complete test splits, it holds for accuracy: every
+fake-versus-integer difference is within $0.20$~pp and all twelve $95\%$ confidence intervals contain
+zero. It fails for tensors: $28.5$--$72.7\%$ of the output codes differ, on $95$--$100\%$ of the images.
+Teacher forcing attributes the divergence per operator. Convolution, linear and pooling each disagree on
+under $1\%$ of their own codes, while integer LayerNorm disagrees on $24.8\%$. Making the simulator
+integer-faithful at LayerNorm removes that source entirely ($24.77\% \rightarrow 0.00\%$) but moves the
+propagated output mismatch only from $72.7\%$ to $65.7\%$: a simulator cannot be repaired into a source of
+bit-accurate vectors one operator at a time. We also price a requantization choice the accuracy proxy
+cannot see --- replacing rounding with truncation costs $0.90$--$3.37$~pp in all 18 (model, seed, mode)
+combinations, and the sign of that cost transfers across seeds while its magnitude does not.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -47,203 +51,251 @@ Quantization, integer arithmetic, embedded inference, neural processing units, r
 \end{IEEEkeywords}
 
 \section{Introduction}
-\IEEEPARstart{D}{eploying} a network on an INT8 accelerator involves two different programs. The one used for decisions is a
-floating-point graph with quantize--dequantize (``fake-quantization'') nodes, whose accuracy is reported as the quantized
-accuracy~\cite{jacob2018,krishnamoorthi2018}. The one that runs on the device is an integer program: int8 weights, an int32
-accumulator, and a fixed-point multiply-and-shift requantization~\cite{gemmlowp}. The two are assumed to be interchangeable,
-and for accuracy they largely are~\cite{nagel2021}.
+\IEEEPARstart{T}{wo} programs decide an INT8 deployment. The one that answers questions is a
+floating-point graph with quantize--dequantize (``fake-quantization'') nodes, whose accuracy is reported as
+the quantized accuracy~\cite{jacob2018,krishnamoorthi2018}. The one that ships is an integer program: int8
+weights, an int32 accumulator, and a fixed-point multiply-and-shift requantization~\cite{gemmlowp}.
+Practice treats the two as interchangeable, and for accuracy they largely are~\cite{nagel2021}.
 
-Accuracy is not the only thing asked of the simulator. Silicon bring-up and compiler validation need \emph{golden vectors}: the
-exact integer tensors the device must produce. Debugging a post-training quantization regression needs to know \emph{which}
-operator started the divergence. Both are tensor questions, and whether the simulator answers them has not, to our knowledge,
-been measured.
+Accuracy is not all that is asked of the simulator. Silicon bring-up and compiler validation need
+\emph{golden vectors}: the exact integer tensors the device must produce. Triaging a post-training
+quantization regression needs to know \emph{which} operator started the divergence. Both are tensor
+questions, and to our knowledge neither has been measured. We ask three.
+\textbf{RQ1:} does agreement on accuracy imply agreement on tensors?
+\textbf{RQ2:} which operators create the divergence, and does removing the largest one close it?
+\textbf{RQ3:} what does the accuracy proxy fail to price?
 
-This letter measures it. Our contributions are: (i) a per-operator decomposition of the fake-quantization-to-integer gap into a
-\emph{local} component (what an operator's own integer arithmetic contributes, isolated by teacher forcing) and a
-\emph{propagated} component (what survives end-to-end execution), reported with paired standard errors on full test splits;
-(ii) the observation that accuracy agreement and tensor agreement are decoupled by two orders of magnitude, across CNNs,
-depthwise and concatenation topologies, a transformer, and a second dataset; (iii) a direct test of the natural repair --- making
-the simulator use the device's integer arithmetic at the single worst operator --- which closes the local gap completely and the
-propagated gap only slightly; and (iv) a seeded measurement of one requantization choice the accuracy proxy cannot see.
+Answering them needs a decomposition that current layer-wise error analyses do not provide: separating what
+an operator's own integer arithmetic contributes (\emph{local} mismatch, isolated by teacher forcing) from
+what survives end-to-end execution (\emph{propagated} mismatch). That decomposition, reported with paired
+standard errors on full test splits, is this letter's methodological contribution; Findings~1--5 are its
+empirical ones.
 
 \begin{table*}[!t]
-\caption{Fake quantization versus bit-exact integer execution, complete test splits. \textsc{pc}: per-channel weights,
-\textsc{pt}: per-tensor. $\Delta$ is (integer $-$ fake) top-1 on the same images, with its paired standard error.
-``codes'' is the fraction of output logit codes that differ; ``imgs'' the fraction of images with at least one differing code.}
+\caption{Fake quantization versus bit-exact integer execution, complete test splits. \textsc{pc}: per-channel
+weights, \textsc{pt}: per-tensor. $\Delta$ is (integer $-$ fake) top-1 on the same images, with its paired
+standard error. ``codes'' is the fraction of output logit codes that differ; ``imgs'' the fraction of images
+with at least one differing code.}
 \label{tab:fidelity}
 \centering
 \footnotesize
 \input{tab1_rows}
 \end{table*}
 
-\section{Method}
+\section{Background and Related Work}
+A fake-quantization graph rounds and clips a tensor to the quantization grid and then returns to float, so
+every operator still runs in float32. The integer program instead keeps int8 codes end to end and rescales
+with a Q31 multiplier and a shift~\cite{jacob2018,gemmlowp}. The two therefore agree on \emph{intent} and
+are free to disagree on every least-significant bit.
 
-\subsection{Integer engine and its validation}
-A calibrated fake-quantization graph is exported to an integer graph: int8 weights, int32 biases, and a per-output-channel Q31
-multiplier and shift. Execution follows the gemmlowp/TensorFlow Lite semantics of
-\texttt{MultiplyByQuantizedMultiplier}~\cite{gemmlowp}, including the saturating rounding doubling high multiply and the rounding
-divide by a power of two. Two independent implementations (NumPy and C++) are required by the test suite to agree on
-\emph{every} intermediate tensor, and a third, Python-free C++ executor reproduces the same codes from a serialized file.
+MQBench~\cite{mqbench} measures the gap between academic quantization and deployable backends and reports it
+as accuracy. The quantization white papers~\cite{nagel2021,krishnamoorthi2018} treat fake quantization as the
+simulation of the integer pipeline. Layer-wise error analyses in deployment toolchains quantify how far a
+quantized layer is from its \emph{float} counterpart. Our measurement is different in kind: how far the
+\emph{simulator} is from the \emph{integer execution} the device performs, in codes rather than in
+signal-to-noise ratio. Integer-only transformer inference has established integer LayerNorm and softmax
+kernels~\cite{ibert,fqvit}; our contribution on that operator is not the kernel but the size of its
+disagreement with the simulator, and the demonstration that fixing it is not sufficient. Accumulator width has
+been studied as a training-time constraint~\cite{a2q}; the axis measured here is instead the rounding of the
+requantization step, a pure implementation choice.
 
-The engine is validated against an external oracle rather than against itself. Taking a TensorFlow Lite full-integer model and
-building the integer graph from \emph{its} scales, zero-points, weights and biases, the two agree on all tensors for
-$1000/1000$ images when convolution and pooling use the legacy double rounding and the fully-connected layer uses single
-rounding. For calibration of how tight that criterion is: TensorFlow Lite's own optimized delegate and its reference kernels
-differ on $155/1000$ images of the same model.
+\section{Measurement Setup}
 
-\subsection{Local and propagated divergence}
-For an image, let $f_n$ be the codes the fake-quantization graph produces at node $n$ (its quantizer output, converted to
-integer codes) and $i_n$ the codes the integer engine produces when run end-to-end. The \emph{propagated} mismatch at $n$ is the
-fraction of elements with $f_n \neq i_n$. The \emph{local} mismatch feeds node $n$'s integer kernel the fake-quantization codes
-of its inputs (teacher forcing) and compares only its own output. Local mismatch isolates what an operator's integer arithmetic
-contributes; propagated mismatch shows how far that contribution travels.
+\subsection{Integer engine and external validation}
+A calibrated fake-quantization graph is exported to an integer graph: int8 weights, int32 biases, and a
+per-output-channel Q31 multiplier and shift. Execution follows the gemmlowp/TensorFlow Lite semantics of
+\texttt{MultiplyByQuantizedMultiplier}~\cite{gemmlowp}, including the saturating rounding doubling high
+multiply and the rounding divide by a power of two. Two independent implementations (NumPy and C++) must
+agree on \emph{every} intermediate tensor, and a third, Python-free C++ executor reproduces the same codes
+from a serialized file.
 
-\subsection{Statistics}
-Accuracy differences are paired: the same images are evaluated three times (float, fake-quantization, integer). We report the
-mean of the per-image difference in correctness together with its standard error $s/\sqrt{n}$ and a $95\%$ Wald interval. All
-accuracy columns use the complete test split ($10{,}000$ images for CIFAR-10, $3{,}925$ for Imagenette); the per-node
-decomposition uses a fixed batch of $250$ images ($125$ for Imagenette).
+We validate the engine against an external oracle, not against itself. Building the integer graph from a
+TensorFlow Lite full-integer model's own scales, zero-points, weights and biases, the two agree on all
+tensors for $1000/1000$ images when convolution and pooling use the legacy double rounding and the
+fully-connected layer uses single rounding. For calibration of how tight that criterion is: TensorFlow Lite's
+own optimized delegate and its reference kernels differ on $155/1000$ images of the same model.
 
-\subsection{Setup}
-Five CIFAR-10 networks --- ResNet-20 with ReLU and with SiLU, MobileNetV2-0.5 (depthwise), a concatenation-branch
-Inception-style CNN, and a ViT-128/6 (12 attention blocks, 13 LayerNorms) --- and one ResNet-20 trained on Imagenette at
-$128\times128$. Two post-training schemes: per-channel weights with asymmetric activations (\textsc{pc}) and per-tensor weights
-(\textsc{pt}), both calibrated on $512$ training images. Training and evaluation run on CPU; every number in this letter is
-produced by a script from a committed results file.
+\subsection{Local and propagated mismatch}
+For one image, let $f_n$ be the codes the fake-quantization graph produces at node $n$ (its quantizer output,
+converted to integer codes) and $i_n$ the codes the integer engine produces when run end-to-end. The
+\emph{propagated} mismatch at $n$ is the fraction of elements with $f_n \neq i_n$. The \emph{local} mismatch
+feeds node $n$'s integer kernel the fake-quantization codes of its inputs (teacher forcing) and compares only
+its own output. Local mismatch isolates what an operator's integer arithmetic contributes; propagated
+mismatch shows how far that contribution travels.
+
+\subsection{Statistics, models and schemes}
+Accuracy differences are paired: the same images are evaluated three times (float, fake-quantization,
+integer). We report the mean per-image difference in correctness with its standard error $s/\sqrt{n}$ and a
+$95\%$ Wald interval. Accuracy columns use the complete test split ($10{,}000$ images for CIFAR-10, $3{,}925$
+for Imagenette); the per-node decomposition uses a fixed batch of $250$ images ($125$ for Imagenette).
+
+Five CIFAR-10 networks --- ResNet-20 with ReLU and with SiLU, MobileNetV2-0.5 (depthwise), a
+concatenation-branch Inception-style CNN, and a ViT-128/6 (12 attention blocks, 13 LayerNorms) --- and one
+ResNet-20 trained on Imagenette at $128\times128$. Two post-training schemes: per-channel weights with
+asymmetric activations (\textsc{pc}) and per-tensor weights (\textsc{pt}), both calibrated on $512$ training
+images. Training and evaluation run on CPU; every number below is emitted by a script from a committed
+results file.
 
 \section{Results}
 
-\subsection{Accuracy is faithful, tensors are not}
-Table~\ref{tab:fidelity} is the main measurement. Across six networks and two schemes, the largest fake-versus-integer accuracy
-difference is $0.20$~pp, the largest $|\Delta|/\mathrm{SE}$ is $1.6$, and all twelve confidence intervals contain zero: at these
-sample sizes the accuracy proxy is not distinguishable from exact. Image-level top-1 agreement is $97.9$--$99.7\%$.
+\subsection{RQ1: accuracy agrees, tensors do not}
+Table~\ref{tab:fidelity} is the main measurement. The largest fake-versus-integer accuracy difference is
+$0.20$~pp, the largest $|\Delta|/\mathrm{SE}$ is $1.6$, and all twelve confidence intervals contain zero. At
+these sample sizes the accuracy proxy is not distinguishable from exact, and image-level top-1 agreement is
+$97.9$--$99.7\%$. The same rows disagree on tensors: between $28.5\%$ (Inception-32) and $72.7\%$
+(ViT-128/6) of the output logit codes differ, on $95$--$100\%$ of the images. The transformer is the extreme
+case but not a special case --- the CNNs sit at $50$--$63\%$ and the larger-input Imagenette model at $36\%$.
 
-The same rows disagree on tensors. Between $28.5\%$ (Inception-32) and $72.7\%$ (ViT-128/6) of the output logit codes differ,
-and at least one code differs on $95$--$100\%$ of the images. The transformer is the extreme case but not a special case: the
-CNNs sit at $50$--$63\%$, and the larger-input Imagenette model at $36\%$. Accuracy agreement of $99\%$ therefore says nothing
-about whether the simulator can supply a verification vector.
+\finding{1} Accuracy agreement and tensor agreement are decoupled by more than two orders of magnitude, on
+every network and both schemes.
+
+\implication A reported $99\%$ accuracy agreement is no evidence that the simulator can supply a
+verification vector.
 
 \begin{figure}[!t]
 \centering
 \includegraphics[width=\columnwidth]{fig1_decomposition.pdf}
-\caption{Per-node code mismatch, \textsc{pc} scheme. Local (teacher-forced) mismatch is below $1\%$ for every operator except
-LayerNorm; propagated mismatch rises from the first convolution to $50$--$73\%$ at the output. Log scale; nodes with zero local
-mismatch (lookup-table activations, residual additions) are not drawn.}
+\caption{Per-node code mismatch, \textsc{pc} scheme. Local (teacher-forced) mismatch is below $1\%$ for every
+operator except LayerNorm; propagated mismatch rises from the first convolution to $50$--$73\%$ at the output.
+Log scale; nodes with zero local mismatch (lookup-table activations, residual additions) are not drawn.}
 \label{fig:decomposition}
 \end{figure}
 
-\subsection{Where the divergence is born}
-Fig.~\ref{fig:decomposition} separates the two components. Local mismatch is small and flat: convolution disagrees on
-$0.02$--$0.93\%$ of its codes, linear on $0.03$--$0.96\%$, average pooling on $0.1$--$2.7\%$ (rounding ties), and the int8
-lookup-table activations on exactly $0\%$. Every one of these is a $\pm 1$ least-significant-bit disagreement. Propagated
-mismatch, by contrast, rises monotonically from the first convolution --- the first divergence is that node in all twelve rows ---
-and reaches $28$--$73\%$ at the output.
+\subsection{RQ2: where the divergence is born}
+Fig.~\ref{fig:decomposition} separates the two components. Local mismatch is small and flat: convolution
+disagrees on $0.02$--$0.93\%$ of its codes, linear on $0.03$--$0.96\%$, average pooling on $0.1$--$2.7\%$
+(rounding ties), and the int8 lookup-table activations on exactly $0\%$. Every one of these is a $\pm 1$
+least-significant-bit disagreement. Propagated mismatch instead rises monotonically from the first
+convolution --- the first divergence is that node in all twelve rows --- and reaches $28$--$73\%$ at the
+output.
 
-The transformer adds one operator that is not small: integer LayerNorm disagrees with its floating-point counterpart on
-$24.8\%$ of its codes (maximum $26.2\%$ over the 13 instances). The integer implementation normalizes with an int64 sum and an
-exact integer square root, while the simulator computes in float32 and then snaps to the grid, so roughly one element in four
-lands on the other side of a rounding boundary. A practitioner porting a transformer to INT8 should suspect LayerNorm first.
+One operator is not small. Integer LayerNorm disagrees with its floating-point counterpart on $24.8\%$ of its
+codes, with a maximum of $26.2\%$ over the 13 instances. The integer implementation normalizes with an int64
+sum and an exact integer square root, while the simulator computes in float32 and then snaps to the grid, so
+roughly one element in four lands on the other side of a rounding boundary.
+
+\finding{2} Outside LayerNorm, every operator's own integer arithmetic disagrees on under $1\%$ of its codes,
+and every such disagreement is $\pm 1$ LSB. The end-to-end gap is therefore grown by propagation, not
+contributed by any one kernel.
+
+\finding{3} Integer LayerNorm is the single large local source, two orders of magnitude above every other
+operator.
+
+\implication When porting a transformer to INT8, suspect LayerNorm first and expect $\pm 1$ LSB everywhere
+else.
 
 \begin{table}[!t]
-\caption{Making the simulator integer-faithful at LayerNorm (ViT-128/6, $10{,}000$ images). The integer program is unchanged
-between the two rows of each scheme; only the simulator's LayerNorm differs. The mean absolute logit difference
-falls from $0.119$ to $0.091$ (\textsc{pc}) and from $0.118$ to $0.093$ (\textsc{pt}).}
+\caption{Making the simulator integer-faithful at LayerNorm (ViT-128/6, $10{,}000$ images). The integer
+program is unchanged between the two rows of each scheme; only the simulator's LayerNorm differs. The mean
+absolute logit difference falls from $0.119$ to $0.091$ (\textsc{pc}) and from $0.118$ to $0.093$
+(\textsc{pt}).}
 \label{tab:layernorm}
 \centering
 \footnotesize
 \input{tab2_rows}
 \end{table}
 
-\subsection{Removing the largest local source does not close the gap}
-If the divergence were a sum of per-operator errors, removing the largest one would help proportionally. We test this directly:
-the simulator's LayerNorm is replaced by a module that computes the engine's arithmetic on the input codes, bit-exact by
-construction, while the exported integer program is unchanged (the experiment asserts this).
+\subsection{RQ2: removing the largest local source}
+If the divergence were a sum of per-operator errors, removing the largest would help proportionally. We test
+this directly: the simulator's LayerNorm is replaced by a module that computes the engine's arithmetic on the
+input codes, bit-exact by construction, while the exported integer program is unchanged (the experiment
+asserts this).
 
-Table~\ref{tab:layernorm} shows the outcome. Local LayerNorm mismatch goes from $24.77\%$ to exactly $0.00\%$, and the mean
-absolute logit difference improves by about $23\%$. The propagated output-code mismatch moves only from $72.7\%$ to $65.7\%$
-(per-tensor: $72.6\% \rightarrow 66.0\%$). Removing the single largest local source --- an operator responsible for two orders of
-magnitude more local disagreement than any other --- recovers about a tenth of the propagated gap, because what remains is the
-amplification of $\pm 1$ LSB events from operators whose individual local mismatch is below $1\%$. Accuracy moves within about
-two paired standard errors in either direction and cannot be read as an improvement.
+Table~\ref{tab:layernorm} shows the outcome. Local LayerNorm mismatch goes from $24.77\%$ to exactly
+$0.00\%$, and the mean absolute logit difference improves by about $23\%$. The propagated output-code
+mismatch moves only from $72.7\%$ to $65.7\%$ (per-tensor: $72.6\% \rightarrow 66.0\%$). Accuracy moves
+within about two paired standard errors in either direction and cannot be read as an improvement.
 
-The practical consequence is that bit-accurate verification vectors have to come from an integer implementation. Repairing a
-floating-point simulator operator by operator converges too slowly to be a substitute.
+\finding{4} Eliminating the single largest local source recovers about a tenth of the propagated gap, because
+what remains is the amplification of $\pm 1$ LSB events from operators that individually disagree on under
+$1\%$ of their codes.
+
+\implication Golden vectors have to come from an integer implementation validated against an external
+reference. Repairing a floating-point simulator operator by operator converges too slowly to substitute for
+one.
 
 \begin{figure}[!t]
 \centering
 \includegraphics[width=\columnwidth]{fig2_rounding.pdf}
-\caption{Top-1 change against the reference requantization rounding, complete test split, three independently trained
-checkpoints per network (error bars: paired standard error). The biased modes lose in every combination; how much they lose
-varies by seed.}
+\caption{Top-1 change against the reference requantization rounding, complete test split, three independently
+trained checkpoints per network (error bars: paired standard error). The biased modes lose in every
+combination; how much they lose varies by seed.}
 \label{fig:rounding}
 \end{figure}
 
 \begin{table}[!t]
-\caption{Rounding-mode cost against the reference implementation, mean $\pm$ standard deviation over three seeds (pp).}
+\caption{Rounding-mode cost against the reference implementation, mean $\pm$ standard deviation over three
+seeds (pp).}
 \label{tab:rounding}
 \centering
 \footnotesize
 \input{tab3_rows}
 \end{table}
 
-\subsection{A cost the accuracy proxy hides}
-The requantization multiply-and-shift ends in a rounding step, and an implementation may be tempted to replace it with a plain
-arithmetic shift. Fig.~\ref{fig:rounding} and Table~\ref{tab:rounding} measure that choice against the reference implementation
-on full test splits, with three independently trained checkpoints per network.
+\subsection{RQ3: a cost the accuracy proxy hides}
+The requantization multiply-and-shift ends in a rounding step, and an implementation may be tempted to replace
+it with a plain arithmetic shift. Fig.~\ref{fig:rounding} and Table~\ref{tab:rounding} price that choice
+against the reference implementation on full test splits, with three independently trained checkpoints per
+network.
 
-Two results. First, the \emph{sign and significance} are seed-robust: \texttt{truncate} and \texttt{floor} are worse than the
-reference in all 18 (model, seed, mode) combinations, by $0.90$--$3.37$~pp, with $|\Delta|/\mathrm{SE}$ between $4.4$ and
-$11.8$; the alternative single-rounding and round-half-to-even paths stay within noise ($|\Delta| \leq 0.13$~pp). Second, the
-\emph{magnitude} is not: for ResNet-20 SiLU the cost of \texttt{truncate} ranges from $1.36$ to $2.98$~pp across three seeds, a
-seed standard deviation equal to $37\%$ of the effect, while ResNet-20 ReLU stays within a tenth of its effect. Which of the two
-biased modes is worse is a property of the network, not of the arithmetic: \texttt{floor} loses more on all three ResNet-20 ReLU
-seeds, \texttt{truncate} loses more on all three MobileNetV2 seeds. A single-seed number should not be quoted as the cost of a
-rounding mode.
+\texttt{truncate} and \texttt{floor} are worse than the reference in all 18 (model, seed, mode) combinations,
+by $0.90$--$3.37$~pp, with $|\Delta|/\mathrm{SE}$ between $4.4$ and $11.8$; the alternative single-rounding
+and round-half-to-even paths stay within noise ($|\Delta| \leq 0.13$~pp). The magnitude does not transfer. For
+ResNet-20 SiLU the cost of \texttt{truncate} ranges from $1.36$ to $2.98$~pp across three seeds, a seed
+standard deviation equal to $37\%$ of the effect, while ResNet-20 ReLU stays within a tenth of its effect.
+Which biased mode is worse is a property of the network, not of the arithmetic: \texttt{floor} loses more on
+all three ResNet-20 ReLU seeds, \texttt{truncate} on all three MobileNetV2 seeds.
 
-\section{Related Work}
-MQBench~\cite{mqbench} measures the gap between academic quantization and deployable backends, reporting it as accuracy;
-the quantization white papers~\cite{nagel2021,krishnamoorthi2018} treat fake quantization as the simulation of the integer
-pipeline. Layer-wise error analyses in deployment toolchains quantify how far a quantized layer is from its \emph{float}
-counterpart. The measurement here is different in kind: how far the \emph{simulator} is from the \emph{integer execution} that
-the device performs, in codes rather than in signal-to-noise ratio. Integer-only transformer inference has established integer
-LayerNorm and softmax kernels~\cite{ibert,fqvit}; our contribution on that operator is not the kernel but the quantification of
-its disagreement with the simulator, and the demonstration that fixing it is not sufficient. Accumulator width has been studied
-as a training-time constraint~\cite{a2q}; the axis measured here is instead the rounding of the requantization step, which is a
-pure implementation choice.
+\finding{5} The sign and significance of a rounding-mode cost are seed-robust; its magnitude is not, varying
+by up to $37\%$ of the effect across three seeds of the same architecture.
 
-\section{Limitations}
-The networks are CIFAR-10 scale plus one Imagenette model at $128\times128$; the conclusions are about the structure of the
-divergence rather than its exact size on ImageNet-scale graphs. Three seeds cover the rounding axis only; the remaining
-measurements use one checkpoint per network. The twelve accuracy comparisons in Table~\ref{tab:fidelity} and the four in
-Table~\ref{tab:layernorm} are not corrected for multiple comparisons (over all sixteen, the largest $|\Delta|/\mathrm{SE}$ is
-$2.2$). The external bit-exactness check covers convolution, pooling and fully-connected layers; depthwise convolution,
-element-wise addition and softmax are not covered by it.
+\implication Do not quote a single-seed number as the cost of a rounding mode.
 
-\section{Reproducibility}
-Every number in this letter is emitted by a script from a committed result file, and the scripts, the trained checkpoints and
-those result files are public. \texttt{python paper/make\_tables.py} regenerates Tables~\ref{tab:fidelity}--\ref{tab:rounding}
-and \texttt{python paper/make\_figs.py} regenerates Figs.~\ref{fig:decomposition}--\ref{fig:rounding}; a continuous-integration
-job re-runs the generators on every commit and fails if a committed table differs from the one the results imply. The
-measurements themselves are \texttt{experiments/e15\_fidelity.py} (Table~\ref{tab:fidelity} and Fig.~\ref{fig:decomposition}),
+\section{Threats to Validity}
+\emph{External.} The networks are CIFAR-10 scale plus one Imagenette model at $128\times128$, and all six are
+classifiers. The conclusions are about the structure of the divergence rather than its exact size on
+ImageNet-scale graphs, and a dense-output task --- where the tensor, not an argmax over it, is the deliverable
+--- would expose the tensor gap more directly than accuracy does here.
+
+\emph{Construct.} Local mismatch is teacher-forced, so it measures an operator's arithmetic in isolation and
+not its interaction with upstream error; the propagated column is what captures that interaction.
+
+\emph{Conclusion.} The twelve accuracy comparisons in Table~\ref{tab:fidelity} and the four in
+Table~\ref{tab:layernorm} are not corrected for multiple comparisons; over all sixteen the largest
+$|\Delta|/\mathrm{SE}$ is $2.2$. Three seeds cover the rounding axis only, and the remaining measurements use
+one checkpoint per network.
+
+\emph{Internal.} The external bit-exactness check covers convolution, pooling and fully-connected layers;
+depthwise convolution, element-wise addition and softmax are not covered by it.
+
+\section{Artifact Availability}
+Every number is emitted by a script from a committed result file, and the scripts, the trained checkpoints and
+those result files are public. \texttt{make\_tables.py} regenerates
+Tables~\ref{tab:fidelity}--\ref{tab:rounding} and \texttt{make\_figs.py} regenerates
+Figs.~\ref{fig:decomposition}--\ref{fig:rounding}; a continuous-integration job re-runs the generators on every
+commit and fails if a committed table differs from the one the results imply. The measurements are
+\texttt{e15\_fidelity.py} (Table~\ref{tab:fidelity}, Fig.~\ref{fig:decomposition}),
 \texttt{e16\_ln\_emulation.py} (Table~\ref{tab:layernorm}) and \texttt{e14\_rounding\_seeds.py}
-(Fig.~\ref{fig:rounding}, Table~\ref{tab:rounding}); the external bit-exactness check is \texttt{e11\_tflite\_crosscheck.py}.
-One caveat applies to the seeded measurement: the trainer's seed controlled data order but not weight initialization when these
-checkpoints were produced, so the three replicates are independent draws that the same command will not reproduce bit for bit.
+(Fig.~\ref{fig:rounding}, Table~\ref{tab:rounding}); the external check is \texttt{e11\_tflite\_crosscheck.py}.
+One caveat applies to the seeded measurement: the trainer's seed controlled data order but not weight
+initialization when these checkpoints were produced, so the three replicates are independent draws that the
+same command will not reproduce bit for bit.
 
 \section{Conclusion}
-Simulated quantization predicts INT8 accuracy well and predicts INT8 tensors badly, and the two facts are independent. The gap
-is not carried by any single operator: it is born as $\pm 1$ LSB events in operators that individually disagree on less than
-$1\%$ of their codes, and it is grown by propagation, which is why removing the worst local source recovers only a tenth of it.
-Teams that need golden vectors should generate them from an integer implementation validated against an external reference, and
-teams that change a requantization detail should measure it across seeds, because its magnitude --- unlike its sign --- does not
-transfer.
+Simulated quantization predicts INT8 accuracy well and INT8 tensors badly, and the two facts are independent.
+The gap is not carried by any single operator: it is born as $\pm 1$ LSB events in operators that individually
+disagree on under $1\%$ of their codes, and grown by propagation, which is why removing the worst local source
+recovers only a tenth of it. Teams that need golden vectors should generate them from an integer implementation
+validated against an external reference, and teams that change a requantization detail should measure it across
+seeds, because its magnitude --- unlike its sign --- does not transfer.
 
 \section*{Acknowledgment}
 % IEEE requires disclosure of AI-assisted content; the wording is the author's to choose.
-The author used an AI coding assistant (Claude Code) while preparing this manuscript and is responsible for all of its content.
+The author used an AI coding assistant (Claude Code) while preparing this manuscript and is responsible for all
+of its content.
 
-% balance the final page: references 5-8 start the right column
-\IEEEtriggeratref{5}
+% balance the final page: references 3-8 start the right column
+\IEEEtriggeratref{3}
 \begin{thebibliography}{10}
 \bibitem{jacob2018} B.~Jacob \emph{et al.}, ``Quantization and training of neural networks for efficient integer-arithmetic-only
 inference,'' in \emph{Proc. IEEE/CVF Conf. Comput. Vis. Pattern Recognit. (CVPR)}, 2018, pp. 2704--2713.

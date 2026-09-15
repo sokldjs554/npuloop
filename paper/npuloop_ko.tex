@@ -2,6 +2,7 @@
 %
 % IEEE Embedded Systems Letters는 영문만 받습니다. 투고 원고는 npuloop_esl.tex이고, 이 파일은 같은
 % 내용의 한국어판 -- 읽기용이자 국내 학술대회(대한전자공학회·KIISE·KIPS 등)로 돌릴 때의 출발점입니다.
+% 국내 관례에 맞춰 장 번호는 아라비아 숫자, 구성은 서론-관련연구-방법-결과-결론, 끝에 영문 초록을 둡니다.
 % 두 파일의 수치는 같은 results/*.json에서 같은 생성기로 나오므로 서로 어긋날 수 없습니다.
 %
 %   python paper/make_tables.py --lang ko   # -> tab{1,2,3}_rows_ko.tex
@@ -9,9 +10,10 @@
 %   cd paper && lualatex npuloop_ko && lualatex npuloop_ko
 %
 % 엔진은 lualatex입니다(한글 조판에 luatexko를 씁니다). pdflatex로는 빌드되지 않습니다.
-% IEEEtran measures the Type1 Times family (ptm) while the class itself loads -- before any package
-% can run -- and under Unicode (TU) encoding that family does not exist.  Declaring it here, ahead of
-% \documentclass, lets the class take its metrics from real Times instead of a silent substitute.
+
+% IEEEtran은 클래스를 읽는 동안 Type1 Times(ptm)를 재는데 -- 어떤 패키지도 아직 못 올라온 시점입니다 --
+% 유니코드(TU) 인코딩에는 그 패밀리가 없습니다. \documentclass 앞에서 선언해 두면 클래스가 대체 글꼴이
+% 아니라 진짜 Times의 치수를 재게 됩니다.
 \RequirePackage{fontspec}
 \DeclareFontFamily{TU}{ptm}{}
 \DeclareFontShape{TU}{ptm}{m}{n}{<->"[texgyretermes-regular.otf]"}{}
@@ -26,17 +28,16 @@
 \setmainfont{TeX Gyre Termes}          % fontspec 기본값(Latin Modern) 대신 IEEEtran과 같은 Times 계열
 \setsansfont{TeX Gyre Heros}
 \setmonofont{TeX Gyre Cursor}[Scale=MatchLowercase]
-% Hangul has no italic and no small caps: IEEEtran's italic subsection heads become Gothic (sans),
-% which is how Korean typography marks them, and \textsc falls back to the upright face.
+% 한글에는 이탤릭도 스몰캡도 없습니다. IEEEtran이 이탤릭을 쓰는 자리는 고딕으로 -- 국문 조판이 강조를
+% 표시하는 방식입니다 -- 넘기고, \textsc는 정체로 떨어지게 합니다.
 \setmainhangulfont{NanumMyeongjo}[ItalicFont=NanumGothic, BoldItalicFont=NanumGothicBold,
                                   SmallCapsFont=NanumMyeongjo]
 \setsanshangulfont{NanumGothic}
 \setmonohangulfont{NanumGothicCoding}[Scale=MatchLowercase]
-% luatexko draws ASCII punctuation with the Hangul font by default, which turns the periods and
-% commas of the English bibliography into CJK-shaped marks.  Korean body text reads fine with
-% Latin punctuation, so switch the feature off for the whole document.
+% luatexko는 ASCII 문장부호를 한글 글꼴로 그리는 것이 기본값이라, 영문 참고문헌의 마침표와 쉼표가
+% CJK 모양으로 나옵니다. 국문 본문은 라틴 문장부호로도 잘 읽히므로 문서 전체에서 끕니다.
 \hangulpunctuations=0
-% no hyphenation points: "gemm-lowp" across a line break misspells the library.
+% 하이픈 자리 없음: 줄바꿈으로 "gemm-lowp"가 되면 라이브러리 이름이 틀립니다.
 \hyphenation{gemmlowp}
 
 \usepackage{graphicx}
@@ -45,8 +46,18 @@
 \usepackage{url}
 \usepackage[hidelinks]{hyperref}
 
+% 국내 학술대회 관례: 장 번호는 아라비아 숫자(1. 서론 / 3.2 ...), 표와 그림은 "표"·"그림".
+\renewcommand{\thesection}{\arabic{section}}
+\renewcommand{\thesubsection}{\thesection.\arabic{subsection}}
+% IEEEtran prints headings from \the...dis, not \the...; its non-compsoc subsection heading is
+% "A.", so redirect it too (\thesectiondis already carries the trailing period).
+\renewcommand{\thesubsectiondis}{\thesectiondis\arabic{subsection}}
 \renewcommand{\figurename}{그림}
 \renewcommand{\tablename}{표}
+\renewcommand{\refname}{참고문헌}
+
+\newcommand{\finding}[1]{\smallskip\noindent\textbf{발견~#1.}~}
+\newcommand{\implication}{\emph{실무 함의.}~}
 
 \begin{document}
 
@@ -62,18 +73,18 @@
 \maketitle
 
 \begin{abstract}
-모의(fake) 양자화는 INT8 배포 판단이 내려지는 방식이다. 부동소수점 그래프에 양자화--역양자화 노드를 끼워 넣어
-평가하고, 그렇게 나온 정확도를 정수 타깃이 낼 정확도의 대리지표로 삼는다. 이 논문은 그 대리지표가 얼마나 좋은지를
-정확도와 텐서에 대해 따로 측정한다. 측정에는 TensorFlow Lite 참조 커널과 비트 단위로 일치하는 정수 엔진을 썼다.
-신경망 6종(CNN, 깊이별 합성곱, 분기-연결, 트랜스포머)과 양자화 방식 2종을 전체 테스트셋에서 비교하면 정확도
-대리지표는 성립한다. 모의 대 정수 정확도 차이는 모두 $0.20$~\%p 이내이고 12개 $95\%$ 신뢰구간이 전부 0을 포함한다.
-텐서는 성립하지 않는다. 출력 코드의 $28.5$--$72.7\%$가 다르고, 이미지의 $95$--$100\%$에서 코드가 최소 하나 다르다.
-교사 강제로 분해하면 격차의 출처가 연산자별로 드러난다. 합성곱·선형·풀링은 각각 자기 코드의 $1\%$ 미만에서만
-어긋나지만 정수 LayerNorm은 $24.8\%$에서 어긋난다. 시뮬레이터의 LayerNorm을 정수에 충실하게 바꾸면 이 원천은 통째로
-사라지지만($24.77\% \rightarrow 0.00\%$) 전파된 출력 코드 불일치는 $72.7\%$에서 $65.7\%$로만 내려간다. 시뮬레이터를
-연산자 하나씩 고쳐서 비트 정확한 벡터의 공급원으로 만들 수는 없다는 뜻이다. 아울러 이 대리지표가 가리는 재양자화
-선택 하나를 정량화한다. 반올림을 절사로 바꾸면 18개 (모델, 시드, 방식) 조합 전부에서 $0.90$--$3.37$~\%p를 잃으며,
-그 손해의 부호는 시드에 강건하지만 크기는 그렇지 않다.
+INT8 배포 판단은 시뮬레이터 위에서 내려진다. 부동소수점 그래프에 양자화--역양자화(``모의 양자화'') 노드를
+끼워 넣어 돌리고, 그 정확도를 정수 타깃의 정확도로 대신 읽는다. 이 논문은 그 대신 읽기가 어디까지
+성립하는지를 정확도와 텐서에 대해 따로 측정한다. 기준은 TensorFlow Lite 참조 커널과 비트 단위로 일치하는
+정수 엔진이다. 신경망 6종, 양자화 방식 2종, 전체 테스트셋에서 정확도는 성립한다. 모의 대 정수 차이는 모두
+$0.20$~\%p 이내이고 12개 $95\%$ 신뢰구간이 전부 0을 포함한다. 텐서는 성립하지 않는다. 출력 코드의
+$28.5$--$72.7\%$가 다르고, 이미지의 $95$--$100\%$에서 코드가 최소 하나 다르다. 교사 강제로 분해하면 격차의
+출처가 연산자별로 드러난다. 합성곱·선형·풀링은 각각 자기 코드의 $1\%$ 미만에서만 어긋나지만 정수 LayerNorm은
+$24.8\%$에서 어긋난다. 시뮬레이터의 LayerNorm을 정수에 충실하게 바꾸면 이 원천은 통째로
+사라지지만($24.77\% \rightarrow 0.00\%$) 전파된 출력 불일치는 $72.7\%$에서 $65.7\%$로만 내려간다.
+시뮬레이터를 연산자 하나씩 고쳐서 비트 정확한 벡터의 공급원으로 만들 수는 없다는 뜻이다. 아울러 정확도
+대리지표가 값을 매기지 못하는 재양자화 선택 하나를 측정한다. 반올림을 절사로 바꾸면 18개 (모델, 시드, 방식)
+조합 전부에서 $0.90$--$3.37$~\%p를 잃으며, 그 손해의 부호는 시드를 넘어 옮겨 가지만 크기는 옮겨 가지 않는다.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -81,24 +92,23 @@
 \end{IEEEkeywords}
 
 \section{서론}
-INT8 가속기에 신경망을 올리는 일은 서로 다른 두 프로그램을 다룬다. 판단에 쓰이는 쪽은 양자화--역양자화(``모의
-양자화'') 노드가 삽입된 부동소수점 그래프이고, 그 정확도가 곧 양자화 정확도로 보고된다~\cite{jacob2018,krishnamoorthi2018}.
-장치에서 실제로 도는 쪽은 정수 프로그램이다. int8 가중치, int32 누산기, 그리고 고정소수점 곱셈-시프트
-재양자화로 이루어진다~\cite{gemmlowp}. 두 프로그램은 서로 바꿔 써도 된다고 가정되며, 정확도에 관한 한 대체로
-그렇다~\cite{nagel2021}.
+INT8 배포는 서로 다른 두 프로그램이 결정한다. 질문에 답하는 쪽은 양자화--역양자화(``모의 양자화'') 노드가
+삽입된 부동소수점 그래프이고, 그 정확도가 곧 양자화 정확도로 보고된다~\cite{jacob2018,krishnamoorthi2018}.
+실제로 출하되는 쪽은 정수 프로그램이다. int8 가중치, int32 누산기, 고정소수점 곱셈-시프트 재양자화로
+이루어진다~\cite{gemmlowp}. 현업은 둘을 바꿔 써도 되는 것으로 다루고, 정확도에 관한 한 대체로 그렇다~\cite{nagel2021}.
 
-그러나 시뮬레이터에 요구되는 것이 정확도뿐인 것은 아니다. 실리콘 브링업과 컴파일러 검증에는 \textbf{골든 벡터}, 곧
-장치가 내놓아야 할 정수 텐서 그 자체가 필요하다. 학습 후 양자화에서 생긴 회귀를 디버깅하려면 \textbf{어느} 연산자에서
-격차가 시작되었는지를 알아야 한다. 둘 다 텐서에 관한 질문이고, 시뮬레이터가 이 질문에 답할 수 있는지는 저자가 아는
-한 측정된 바 없다.
+그러나 시뮬레이터에 요구되는 것이 정확도뿐인 것은 아니다. 실리콘 브링업과 컴파일러 검증에는 \emph{골든 벡터},
+곧 장치가 내놓아야 할 정수 텐서 그 자체가 필요하다. 학습 후 양자화 회귀를 추적하려면 \emph{어느} 연산자에서
+격차가 시작되었는지를 알아야 한다. 둘 다 텐서에 관한 질문이고, 저자가 아는 한 어느 쪽도 측정된 바 없다. 이
+논문은 세 가지를 묻는다.
+\textbf{RQ1:} 정확도가 일치하면 텐서도 일치하는가?
+\textbf{RQ2:} 격차를 만드는 연산자는 무엇이며, 가장 큰 것을 없애면 격차가 닫히는가?
+\textbf{RQ3:} 정확도 대리지표는 무엇에 값을 매기지 못하는가?
 
-이 논문은 그것을 측정한다. 기여는 다음과 같다. (i) 모의 양자화와 정수 실행 사이의 격차를, 교사 강제로 떼어 낸
-\textbf{국소} 성분(연산자 자신의 정수 연산이 만드는 몫)과 종단간 실행에서 살아남는 \textbf{전파} 성분으로 연산자별
-분해하고, 전체 테스트셋에서 대응 표준오차와 함께 보고한다. (ii) 정확도 일치와 텐서 일치가 두 자릿수 규모로 분리되어
-있음을 CNN·깊이별 합성곱·분기 연결 구조·트랜스포머와 두 번째 데이터셋에 걸쳐 보인다. (iii) 가장 자연스러운 수리
-방법 --- 가장 나쁜 연산자 하나에서 시뮬레이터가 장치의 정수 연산을 쓰게 하는 것 --- 을 직접 시험하여, 국소 격차는
-완전히 닫히지만 전파 격차는 거의 닫히지 않음을 보인다. (iv) 정확도 대리지표가 볼 수 없는 재양자화 선택 하나를 시드를
-바꿔 가며 측정한다.
+이 질문들에 답하려면 기존 계층별 오차 분석이 제공하지 않는 분해가 필요하다. 연산자 자신의 정수 연산이 만드는
+몫(\emph{국소} 불일치, 교사 강제로 분리)과 종단간 실행에서 살아남는 몫(\emph{전파} 불일치)을 갈라내는
+분해다. 전체 테스트셋에서 대응 표준오차와 함께 보고하는 이 분해가 이 논문의 방법론적 기여이고, 발견 1--5가
+실험적 기여다.
 
 \begin{table*}[!t]
 \caption{모의 양자화 대 비트 단위로 일치하는 정수 실행, 전체 테스트셋. \textsc{pc}는 채널별 가중치, \textsc{pt}는
@@ -110,50 +120,67 @@ INT8 가속기에 신경망을 올리는 일은 서로 다른 두 프로그램�
 \input{tab1_rows_ko}
 \end{table*}
 
-\section{방법}
+\section{배경 및 관련 연구}
+모의 양자화 그래프는 텐서를 양자화 격자에 맞춰 반올림하고 자른 뒤 다시 부동소수점으로 돌아오므로, 모든 연산자가
+여전히 float32로 돈다. 정수 프로그램은 대신 int8 코드를 끝까지 유지하고 Q31 승수와 시프트로 다시
+스케일한다~\cite{jacob2018,gemmlowp}. 따라서 두 프로그램은 \emph{의도}에서는 일치하고 최하위 비트마다 어긋날
+자유를 갖는다.
 
-\subsection{정수 엔진과 그 검증}
-보정을 마친 모의 양자화 그래프를 정수 그래프로 내보낸다. int8 가중치, int32 편향, 그리고 출력 채널별 Q31 승수와
+MQBench~\cite{mqbench}는 학술 양자화와 배포 가능한 백엔드 사이의 격차를 측정하되 그것을 정확도로 보고한다.
+양자화 백서들~\cite{nagel2021,krishnamoorthi2018}은 모의 양자화를 정수 파이프라인의 시뮬레이션으로 다룬다.
+배포 툴체인의 계층별 오차 분석은 양자화된 계층이 \emph{부동소수점} 대응물에서 얼마나 떨어져 있는지를 잰다.
+이 논문의 측정은 종류가 다르다. \emph{시뮬레이터}가 장치에서 실제로 일어나는 \emph{정수 실행}에서 얼마나
+떨어져 있는지를, 신호 대 잡음비가 아니라 코드 단위로 잰다. 정수만 쓰는 트랜스포머 추론은 정수 LayerNorm과
+소프트맥스 커널을 이미 확립했다~\cite{ibert,fqvit}. 그 연산자에 대한 기여는 커널이 아니라 커널과 시뮬레이터가
+어긋나는 크기이고, 그것을 고치는 것만으로는 충분하지 않다는 증거다. 누산기 폭은 학습 시 제약으로 연구되어
+왔다~\cite{a2q}. 여기서 재는 축은 그 대신 재양자화 단계의 반올림, 즉 순수한 구현 선택이다.
+
+\section{측정 방법}
+
+\subsection{정수 엔진과 외부 검증}
+보정을 마친 모의 양자화 그래프를 정수 그래프로 내보낸다. int8 가중치, int32 편향, 출력 채널별 Q31 승수와
 시프트로 이루어진다. 실행은 \texttt{MultiplyByQuantizedMultiplier}의 gemmlowp/TensorFlow Lite 의미론을
 따르며~\cite{gemmlowp}, 포화 반올림 배증 상위곱과 2의 거듭제곱 반올림 나눗셈을 포함한다. 서로 독립인 두
-구현(NumPy와 C++)이 \textbf{모든} 중간 텐서에서 일치할 것을 테스트 스위트가 요구하고, 파이썬을 쓰지 않는 세 번째
-C++ 실행기가 직렬화된 파일로부터 같은 코드를 재현한다.
+구현(NumPy와 C++)이 \emph{모든} 중간 텐서에서 일치해야 하고, 파이썬을 쓰지 않는 세 번째 C++ 실행기가 직렬화된
+파일로부터 같은 코드를 재현한다.
 
-엔진은 자기 자신이 아니라 외부 오라클에 대해 검증한다. TensorFlow Lite의 완전 정수 모델을 가져와 \textbf{그}
-스케일·영점·가중치·편향으로 정수 그래프를 세우면, 합성곱과 풀링이 기존 방식의 이중 반올림을 쓰고 완전 연결 계층이
-단일 반올림을 쓸 때 $1000/1000$ 이미지의 모든 텐서에서 일치한다. 이 기준이 얼마나 빡빡한지에 대한 눈금으로, 같은
-모델에서 TensorFlow Lite 자신의 최적화 델리게이트와 참조 커널은 $1000$장 중 $155$장에서 서로 다른 답을 낸다.
+엔진은 자기 자신이 아니라 외부 오라클에 대해 검증한다. TensorFlow Lite 완전 정수 모델의 스케일·영점·가중치·편향으로
+정수 그래프를 세우면, 합성곱과 풀링이 기존 방식의 이중 반올림을 쓰고 완전 연결 계층이 단일 반올림을 쓸 때
+$1000/1000$ 이미지의 모든 텐서에서 일치한다. 이 기준이 얼마나 빡빡한지에 대한 눈금으로, 같은 모델에서
+TensorFlow Lite 자신의 최적화 델리게이트와 참조 커널은 $1000$장 중 $155$장에서 서로 다른 답을 낸다.
 
 \subsection{국소 불일치와 전파 불일치}
-한 장의 이미지에 대해, 모의 양자화 그래프가 노드 $n$에서 만드는 코드를 $f_n$(양자화기 출력을 정수 코드로 환산한 것),
-정수 엔진을 종단간으로 돌렸을 때 같은 노드에서 나오는 코드를 $i_n$이라 하자. 노드 $n$의 \textbf{전파} 불일치는
-$f_n \neq i_n$인 원소의 비율이다. \textbf{국소} 불일치는 노드 $n$의 정수 커널에 입력으로 모의 양자화 코드를
-먹이고(교사 강제) 그 노드의 출력만 비교한 것이다. 국소 불일치는 한 연산자의 정수 연산이 만들어 내는 몫을 떼어 내고,
-전파 불일치는 그 몫이 얼마나 멀리 가는지를 보여 준다.
+한 장의 이미지에 대해, 모의 양자화 그래프가 노드 $n$에서 만드는 코드를 $f_n$(양자화기 출력을 정수 코드로 환산한
+것), 정수 엔진을 종단간으로 돌렸을 때 같은 노드에서 나오는 코드를 $i_n$이라 하자. 노드 $n$의 \emph{전파}
+불일치는 $f_n \neq i_n$인 원소의 비율이다. \emph{국소} 불일치는 노드 $n$의 정수 커널에 입력으로 모의 양자화
+코드를 먹이고(교사 강제) 그 노드의 출력만 비교한 것이다. 국소 불일치는 한 연산자의 정수 연산이 만드는 몫을 떼어
+내고, 전파 불일치는 그 몫이 얼마나 멀리 가는지를 보여 준다.
 
-\subsection{통계}
-정확도 차이는 대응 표본으로 다룬다. 같은 이미지를 세 번(부동소수점, 모의 양자화, 정수) 평가하고, 이미지별 정답 여부
-차이의 평균을 그 표준오차 $s/\sqrt{n}$ 및 $95\%$ Wald 구간과 함께 보고한다. 정확도 열은 모두 전체 테스트셋을
-쓴다(CIFAR-10 $10{,}000$장, Imagenette $3{,}925$장). 노드별 분해는 고정된 $250$장 배치(Imagenette는 $125$장)를 쓴다.
+\subsection{통계, 모델, 양자화 방식}
+정확도 차이는 대응 표본으로 다룬다. 같은 이미지를 세 번(부동소수점, 모의 양자화, 정수) 평가하고, 이미지별 정답
+여부 차이의 평균을 표준오차 $s/\sqrt{n}$ 및 $95\%$ Wald 구간과 함께 보고한다. 정확도 열은 전체 테스트셋을
+쓴다(CIFAR-10 $10{,}000$장, Imagenette $3{,}925$장). 노드별 분해는 고정된 $250$장 배치(Imagenette는 $125$장)를
+쓴다.
 
-\subsection{실험 설정}
 CIFAR-10 신경망 5종 --- ReLU를 쓰는 ResNet-20과 SiLU를 쓰는 ResNet-20, MobileNetV2-0.5(깊이별 합성곱), 분기를
 연결하는 Inception 계열 CNN, ViT-128/6(어텐션 블록 12개, LayerNorm 13개) --- 과 Imagenette를 $128\times128$로
-학습한 ResNet-20 1종을 쓴다. 학습 후 양자화 방식은 둘이다. 채널별 가중치에 비대칭 활성화를 쓰는 방식(\textsc{pc})과
-텐서별 가중치를 쓰는 방식(\textsc{pt})이며, 둘 다 학습 이미지 $512$장으로 보정했다. 학습과 평가는 모두 CPU에서
-수행했고, 이 논문의 모든 수치는 저장소에 커밋된 결과 파일에서 스크립트가 만들어 낸다.
+학습한 ResNet-20 1종을 쓴다. 학습 후 양자화 방식은 둘이다. 채널별 가중치에 비대칭 활성화를 쓰는
+방식(\textsc{pc})과 텐서별 가중치를 쓰는 방식(\textsc{pt})이며, 둘 다 학습 이미지 $512$장으로 보정했다. 학습과
+평가는 모두 CPU에서 수행했고, 아래의 모든 수치는 저장소에 커밋된 결과 파일에서 스크립트가 만들어 낸다.
 
-\section{결과}
+\section{실험 결과}
 
-\subsection{정확도는 충실하고 텐서는 충실하지 않다}
-표~\ref{tab:fidelity}이 핵심 측정이다. 신경망 6종과 방식 2종에 걸쳐 모의 대 정수 정확도 차이의 최댓값은
-$0.20$~\%p, $|\Delta|/\mathrm{SE}$의 최댓값은 $1.6$이며, 12개 신뢰구간이 모두 0을 포함한다. 이 표본 크기에서
-정확도 대리지표는 정확한 것과 구별되지 않는다. 이미지 단위 top-1 일치율은 $97.9$--$99.7\%$이다.
+\subsection{RQ1: 정확도는 일치하고 텐서는 일치하지 않는다}
+표~\ref{tab:fidelity}이 핵심 측정이다. 모의 대 정수 정확도 차이의 최댓값은 $0.20$~\%p, $|\Delta|/\mathrm{SE}$의
+최댓값은 $1.6$이며, 12개 신뢰구간이 모두 0을 포함한다. 이 표본 크기에서 정확도 대리지표는 정확한 것과 구별되지
+않고, 이미지 단위 top-1 일치율은 $97.9$--$99.7\%$다. 같은 행이 텐서에서는 어긋난다. 출력 로짓 코드의
+$28.5\%$(Inception-32)에서 $72.7\%$(ViT-128/6)가 다르고, 이미지의 $95$--$100\%$에서 코드가 최소 하나 다르다.
+트랜스포머가 극단이기는 하나 예외는 아니다. CNN들이 $50$--$63\%$, 입력이 더 큰 Imagenette 모델이 $36\%$에
+자리한다.
 
-같은 행이 텐서에서는 어긋난다. 출력 로짓 코드의 $28.5\%$(Inception-32)에서 $72.7\%$(ViT-128/6)가 다르고, 이미지의
-$95$--$100\%$에서 코드가 최소 하나 다르다. 트랜스포머가 극단이기는 하나 예외는 아니다. CNN들이 $50$--$63\%$,
-입력이 더 큰 Imagenette 모델이 $36\%$에 자리한다. 정확도가 $99\%$ 일치한다는 말은 시뮬레이터가 검증 벡터를 공급할 수
-있는지에 대해 아무것도 말해 주지 않는다.
+\finding{1} 정확도 일치와 텐서 일치는 두 자릿수 이상 분리되어 있으며, 모든 신경망과 두 방식 모두에서 그렇다.
+
+\implication 정확도가 $99\%$ 일치한다는 보고는 시뮬레이터가 검증 벡터를 공급할 수 있다는 증거가 되지 못한다.
 
 \begin{figure}[!t]
 \centering
@@ -164,16 +191,22 @@ $95$--$100\%$에서 코드가 최소 하나 다르다. 트랜스포머가 극단
 \label{fig:decomposition}
 \end{figure}
 
-\subsection{격차는 어디서 태어나는가}
+\subsection{RQ2: 격차는 어디서 태어나는가}
 그림~\ref{fig:decomposition}이 두 성분을 갈라 놓는다. 국소 불일치는 작고 평평하다. 합성곱은 자기 코드의
 $0.02$--$0.93\%$, 선형 계층은 $0.03$--$0.96\%$, 평균 풀링은 $0.1$--$2.7\%$(반올림 동점)에서 어긋나며, int8 룩업
-테이블 활성화는 정확히 $0\%$이다. 이들은 모두 최하위 비트 $\pm 1$ 수준의 차이다. 반면 전파 불일치는 첫
+테이블 활성화는 정확히 $0\%$다. 이들은 모두 최하위 비트 $\pm 1$ 수준의 차이다. 반면 전파 불일치는 첫
 합성곱에서부터 --- 12개 행 전부에서 첫 격차가 그 노드다 --- 단조롭게 올라가 출력에서 $28$--$73\%$에 이른다.
 
-트랜스포머에는 작지 않은 연산자가 하나 더 있다. 정수 LayerNorm은 부동소수점 대응물과 자기 코드의 $24.8\%$에서
-어긋난다(13개 인스턴스 중 최대 $26.2\%$). 정수 구현은 int64 합과 정확한 정수 제곱근으로 정규화하는 반면 시뮬레이터는
-float32로 계산한 뒤 격자에 스냅하므로, 대략 원소 넷 중 하나가 반올림 경계의 반대편에 떨어진다. 트랜스포머를 INT8로
-옮기는 실무자는 LayerNorm을 가장 먼저 의심해야 한다.
+작지 않은 연산자가 하나 있다. 정수 LayerNorm은 부동소수점 대응물과 자기 코드의 $24.8\%$에서 어긋나며, 13개
+인스턴스 중 최댓값은 $26.2\%$다. 정수 구현은 int64 합과 정확한 정수 제곱근으로 정규화하는 반면 시뮬레이터는
+float32로 계산한 뒤 격자에 스냅하므로, 대략 원소 넷 중 하나가 반올림 경계의 반대편에 떨어진다.
+
+\finding{2} LayerNorm을 빼면 어떤 연산자도 자기 코드의 $1\%$ 미만에서만 어긋나고, 그 어긋남은 모두 최하위 비트
+$\pm 1$이다. 종단간 격차는 특정 커널이 만든 것이 아니라 전파가 키운 것이다.
+
+\finding{3} 정수 LayerNorm은 유일하게 큰 국소 원천으로, 다른 모든 연산자보다 두 자릿수 크다.
+
+\implication 트랜스포머를 INT8로 옮길 때는 LayerNorm을 가장 먼저 의심하고, 나머지에서는 $\pm 1$ LSB를 예상하라.
 
 \begin{table}[!t]
 \caption{시뮬레이터의 LayerNorm을 정수에 충실하게 바꾼 결과(ViT-128/6, $10{,}000$장). 각 방식의 두 행 사이에서 정수
@@ -185,20 +218,21 @@ float32로 계산한 뒤 격자에 스냅하므로, 대략 원소 넷 중 하나
 \input{tab2_rows_ko}
 \end{table}
 
-\subsection{가장 큰 국소 원천을 없애도 격차는 닫히지 않는다}
+\subsection{RQ2: 가장 큰 국소 원천을 제거하면}
 격차가 연산자별 오차의 합이라면 가장 큰 항을 없앴을 때 그만큼 줄어야 한다. 이를 직접 시험한다. 시뮬레이터의
-LayerNorm을, 입력 코드 위에서 엔진의 연산을 그대로 수행하여 구성적으로 비트 단위까지 같은 모듈로 교체하되, 내보낸
-정수 프로그램은 그대로 둔다(실험이 이 사실을 단언한다).
+LayerNorm을, 입력 코드 위에서 엔진의 연산을 그대로 수행하여 구성적으로 비트 단위까지 같은 모듈로 교체하되,
+내보낸 정수 프로그램은 그대로 둔다(실험이 이 사실을 단언한다).
 
-표~\ref{tab:layernorm}이 그 결과다. LayerNorm의 국소 불일치는 $24.77\%$에서 정확히 $0.00\%$로 내려가고 로짓 절대차
-평균은 약 $23\%$ 개선된다. 그러나 전파된 출력 코드 불일치는 $72.7\%$에서 $65.7\%$로만 움직인다(텐서별은
-$72.6\% \rightarrow 66.0\%$). 다른 어떤 연산자보다 두 자릿수 많은 국소 불일치를 책임지던 가장 큰 원천 하나를 없애도
-전파 격차의 10분의 1 정도만 회수된다. 남은 것은 개별 국소 불일치가 $1\%$ 미만인 연산자들에서 나온 최하위 비트
-$\pm 1$ 사건의 증폭이기 때문이다. 정확도는 어느 방향으로든 대응 표준오차 두 배 안쪽에서 움직이므로 개선으로 읽을 수
+표~\ref{tab:layernorm}이 그 결과다. LayerNorm의 국소 불일치는 $24.77\%$에서 정확히 $0.00\%$로 내려가고 로짓
+절대차 평균은 약 $23\%$ 개선된다. 그러나 전파된 출력 코드 불일치는 $72.7\%$에서 $65.7\%$로만 움직인다(텐서별은
+$72.6\% \rightarrow 66.0\%$). 정확도는 어느 방향으로든 대응 표준오차 두 배 안쪽에서 움직이므로 개선으로 읽을 수
 없다.
 
-실무적 함의는 분명하다. 비트 정확한 검증 벡터는 정수 구현에서 나와야 한다. 부동소수점 시뮬레이터를 연산자 하나씩
-고쳐 나가는 길은 대체재가 되기에는 너무 느리게 수렴한다.
+\finding{4} 가장 큰 국소 원천 하나를 완전히 없애도 전파 격차의 10분의 1 정도만 회수된다. 남는 것이 개별적으로는
+코드의 $1\%$ 미만에서만 어긋나는 연산자들의 $\pm 1$ LSB 사건이 증폭된 결과이기 때문이다.
+
+\implication 골든 벡터는 외부 기준에 대해 검증된 정수 구현에서 나와야 한다. 부동소수점 시뮬레이터를 연산자
+하나씩 고쳐 나가는 길은 대체재가 되기에 너무 느리게 수렴한다.
 
 \begin{figure}[!t]
 \centering
@@ -216,60 +250,63 @@ $\pm 1$ 사건의 증폭이기 때문이다. 정확도는 어느 방향으로든
 \input{tab3_rows_ko}
 \end{table}
 
-\subsection{정확도 대리지표가 가리는 비용}
+\subsection{RQ3: 정확도 대리지표가 가리는 비용}
 재양자화의 곱셈-시프트는 반올림 단계로 끝나는데, 구현에 따라 이를 단순 산술 시프트로 바꾸고 싶은 유혹이 있다.
-그림~\ref{fig:rounding}과 표~\ref{tab:rounding}은 그 선택을 기준 구현과 비교해 전체 테스트셋에서, 신경망당 독립적으로
-학습한 체크포인트 3개로 측정한 것이다.
+그림~\ref{fig:rounding}과 표~\ref{tab:rounding}은 그 선택을 기준 구현과 비교해 전체 테스트셋에서, 신경망당
+독립적으로 학습한 체크포인트 3개로 측정한 것이다.
 
-결과는 둘이다. 첫째, \textbf{부호와 유의성}은 시드에 강건하다. \texttt{truncate}와 \texttt{floor}는 18개 (모델, 시드,
-방식) 조합 전부에서 기준보다 나빴고, 그 폭은 $0.90$--$3.37$~\%p, $|\Delta|/\mathrm{SE}$는 $4.4$에서 $11.8$ 사이였다.
-반면 단일 반올림과 짝수 반올림 경로는 잡음 범위를 벗어나지 않는다($|\Delta| \leq 0.13$~\%p). 둘째, \textbf{크기}는
-그렇지 않다. ResNet-20 SiLU에서 \texttt{truncate}의 손해는 시드 3개에 걸쳐 $1.36$에서 $2.98$~\%p까지 벌어져 시드
-표준편차가 효과 크기의 $37\%$에 이르는 반면, ResNet-20 ReLU는 효과의 10분의 1 이내에 머문다. 두 편향 방식 중 어느
-쪽이 더 나쁜지는 연산의 성질이 아니라 신경망의 성질이다. ResNet-20 ReLU는 세 시드 모두에서 \texttt{floor}가,
-MobileNetV2는 세 시드 모두에서 \texttt{truncate}가 더 많이 잃는다. 반올림 방식의 비용을 시드 하나의 수치로 인용해서는
-안 된다.
+\texttt{truncate}와 \texttt{floor}는 18개 (모델, 시드, 방식) 조합 전부에서 기준보다 나빴고, 그 폭은
+$0.90$--$3.37$~\%p, $|\Delta|/\mathrm{SE}$는 $4.4$에서 $11.8$ 사이였다. 반면 단일 반올림과 짝수 반올림 경로는
+잡음 범위를 벗어나지 않는다($|\Delta| \leq 0.13$~\%p). 크기는 옮겨 가지 않는다. ResNet-20 SiLU에서
+\texttt{truncate}의 손해는 시드 3개에 걸쳐 $1.36$에서 $2.98$~\%p까지 벌어져 시드 표준편차가 효과 크기의
+$37\%$에 이르는 반면, ResNet-20 ReLU는 효과의 10분의 1 이내에 머문다. 두 편향 방식 중 어느 쪽이 더 나쁜지는
+연산의 성질이 아니라 신경망의 성질이다. ResNet-20 ReLU는 세 시드 모두에서 \texttt{floor}가, MobileNetV2는 세
+시드 모두에서 \texttt{truncate}가 더 많이 잃는다.
 
-\section{관련 연구}
-MQBench~\cite{mqbench}는 학술 양자화와 배포 가능한 백엔드 사이의 격차를 측정하되 그것을 정확도로 보고한다. 양자화
-백서들~\cite{nagel2021,krishnamoorthi2018}은 모의 양자화를 정수 파이프라인의 시뮬레이션으로 다룬다. 배포 툴체인의
-계층별 오차 분석은 양자화된 계층이 \textbf{부동소수점} 대응물에서 얼마나 떨어져 있는지를 정량화한다. 여기서의 측정은
-종류가 다르다. \textbf{시뮬레이터}가 장치에서 실제로 일어나는 \textbf{정수 실행}에서 얼마나 떨어져 있는지를, 신호 대
-잡음비가 아니라 코드 단위로 잰다. 정수만 쓰는 트랜스포머 추론은 정수 LayerNorm과 소프트맥스 커널을 이미
-확립했다~\cite{ibert,fqvit}. 그 연산자에 대한 이 논문의 기여는 커널이 아니라, 커널과 시뮬레이터가 얼마나 어긋나는지의
-정량화이고 그것을 고치는 것만으로는 충분하지 않다는 증거다. 누산기 폭은 학습 시 제약으로 연구되어 왔다~\cite{a2q}.
-여기서 측정하는 축은 그 대신 재양자화 단계의 반올림, 즉 순수한 구현 선택이다.
+\finding{5} 반올림 방식 비용의 부호와 유의성은 시드에 강건하지만 크기는 그렇지 않다. 같은 구조의 시드 3개에서
+효과 크기의 $37\%$까지 벌어진다.
 
-\section{한계}
-신경망은 CIFAR-10 규모에 $128\times128$ Imagenette 모델 하나를 더한 것이다. 따라서 결론은 격차의 구조에 관한 것이지
-ImageNet 규모 그래프에서의 정확한 크기에 관한 것이 아니다. 시드 3개는 반올림 축만 덮으며 나머지 측정은 신경망당
-체크포인트 하나를 쓴다. 표~\ref{tab:fidelity}의 정확도 비교 12개와 표~\ref{tab:layernorm}의 4개는 다중비교 보정을
-하지 않았다(16개 전체에서 $|\Delta|/\mathrm{SE}$의 최댓값은 $2.2$이다). 외부 비트 일치 검증은 합성곱·풀링·완전 연결
-계층을 덮고, 깊이별 합성곱·원소별 덧셈·소프트맥스는 덮지 않는다.
+\implication 반올림 방식의 비용을 시드 하나의 수치로 인용해서는 안 된다.
 
-\section{재현성}
-이 논문의 모든 수치는 커밋된 결과 파일에서 스크립트가 출력하며, 스크립트와 학습된 체크포인트와 그 결과 파일은 모두
-공개되어 있다. \texttt{python paper/make\_tables.py}가 표~\ref{tab:fidelity}--\ref{tab:rounding}을,
-\texttt{python paper/make\_figs.py}가 그림~\ref{fig:decomposition}--\ref{fig:rounding}을 다시 만든다. 지속적 통합
-작업이 커밋마다 생성기를 다시 돌려, 커밋된 표가 결과 파일이 함의하는 표와 다르면 실패시킨다. 측정 자체는
-\texttt{experiments/e15\_fidelity.py}(표~\ref{tab:fidelity}과 그림~\ref{fig:decomposition}),
-\texttt{e16\_ln\_emulation.py}(표~\ref{tab:layernorm}), \texttt{e14\_rounding\_seeds.py}(그림~\ref{fig:rounding},
-표~\ref{tab:rounding})에 있고, 외부 비트 일치 검증은 \texttt{e11\_tflite\_crosscheck.py}이다. 시드를 쓴 측정에는
-단서가 하나 붙는다. 이 체크포인트들을 만들 당시 학습기의 시드는 데이터 순서만 통제하고 가중치 초기화는 통제하지
-못했으므로, 세 반복은 서로 독립인 표본이지만 같은 명령으로 비트 단위까지 재현되지는 않는다.
+\section{타당성 위협}
+\emph{외적 타당성.} 신경망은 CIFAR-10 규모에 $128\times128$ Imagenette 모델 하나를 더한 것이고, 여섯 모델 모두
+분류기다. 따라서 결론은 격차의 구조에 관한 것이지 ImageNet 규모 그래프에서의 정확한 크기에 관한 것이 아니다.
+출력 텐서 자체가 결과물인 밀집 출력 과제 --- 초해상, 분할, 검출 --- 라면 여기서 정확도가 가린 텐서 격차가 더
+직접 드러날 것이다.
+
+\emph{구성 타당성.} 국소 불일치는 교사 강제로 재므로 연산자의 연산만 떼어 보고 상류 오차와의 상호작용은 보지
+않는다. 그 상호작용을 담는 것은 전파 열이다.
+
+\emph{결론 타당성.} 표~\ref{tab:fidelity}의 정확도 비교 12개와 표~\ref{tab:layernorm}의 4개는 다중비교 보정을
+하지 않았다(16개 전체에서 $|\Delta|/\mathrm{SE}$의 최댓값은 $2.2$). 시드 3개는 반올림 축만 덮고, 나머지 측정은
+신경망당 체크포인트 하나를 쓴다.
+
+\emph{내적 타당성.} 외부 비트 일치 검증은 합성곱·풀링·완전 연결 계층을 덮고, 깊이별 합성곱·원소별
+덧셈·소프트맥스는 덮지 않는다.
+
+\section{재현 자료}
+모든 수치는 커밋된 결과 파일에서 스크립트가 출력하며, 스크립트와 학습된 체크포인트와 그 결과 파일은 모두 공개되어
+있다. \texttt{make\_tables.py}가 표~\ref{tab:fidelity}--\ref{tab:rounding}을, \texttt{make\_figs.py}가
+그림~\ref{fig:decomposition}--\ref{fig:rounding}을 다시 만든다. 지속적 통합 작업이 커밋마다 생성기를 다시 돌려,
+커밋된 표가 결과 파일이 함의하는 표와 다르면 실패시킨다. 측정 자체는 \texttt{e15\_fidelity.py}(표~\ref{tab:fidelity},
+그림~\ref{fig:decomposition}), \texttt{e16\_ln\_emulation.py}(표~\ref{tab:layernorm}),
+\texttt{e14\_rounding\_seeds.py}(그림~\ref{fig:rounding}, 표~\ref{tab:rounding})에 있고, 외부 검증은
+\texttt{e11\_tflite\_crosscheck.py}다. 시드를 쓴 측정에는 단서가 하나 붙는다. 이 체크포인트들을 만들 당시 학습기의
+시드는 데이터 순서만 통제하고 가중치 초기화는 통제하지 못했으므로, 세 반복은 서로 독립인 표본이지만 같은 명령으로
+비트 단위까지 재현되지는 않는다.
 
 \section{결론}
 모의 양자화는 INT8 정확도는 잘 맞히고 INT8 텐서는 잘 못 맞히며, 두 사실은 서로 독립이다. 격차를 옮기는 연산자는
-하나가 아니다. 개별적으로는 코드의 $1\%$ 미만에서만 어긋나는 연산자들에서 최하위 비트 $\pm 1$ 사건으로 태어나 전파로
-자라며, 그래서 가장 나쁜 국소 원천을 없애도 10분의 1밖에 회수되지 않는다. 골든 벡터가 필요한 팀은 외부 기준에 대해
-검증된 정수 구현에서 그것을 만들어야 하고, 재양자화의 세부를 바꾸는 팀은 여러 시드에서 측정해야 한다. 그 효과의
-크기는 --- 부호와 달리 --- 옮겨 가지 않기 때문이다.
+하나가 아니다. 개별적으로는 코드의 $1\%$ 미만에서만 어긋나는 연산자들에서 최하위 비트 $\pm 1$ 사건으로 태어나
+전파로 자라며, 그래서 가장 나쁜 국소 원천을 없애도 10분의 1밖에 회수되지 않는다. 골든 벡터가 필요한 팀은 외부
+기준에 대해 검증된 정수 구현에서 그것을 만들어야 하고, 재양자화의 세부를 바꾸는 팀은 여러 시드에서 측정해야 한다.
+그 효과의 크기는 --- 부호와 달리 --- 옮겨 가지 않기 때문이다.
 
 \section*{감사의 글}
 % IEEE는 AI 사용 공개를 요구하지만, 문구는 저자가 정합니다.
 저자는 이 원고의 준비 과정에서 AI 코딩 도구(Claude Code)를 사용했으며, 모든 내용에 대한 책임은 저자에게 있다.
 
-\IEEEtriggeratref{5}
+\IEEEtriggeratref{3}
 \begin{thebibliography}{10}
 \bibitem{jacob2018} B.~Jacob \emph{et al.}, ``Quantization and training of neural networks for efficient integer-arithmetic-only
 inference,'' in \emph{Proc. IEEE/CVF Conf. Comput. Vis. Pattern Recognit. (CVPR)}, 2018, pp. 2704--2713.
@@ -287,5 +324,28 @@ Available: \url{https://github.com/google/gemmlowp}
 \bibitem{a2q} I.~Colbert \emph{et al.}, ``A2Q: Accumulator-aware quantization with guaranteed overflow avoidance,'' in
 \emph{Proc. IEEE/CVF Int. Conf. Comput. Vis. (ICCV)}, 2023, pp. 16989--16998.
 \end{thebibliography}
+
+% 국내 학술대회 관례에 따른 영문 초록. 내용은 투고본(npuloop_esl.tex)의 Abstract와 같습니다.
+\section*{English Abstract}
+\noindent\textbf{Per-Operator Attribution of the Fake-Quantization-to-Integer Gap in INT8 Inference}
+
+\smallskip
+\noindent INT8 deployment decisions are made on a simulator: the network runs in floating point with
+quantize--dequantize (``fake-quantization'') nodes inserted, and its accuracy stands in for the accuracy of
+the integer target. We measure how far that stand-in holds, for accuracy and for tensors separately, against
+an integer engine that is bit-exact with the TensorFlow Lite reference kernels. On six networks, two
+quantization schemes and complete test splits, it holds for accuracy: every fake-versus-integer difference is
+within $0.20$~pp and all twelve $95\%$ confidence intervals contain zero. It fails for tensors:
+$28.5$--$72.7\%$ of the output codes differ, on $95$--$100\%$ of the images. Teacher forcing attributes the
+divergence per operator: convolution, linear and pooling each disagree on under $1\%$ of their own codes,
+while integer LayerNorm disagrees on $24.8\%$. Making the simulator integer-faithful at LayerNorm removes
+that source entirely ($24.77\% \rightarrow 0.00\%$) but moves the propagated output mismatch only from
+$72.7\%$ to $65.7\%$. We also price a requantization choice the accuracy proxy cannot see: replacing
+rounding with truncation costs $0.90$--$3.37$~pp in all 18 (model, seed, mode) combinations, and the sign of
+that cost transfers across seeds while its magnitude does not.
+
+\smallskip
+\noindent\textbf{Index Terms}---Quantization, integer arithmetic, embedded inference, neural processing
+units, reproducibility.
 
 \end{document}
