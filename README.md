@@ -201,6 +201,7 @@ docs/                    EXPERIMENTS · USAGE · DESIGN · INTEGER_DATAPATH · R
 | [docs/RELATED.md](docs/RELATED.md) | 선행 연구와 이 저장소의 위치 |
 | [docs/USAGE.md](docs/USAGE.md) | 설치·학습·CLI·실험 재현·파이썬 API |
 | [docs/upstream/](docs/upstream/) | oneDNN 버그 보고서와 패치 |
+| [paper/](paper/) | IEEE ESL 투고용 4쪽 원고 초고 (본문 수치는 `results/*.json`에서 생성) |
 | [라이브 데모](https://sokldjs554.github.io/npuloop/) | `results/*.json`을 읽는 인터랙티브 페이지 |
 
 ## 데이터와 외부 도구

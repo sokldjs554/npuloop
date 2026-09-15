@@ -1,0 +1,11 @@
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lccc}
+\toprule
+Mode & ResNet-20 ReLU & ResNet-20 SiLU & MobileNetV2-0.5 \\
+\midrule
+\texttt{single} & $-0.03\pm0.09$ & $+0.01\pm0.02$ & $-0.00\pm0.13$ \\
+\texttt{half\_even} & $-0.07\pm0.09$ & $+0.02\pm0.09$ & $+0.00\pm0.09$ \\
+\texttt{truncate} & $-0.98\pm0.12$ & $-2.31\pm0.85$ & $-2.12\pm0.21$ \\
+\texttt{floor} & $-1.42\pm0.06$ & $-2.42\pm1.04$ & $-1.43\pm0.40$ \\
+\bottomrule
+\end{tabular}

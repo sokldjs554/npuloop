@@ -1,0 +1,11 @@
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{llcccc}
+\toprule
+Sch. & LayerNorm & local (\%) & codes (\%) & agree (\%) & $\Delta$ (pp) \\
+\midrule
+\textsc{pc} & float32 & 24.77 & 72.7 & 97.93 & $+0.10\pm0.13$ \\
+\textsc{pc} & integer (13) & 0.00 & 65.7 & 98.29 & $+0.25\pm0.11$ \\
+\textsc{pt} & float32 & 24.76 & 72.6 & 98.07 & $+0.20\pm0.12$ \\
+\textsc{pt} & integer (13) & 0.00 & 66.0 & 98.60 & $+0.13\pm0.10$ \\
+\bottomrule
+\end{tabular}
