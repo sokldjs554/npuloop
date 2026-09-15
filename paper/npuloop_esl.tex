@@ -13,15 +13,17 @@
 
 \begin{document}
 
-\title{Accuracy-Faithful, Tensor-Unfaithful: \\ Measuring the Fake-Quantization-to-Integer Gap per Operator}
+\title{Per-Operator Attribution of the Fake-Quantization-to-Integer Gap in INT8 Inference}
 
-% TODO: fill in author, affiliation and contact before submission.
-\author{First~Author%
-\thanks{The author is with \textsc{[affiliation]}, \textsc{[city, country]} (e-mail: \textsc{[e-mail]}).}%
+% TODO: the two bracketed fields are the only ones left -- the author's name as it should appear in
+% print, and the city.  Everything else in this block is final.
+\author{\textsc{[Author~Name]}%
+\thanks{The author is an independent researcher, \textsc{[City]}, Republic of Korea
+(e-mail: ykh13571@gmail.com).}%
 \thanks{Code, checkpoints and every result file needed to reproduce the tables and figures:
 \url{https://github.com/sokldjs554/npuloop}.}}
 
-\markboth{IEEE Embedded Systems Letters}{Author: Accuracy-Faithful, Tensor-Unfaithful}
+\markboth{IEEE Embedded Systems Letters}{Per-Operator Attribution of the Fake-Quantization-to-Integer Gap}
 \maketitle
 
 \begin{abstract}
@@ -237,10 +239,8 @@ teams that change a requantization detail should measure it across seeds, becaus
 transfer.
 
 \section*{Acknowledgment}
-% IEEE requires disclosure of AI-assisted content. Edit to match what you actually used before submitting.
-The author used an AI assistant (Claude Code) for parts of the implementation, the experiment scripts and the drafting of this
-manuscript. All experiments were executed by the author, and all reported numbers are produced by committed scripts from
-committed result files.
+% IEEE requires disclosure of AI-assisted content; the wording is the author's to choose.
+The author used an AI coding assistant (Claude Code) while preparing this manuscript and is responsible for all of its content.
 
 % balance the final page: references 5-8 start the right column
 \IEEEtriggeratref{5}

@@ -50,15 +50,15 @@
 
 \begin{document}
 
-\title{정확도에는 충실하고 텐서에는 충실하지 않다: \\ 모의 양자화와 정수 실행 사이 격차의 연산자별 측정}
+\title{INT8 추론에서 모의 양자화와 정수 실행 간 격차의 연산자별 기여도 분석}
 
-% TODO: 투고 전에 저자·소속·연락처를 채울 것.
-\author{저자~이름%
-\thanks{저자 소속: \textsc{[소속]}, \textsc{[도시, 국가]} (e-mail: \textsc{[이메일]}).}%
+% TODO: 대괄호 두 곳만 남았습니다 -- 인쇄될 성명과 도시. 나머지는 확정된 내용입니다.
+\author{\textsc{[저자 성명]}%
+\thanks{저자는 무소속 연구자이다. \textsc{[도시]}, 대한민국. e-mail: \url{ykh13571@gmail.com}}%
 \thanks{표와 그림을 재현하는 데 필요한 코드·체크포인트·결과 파일 전부:
 \url{https://github.com/sokldjs554/npuloop}.}}
 
-\markboth{npuloop --- 모의 양자화와 정수 실행의 격차}{정확도에는 충실하고 텐서에는 충실하지 않다}
+\markboth{npuloop --- 모의 양자화와 정수 실행의 격차}{모의 양자화-정수 실행 격차의 연산자별 기여도 분석}
 \maketitle
 
 \begin{abstract}
@@ -266,9 +266,8 @@ ImageNet 규모 그래프에서의 정확한 크기에 관한 것이 아니다. 
 크기는 --- 부호와 달리 --- 옮겨 가지 않기 때문이다.
 
 \section*{감사의 글}
-% IEEE는 AI 사용 공개를 요구합니다. 실제로 사용한 범위에 맞게 고쳐서 쓰십시오.
-저자는 구현의 일부와 실험 스크립트, 그리고 이 원고의 작성에 AI 도구(Claude Code)를 사용했다. 모든 실험은 저자가 직접
-실행했고, 보고된 모든 수치는 커밋된 결과 파일에서 커밋된 스크립트가 생성한 것이다.
+% IEEE는 AI 사용 공개를 요구하지만, 문구는 저자가 정합니다.
+저자는 이 원고의 준비 과정에서 AI 코딩 도구(Claude Code)를 사용했으며, 모든 내용에 대한 책임은 저자에게 있다.
 
 \IEEEtriggeratref{5}
 \begin{thebibliography}{10}
