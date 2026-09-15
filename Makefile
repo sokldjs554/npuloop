@@ -26,11 +26,13 @@ demo:            ## results/*.json -> demo/index.html + docs/index.html, then th
 tables:          ## regenerate only the generated tables (no checkpoints, no dataset)
 	python tools/readme_tables.py --inject README.md docs/EXPERIMENTS.md
 
-paper:           ## regenerate the manuscript tables/figures and build both PDFs (needs TeX Live)
+paper:           ## regenerate every table/figure and build all three PDFs (needs TeX Live)
 	python paper/make_tables.py && python paper/make_figs.py
 	python paper/make_tables.py --lang ko && python paper/make_figs.py --lang ko
+	python paper/make_thesis.py
 	cd paper && pdflatex -interaction=nonstopmode npuloop_esl && pdflatex -interaction=nonstopmode npuloop_esl
 	cd paper && lualatex -interaction=nonstopmode npuloop_ko && lualatex -interaction=nonstopmode npuloop_ko
+	cd paper && for i in 1 2 3; do lualatex -interaction=nonstopmode npuloop_thesis; done
 
 lint:
 	ruff check npuloop tests tools experiments examples paper demo/build.py --select F,E9 --ignore F401,F403,F405

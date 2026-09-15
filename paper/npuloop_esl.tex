@@ -187,7 +187,8 @@ quality metric is faithful to $6\times10^{-4}$~dB while $6.3$--$18.2\%$ of the d
 \includegraphics[width=\columnwidth]{fig1_decomposition.pdf}
 \caption{Per-node code mismatch, \textsc{pc} scheme. Local (teacher-forced) mismatch is below $1\%$ for every
 operator except LayerNorm; propagated mismatch rises from the first convolution to $50$--$73\%$ at the output.
-Log scale; nodes with zero local mismatch (lookup-table activations, residual additions) are not drawn.}
+Log scale; nodes with zero local mismatch are not drawn --- every lookup-table activation, and all but five of
+the 100 residual additions.}
 \label{fig:decomposition}
 \end{figure}
 
@@ -195,7 +196,8 @@ Log scale; nodes with zero local mismatch (lookup-table activations, residual ad
 Fig.~\ref{fig:decomposition} separates the two components. Local mismatch is small and flat: convolution
 disagrees on $0.02$--$0.93\%$ of its codes, linear on $0.03$--$0.96\%$, average pooling on $0.1$--$2.7\%$
 (rounding ties), and the int8 lookup-table activations on exactly $0\%$. Every one of these is a $\pm 1$
-least-significant-bit disagreement. Propagated mismatch instead rises monotonically from the first
+least-significant-bit disagreement --- as is every local disagreement in the study, LayerNorm's
+included. Propagated mismatch instead rises monotonically from the first
 convolution --- the first divergence is that node in all twelve rows --- and reaches $28$--$73\%$ at the
 output.
 

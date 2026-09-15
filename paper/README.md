@@ -1,14 +1,16 @@
-# 원고 (영문 투고본 · 한국어판)
+# 원고 (영문 투고본 · 한국어판 · 장문판)
 
-같은 내용의 4쪽 원고 두 판입니다. 본문의 모든 수치·표·그림은 `results/*.json`에서 스크립트로 생성되므로
+4쪽 원고 두 판과, 같은 측정을 학위논문 형식으로 풀어 쓴 장문판입니다. 본문의 모든 수치·표·그림은 `results/*.json`에서 스크립트로 생성되므로
 실험을 다시 돌리면 생성기만 재실행하면 되고, 두 판이 서로 다른 숫자를 말하는 일은 생기지 않습니다.
 
 | 파일 | 내용 | 엔진 |
 |---|---|---|
 | `npuloop_esl.tex` → `npuloop_esl.pdf` | **IEEE Embedded Systems Letters 투고본(영문)** | `pdflatex` |
 | `npuloop_ko.tex` → `npuloop_ko.pdf` | 한국어판 — 읽기용이자 국내 학술대회용 출발점 | `lualatex` |
+| `npuloop_thesis.tex` → `npuloop_thesis.pdf` | **장문판 27쪽** — 학위논문 형식(국문 본문, 7장 + 부록 2개 + 영문 초록) | `lualatex` |
 | `make_tables.py` | Table I(E15) · II(E17) · III(E16) · IV(E14) 생성, `--lang ko`로 한국어판 | |
 | `make_figs.py` | Fig. 1(국소/전파 분해) · Fig. 2(반올림 × 시드) 생성, `--lang ko`로 한국어판 | |
+| `make_thesis.py` | 장문판 전용 표(기준선 · 연산자별 불일치 · 구현 세부 · TFLite · Vela)와 그림 3.1 생성 | |
 
 두 판 모두 최근 실증 연구 논문의 관례를 따릅니다 — 서론에서 연구 질문(RQ1~RQ3)을 명시하고, 결과를 번호 붙인
 **발견(Finding) 1~5**와 각 절의 **실무 함의(Implication)**로 요약하며, 관련 연구는 2장으로 앞당기고,
@@ -31,8 +33,17 @@ cd paper && pdflatex npuloop_esl && pdflatex npuloop_esl      # 두 번 (상호�
 python paper/make_tables.py --lang ko && python paper/make_figs.py --lang ko
 cd paper && lualatex npuloop_ko && lualatex npuloop_ko
 
-make paper      # 위 네 줄을 한 번에
+# 장문판
+python paper/make_thesis.py
+cd paper && lualatex npuloop_thesis && lualatex npuloop_thesis && lualatex npuloop_thesis   # 세 번 (목차)
+
+make paper      # 위 전부를 한 번에
 ```
+
+장문판은 학위 제출물이 아니므로 표지에 학교·학과·심사위원 인준 페이지가 없습니다. 국내 학위논문 양식으로
+낼 일이 생기면 그 학교 양식의 표지와 인준 페이지를 앞에 붙이면 됩니다. 구성은 1 서론 / 2 배경 / 3 동기
+(연산자별 불일치 분류) / 4 방법 / 5 성능 평가 / 6 논의 / 7 결론 + 부록 A(정수 데이터패스 명세) ·
+B(재현 방법) + 영문 초록입니다.
 
 한국어판 빌드에 필요한 것 (우분투 기준):
 

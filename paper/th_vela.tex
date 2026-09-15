@@ -1,0 +1,12 @@
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{lrrrrr}
+\toprule
+합성 망 & Vela MACs & npuloop MACs & Vela 사이클 & npuloop 사이클 & 비율 \\
+\midrule
+\texttt{conv-stack} & 3.06M & 3.06M & 47.8k & 40.2k & 0.840 \\
+\texttt{dw-separable} & 0.43M & 0.43M & 22.4k & 10.7k & 0.477 \\
+\texttt{pointwise-heavy} & 1.81M & 1.79M & 44.4k & 12.7k & 0.286 \\
+\texttt{wide-late} & 2.77M & 2.77M & 61.5k & 50.6k & 0.822 \\
+\texttt{deep-narrow} & 0.79M & 0.79M & 15.8k & 11.3k & 0.711 \\
+\bottomrule
+\end{tabular}

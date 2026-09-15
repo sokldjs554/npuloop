@@ -1,0 +1,19 @@
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{llcccc}
+\toprule
+반올림 조합 & 엔진 & 불일치 이미지 & 불일치 원소 & top-1 일치(\%) & 완전 일치 \\
+\midrule
+\texttt{tflite+fc-single} & numpy & 0 / 1000 & 0 / 10000 & 100.0 & 예 \\
+\texttt{tflite+fc-single} & cpp & 0 / 1000 & 0 / 10000 & 100.0 & 예 \\
+\texttt{tflite} & numpy & 20 / 1000 & 20 / 10000 & 100.0 & 아니오 \\
+\texttt{tflite} & cpp & 20 / 1000 & 20 / 10000 & 100.0 & 아니오 \\
+\texttt{single} & numpy & 155 / 1000 & 337 / 10000 & 100.0 & 아니오 \\
+\texttt{single} & cpp & 155 / 1000 & 337 / 10000 & 100.0 & 아니오 \\
+\texttt{half\_even} & numpy & 182 / 1000 & 364 / 10000 & 100.0 & 아니오 \\
+\texttt{half\_even} & cpp & 182 / 1000 & 364 / 10000 & 100.0 & 아니오 \\
+\texttt{truncate} & numpy & 1000 / 1000 & 8203 / 10000 & 99.8 & 아니오 \\
+\texttt{truncate} & cpp & 1000 / 1000 & 8203 / 10000 & 99.8 & 아니오 \\
+\texttt{floor} & numpy & 1000 / 1000 & 7968 / 10000 & 99.8 & 아니오 \\
+\texttt{floor} & cpp & 1000 / 1000 & 7968 / 10000 & 99.8 & 아니오 \\
+\bottomrule
+\end{tabular}
