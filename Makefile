@@ -1,4 +1,4 @@
-.PHONY: test demo tables experiments walkthrough quickstart lint runner
+.PHONY: test demo tables experiments walkthrough quickstart lint runner paper
 DATA ?= data/cifar10.npz
 CKPT ?= runs/resnet20_relu/best.pt
 
@@ -26,8 +26,14 @@ demo:            ## results/*.json -> demo/index.html + docs/index.html, then th
 tables:          ## regenerate only the generated tables (no checkpoints, no dataset)
 	python tools/readme_tables.py --inject README.md docs/EXPERIMENTS.md
 
+paper:           ## regenerate the manuscript tables/figures and build both PDFs (needs TeX Live)
+	python paper/make_tables.py && python paper/make_figs.py
+	python paper/make_tables.py --lang ko && python paper/make_figs.py --lang ko
+	cd paper && pdflatex -interaction=nonstopmode npuloop_esl && pdflatex -interaction=nonstopmode npuloop_esl
+	cd paper && lualatex -interaction=nonstopmode npuloop_ko && lualatex -interaction=nonstopmode npuloop_ko
+
 lint:
-	ruff check npuloop tests tools experiments examples demo/build.py --select F,E9 --ignore F401,F403,F405
+	ruff check npuloop tests tools experiments examples paper demo/build.py --select F,E9 --ignore F401,F403,F405
 
 runner:  ## standalone C++ executor for .npuloop files (no Python)
 	mkdir -p build && g++ -O3 -march=native -std=c++17 -o build/int8_runner npuloop/intengine/cpp/int8_runner.cpp
