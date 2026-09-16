@@ -4,7 +4,7 @@ The page ports the analytical cost model to JavaScript, so it needs, per model, 
 (m, k, n), MACs, element counts and activation kinds — exported here from the traced StaticGraph.
 """
 from __future__ import annotations
-import argparse, json, os, sys, glob, time, shutil
+import argparse, json, os, sys, glob, time, shutil, re, posixpath
 from pathlib import Path
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT); sys.path.insert(0, os.path.join(ROOT, "experiments"))
@@ -89,9 +89,12 @@ def main():
     src = open(os.path.join(ROOT, "demo", "index.template.html"), encoding="utf-8").read()
     # CSS and controller are inline so file:// works without a server or external assets.
     for marker, filename in [("/*__WORKBENCH_CSS__*/", "workbench.css"),
+                             ("/*__STUDY_CSS__*/", "study.css"),
                              ("/*__COST_MODEL__*/", "cost-model.js"),
                              ("/*__GUIDED_DATA__*/", "guided-data.js"),
                              ("/*__WORKBENCH_MODEL__*/", "workbench-model.js"),
+                             ("/*__STUDY_DATA__*/", "study-data.js"),
+                             ("/*__STUDY_UI__*/", "study-ui.js"),
                              ("/*__WORKBENCH_UI__*/", "workbench-ui.js")]:
         if src.count(marker) != 1:
             raise ValueError(f"Expected one asset marker: {marker}")
@@ -103,11 +106,26 @@ def main():
     os.makedirs(os.path.join(ROOT, "docs"), exist_ok=True)
     open(os.path.join(ROOT, "docs", "index.html"), "w", encoding="utf-8").write(html)
     # Same relative evidence links work in both the local demo and GitHub Pages' docs root.
+    reference_names = {"USAGE.md", "VALIDATION_SCOPE.md", "EXPERIMENTS.md", "STUDY_RUNNER.md",
+                       "RESEARCH_SUMMARY.md", "REPRODUCTION_REQUIREMENTS.md"}
+    def reference_link(match):
+        target = match.group(1)
+        if target.startswith(("https:", "http:", "#", "mailto:")):
+            return match.group(0)
+        path, separator, anchor = target.partition("#")
+        resolved = posixpath.normpath(posixpath.join("docs", path))
+        if resolved.startswith("docs/") and resolved[5:] in reference_names:
+            destination = resolved[5:]
+        else:
+            destination = "https://github.com/sokldjs554/npuloop/blob/master/" + resolved
+        return "](" + destination + (separator + anchor if separator else "") + ")"
     for folder in ("docs", "demo"):
         dest = Path(ROOT) / folder / "reference"
         dest.mkdir(parents=True, exist_ok=True)
-        for name in ("USAGE.md", "VALIDATION_SCOPE.md", "EXPERIMENTS.md"):
-            shutil.copyfile(Path(ROOT) / "docs" / name, dest / name)
+        for name in sorted(reference_names):
+            text = (Path(ROOT) / "docs" / name).read_text(encoding="utf-8")
+            text = re.sub(r"\]\(([^)\s]+)\)", reference_link, text)
+            (dest / name).write_text(text, encoding="utf-8")
         shutil.copyfile(Path(ROOT) / "results" / "e9_customer_intake.json", dest / "e9_customer_intake.json")
     print(f"wrote {out} ({len(html)/1024:.0f} KB), models={list(data['models'])}, results={list(data['results'])}")
 

@@ -5,7 +5,7 @@
 > **모델을 가상 NPU의 연산 제약에 맞게 변경하고, 재학습·양자화·프루닝 전후의 정확도와 추정 실행 비용을 비교한 연구·개발 프로젝트입니다.**
 > PyTorch 학습·실험 스크립트와 Python CLI를 연결하고, 내보낸 정수 그래프는 NumPy/C++로 검증합니다.
 > 정확도는 저장된 실험의 측정값, NPU 사이클은 가상 프리셋의 추정값입니다.
-> 브라우저는 비용 계산과 기존 실험 결과 조회를 제공합니다. 실제 NPU 실행이나 재학습 기능은 아닙니다.
+> 브라우저에서 모델 변경·학습·경량화 기록을 비교하고, Python 실행기의 새 학습 결과를 가져올 수 있습니다. 새 학습은 CPU의 PyTorch에서 실행하고 NPU 비용은 시뮬레이션으로 표시합니다.
 
 ## 모델을 어떻게 바꾸고 검증했는가
 
@@ -23,16 +23,17 @@ PTQ·QAT·보정은 개선 여부를 비교하는 실험으로 다뤘습니다. 
 
 ## 실행 방법
 
-**1. 브라우저 분석 화면**
+**1. 모델 실험 워크벤치**
 
 `docs/index.html`을 엽니다. 서버, 설치, API 키, 외부 웹폰트 없이 동작합니다.
 
-- **모델 분석**: 모델·가상 NPU 조건, 지원 연산, 경로별 추정 비용, 노드 검사, 저장된 변경 전후 비교, 비용 설정.
+- **모델 실험** (기본 화면): 태스크·모델·실험 선택, 구조 수정 직후와 회복 학습 후 비교, 실제 학습 곡선, PTQ·QAT·프루닝, 정확도·추정 사이클 조건에 따른 변경안 필터, 로컬 실행 결과 가져오기.
+- **NPU 분석**: 모델·가상 NPU 조건, 지원 연산, 경로별 추정 비용, 노드 검사, 저장된 변경 전후 비교, 비용 설정.
 - **정수 검증**: 동일 조건의 E15 정확도·정수 출력, 계층별 차이, E16·E17 측정 기록.
 - **실험 기록**: E1–E17 검색·필터·표·개별 기록 및 원본 JSON 내보내기.
 - **재현 자료**: 연구 원고, 실행 방법, 검증 범위.
 
-![npuloop 모델 분석 화면](docs/demo_overview.png)
+![npuloop 모델 실험 화면](docs/demo_overview.png)
 
 [화면 사용 안내](docs/DEMO_GUIDE.md) · [검증 기록](docs/DEMO_WORKBENCH_REPORT.md) · [화면 참고 자료](docs/DEMO_REFERENCES.md)
 
@@ -52,7 +53,21 @@ make quickstart
 | `npuloop quantize` | ResNet-20을 PTQ하고 **fake-quant와 비트 정확 정수 엔진을 노드별로 대조** |
 | `npuloop export` + `int8_runner` | 정수 그래프를 `.npuloop` 파일로 내보내고 **파이썬 없는 C++ 실행기**로 같은 답을 냄 |
 
-**3. 전체 재현.** 데이터셋 준비·학습·실험은 [docs/USAGE.md](docs/USAGE.md), 실험 결과 전문은 [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md)에 있습니다.
+**3. 모델 수정·회복 학습을 새로 실행.** 다음 명령은 번들 체크포인트의 채널을 줄이고 실제 SGD 학습, PTQ, NumPy 정수 평가를 수행합니다. 같은 32장으로 모든 단계를 평가하는 실행 확인용 예제입니다.
+
+```bash
+python -m npuloop.study_runner \
+  --checkpoint examples/quickstart/resnet20_relu.pt \
+  --data examples/quickstart/cifar10_sample.npz \
+  --out runs/model-study \
+  --operation prune --prune-ratio 0.25 \
+  --epochs 1 --steps-per-epoch 2 \
+  --eval-images 32 --calibration-images 32 --threads 2
+```
+
+생성된 `runs/model-study/study.json`을 데모의 **내 모델로 실험 실행 → 실행 결과 JSON**에 넣으면 단계별 실제 평가와 학습 곡선이 표시됩니다. 모델 설정·체크포인트·학습 로그·분할 인덱스·해시도 함께 보존됩니다. 입력 형식, 활성함수 교체, 전체 학습 설정은 [실험 실행기 안내](docs/STUDY_RUNNER.md)에 있습니다.
+
+**4. 전체 재현.** 데이터셋 준비·학습·실험은 [docs/USAGE.md](docs/USAGE.md), 실험 결과 전문은 [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md)에 있습니다.
 README와 실험 문서의 `TABLE` 표시 구간은 `results/*.json`에서 `make tables`로 생성됩니다. 상단 모델 변경 요약은 링크한 원본 결과를 대조해 작성했습니다.
 
 ## 정수 실행의 차이를 조사한 결과

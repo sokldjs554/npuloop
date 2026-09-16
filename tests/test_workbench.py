@@ -97,17 +97,17 @@ def test_missing_research_is_an_error(payload):
 
 def test_html_is_an_application_not_a_question_landing():
     src=(ROOT/'demo/index.template.html').read_text(encoding='utf-8')
-    assert '<h1 id="page-title">NPU 모델 분석·검증</h1>' in src
+    assert '<h1 id="page-title">모델 실험·경량화</h1>' in src
     for banned in ['무엇을 고쳐야','할까요','예제 모델 분석 보기','대표 모델 분석','data-guide-step','guide-hero']:
         assert banned not in src
-    for view in ['analysis','research','experiments','resources']:
+    for view in ['studies','analysis','research','experiments','resources']:
         assert f'data-view="{view}"' in src
     assert 'id="analysis-summary"' in src
     assert 'id="operator-search"' in src
 
 
 def test_public_ui_copy_has_no_question_or_lecture_headers():
-    for name in ['index.template.html','workbench-ui.js']:
+    for name in ['index.template.html','workbench-ui.js','study-ui.js']:
         src=(ROOT/'demo'/name).read_text(encoding='utf-8')
         for banned in ['무엇을 고쳐야','할까요','따라가','눌러보','살펴보','이해할 수','고객이 체크포인트','처방']:
             assert banned not in src,(name,banned)

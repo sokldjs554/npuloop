@@ -1,16 +1,15 @@
 # 사용법
 
-[← README](../README.md) · [실험 E1–E16](EXPERIMENTS.md) · [설계 문서](DESIGN.md)
+[← README](../README.md) · [실험 E1–E17](EXPERIMENTS.md) · [설계 문서](DESIGN.md)
 
-README의 "3분 안에 보기"가 데이터도 학습도 없이 도는 경로라면, 이 문서는 그 다음입니다 — 데이터셋을 만들고, 직접 학습하고,
-CLI의 여섯 동사를 개별적으로 쓰고, 실험을 재현하는 방법.
+번들 체크포인트 검증, 새 모델 실험, 데이터 준비와 전체 실험 재현을 구분합니다. 모델 구조 수정부터 학습·PTQ·정수 평가까지 한 번에 실행하는 방법은 [STUDY_RUNNER.md](STUDY_RUNNER.md)에 있습니다.
 
 ## 설치와 전체 명령
 
 ```bash
 pip install -e .[dev]           # torch(CPU), numpy, pytest
 make quickstart                 # 데이터·학습 없이 40초: 번들 체크포인트로 intake → quantize/verify → export + C++ runner
-python -m pytest -q             # 87 tests, ~35 s (C++ 커널은 첫 실행 때 g++로 컴파일되어 처음엔 더 걸립니다)
+python -m pytest -q             # 전체 회귀 테스트 (C++ 커널은 첫 실행 때 g++로 컴파일)
 
 # CIFAR-10 (npz 한 파일) 준비: tools/prepare_cifar10.py 참고
 python -m npuloop.zoo.train --arch resnet --act relu --epochs 30 --out runs/resnet20_relu --data data/cifar10.npz
@@ -55,20 +54,19 @@ print(NumpyEngine(ig).evaluate(ds, limit=2000), CppEngine(ig).evaluate(ds, limit
 
 ## 데모 페이지
 
-`docs/index.html`(= `demo/index.html`)은 위 JSON을 인라인한 정적 페이지입니다. 비용 모델을 JavaScript로 그대로 포팅해서
-배열 크기·코어 수·DRAM 대역폭·depthwise 엔진 유무·비-ReLU 활성함수 실행 방식을 바꾸면 레이어별 사이클과 활용률이 즉시 다시 계산됩니다.
-lint 리포트, PTQ 그리드와 레이어별 일치도, requant ablation, 수술, 캘리브레이션, 프루닝 Pareto, lint-vs-drop 산점도를 모두 담았습니다.
+`docs/index.html`(= `demo/index.html`)은 모델 실험·경량화 워크벤치입니다. 서버나 외부 자산 없이 기존 실험의 모델 변경·회복 학습·양자화·프루닝 결과를 비교합니다. 실제로 기록된 학습 곡선만 표시하고, 정확도와 추정 사이클 조건을 적용해 후보를 비교합니다. Python 실행기의 새 `study.json`을 가져올 수도 있습니다.
 
-**라이브 데모:** https://sokldjs554.github.io/npuloop/
+NPU 분석 화면에서는 배열 크기·코어 수·DRAM 대역폭 등의 조건을 바꾸면 추정 사이클을 다시 계산합니다. 정수 검증과 E1–E17 원본 조회는 별도 작업 영역입니다. [전체 화면 안내](DEMO_GUIDE.md)를 참고하세요.
 
-같은 페이지가 저장소의 `docs/index.html`에 그대로 들어 있어서, 빌드 없이 어느 정적 호스팅에나 올릴 수 있습니다.
+**공개 데모:** [npuloop Workbench](https://sokldjs554.github.io/npuloop/)
 
-| 호스팅 | 설정 | 주소 |
-|---|---|---|
-| GitHub Pages | `.github/workflows/pages.yml`이 `docs/`를 push마다 자동 게시 (Settings → Pages의 Source가 GitHub Actions) | https://sokldjs554.github.io/npuloop/ |
-| Render | New → Blueprint(저장소의 `render.yaml`) 또는 New → Static Site, publish directory `docs` | `https://<name>.onrender.com` |
+`.github/workflows/pages.yml`이 master의 `docs/` 변경을 GitHub Pages에 게시합니다. Render 설정 파일도 있지만 실제 Render 배포가 운영 중이라는 뜻은 아닙니다.
 
-둘 다 push할 때마다 자동으로 갱신됩니다.
+체크포인트가 없는 환경에서 화면만 다시 만들 때는 다음 명령을 사용합니다. 임의 초기화 가중치의 정확도를 계산하지 않고 저장된 실험 결과를 표시합니다.
+
+```bash
+python demo/build.py --from-configs demo/model_configs.json
+```
 
 ## 실험 재현
 
@@ -84,6 +82,7 @@ python experiments/e13_vela.py               # Arm Vela 대조 (pip install etho
 python experiments/e14_rounding_seeds.py     # 반올림 모드 x 시드
 python experiments/e15_fidelity.py           # 쌍 표준오차로 잰 fake-quant vs 정수
 python experiments/e16_ln_emulation.py       # 정수 LayerNorm 에뮬레이션
+python experiments/e17_dense_output.py       # 초해상도 출력·PSNR 비교
 
 make tables                      # results/*.json -> README.md와 docs/EXPERIMENTS.md의 표를 다시 생성
 python tools/build_report.py     # docs/report/npuloop_report.{md,html,pdf}

@@ -1,0 +1,90 @@
+{
+  "all_17_unchanged": true,
+  "records": [
+    {
+      "path": "results/e10_engine_timing.json",
+      "sha256": "82f5f01f8b8c57bec8f2eeba0f029f5dc5e00e3d2809c9a84d7d74f281410752",
+      "unchanged": true
+    },
+    {
+      "path": "results/e11_tflite_crosscheck.json",
+      "sha256": "9fd24f4258275bda2fe0fc2d45d6e55b73e686ebd429664dc2e29c9f941daad5",
+      "unchanged": true
+    },
+    {
+      "path": "results/e12_imagenette.json",
+      "sha256": "0224a15573c3b3b1f6eaa74f030ded0264592b5fa4f58141291d594bafc60db4",
+      "unchanged": true
+    },
+    {
+      "path": "results/e13_vela.json",
+      "sha256": "495623c7321c63f80cd2309d048f62598bc327b15e85caaa43e84f1aac88e1c1",
+      "unchanged": true
+    },
+    {
+      "path": "results/e14_rounding_seeds.json",
+      "sha256": "c288d709cf43966c23161e358a902f63e09076b697b230312a5d10abd47a10bf",
+      "unchanged": true
+    },
+    {
+      "path": "results/e15_fidelity.json",
+      "sha256": "ca88ba1a447895cac42cbf99072fab7419646301503f6fdf6b31b28ad51ecfa8",
+      "unchanged": true
+    },
+    {
+      "path": "results/e16_ln_emulation.json",
+      "sha256": "fab33547eee3d6ab7604235994bbd4539cf399ccfd33acb1ca285d00ece9e8ac",
+      "unchanged": true
+    },
+    {
+      "path": "results/e17_dense_output.json",
+      "sha256": "c2bf25699648fa9d66576220725267440c50e50296532343d037948e8dc94feb",
+      "unchanged": true
+    },
+    {
+      "path": "results/e1_baselines.json",
+      "sha256": "7fd2fa0302b2667a6a575809ab94cce99441f5fb8b2865143cfdae908ddf7bbe",
+      "unchanged": true
+    },
+    {
+      "path": "results/e2_ptq_grid.json",
+      "sha256": "abd6834a96dc6ce940d05ea59f109e1442c3dc450b35e9b360ff6c2000fb99e2",
+      "unchanged": true
+    },
+    {
+      "path": "results/e3_lint_vs_drop.json",
+      "sha256": "32f6e056d0d38170320fd444e61da5549823aaccbf490b3a66758b7ff007fa13",
+      "unchanged": true
+    },
+    {
+      "path": "results/e4_surgery.json",
+      "sha256": "f0b7a77e8b278f3dd81c43e518a5ae6501864a2d17ef94c880470ef77a5c7ea1",
+      "unchanged": true
+    },
+    {
+      "path": "results/e5_calibration.json",
+      "sha256": "a4ab46baf666b69d3968ce1a23c4eaf1134b1247ccf27d5a37bcc5bacd156ffe",
+      "unchanged": true
+    },
+    {
+      "path": "results/e6_pruning.json",
+      "sha256": "2f088adc06e063830bd2cbf1d5bfb4ab64c28d6214a240d21e7975cfefa6f858",
+      "unchanged": true
+    },
+    {
+      "path": "results/e7_requant_ablation.json",
+      "sha256": "7db0cf0611892816f884f0f7259f4cbe463e7dc3f92f0e21ac670005aeab9cf4",
+      "unchanged": true
+    },
+    {
+      "path": "results/e8_scalesim.json",
+      "sha256": "70e1d10a1260e93d082b9f2e8c6c5e9aed539f6d3503279a16ba1b0694da9621",
+      "unchanged": true
+    },
+    {
+      "path": "results/e9_customer_intake.json",
+      "sha256": "336b48844594d1c87ef7dcfe08054e9429554717a973ae9c5783085e16860ac8",
+      "unchanged": true
+    }
+  ]
+}

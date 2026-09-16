@@ -44,4 +44,4 @@ Imagenette와 ESPCN 및 E14 추가 반복은 실제 보관 경로를 확인해 `
 
 누락 자료를 공개할 수 없다면 그 한계를 적고, 재현 가능 범위를 빠른 실행과 공개 결과의 집계 검사로 제한해 설명한다. 실제 존재하지 않는 재현 완료 상태를 만들지 않는다.
 
-로컬 통합 실행의 로그와 명령은 [INTEGRATION_REPORT.md](INTEGRATION_REPORT.md)에 있다. 전체 실험 원본 확보는 추가 연구 재측정을 위한 별도 작업이며, 번들 데모·공개 결과 집계의 실행 성공과 구분한다.
+로컬 통합 실행의 로그와 명령은 [INTEGRATION_REPORT.md](https://github.com/sokldjs554/npuloop/blob/master/docs/INTEGRATION_REPORT.md)에 있다. 전체 실험 원본 확보는 추가 연구 재측정을 위한 별도 작업이며, 번들 데모·공개 결과 집계의 실행 성공과 구분한다.

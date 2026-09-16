@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--browser',default='/usr/bin/chromium')
+    parser.add_argument('--browser',help='Optional Chromium executable; default: Playwright-managed browser')
     parser.add_argument('--output',type=Path,default=ROOT/'verification/workbench/browser')
     args=parser.parse_args();out=args.output;out.mkdir(parents=True,exist_ok=True)
     checks=[];errors=[];requests=[]
@@ -42,8 +42,9 @@ def main():
             check(all(word not in text for word in ['할까요','무엇을 고쳐야','따라가','눌러보','살펴보','처방']),name+' UI copy')
             check('NaN' not in text and 'Infinity' not in text,name+' finite display')
             check(page.evaluate('document.documentElement.scrollWidth<=innerWidth+1'),name+' page width')
-        check(page.locator('h1').inner_text()=='NPU 모델 분석·검증','application title')
-        check(page.locator('.nav-item').count()==4,'four workspace routes')
+        check(page.locator('h1').inner_text()=='모델 실험·경량화','application title')
+        check(page.locator('.nav-item').count()==5,'five workspace routes')
+        nav('analysis')
         check(result()['estimate']['total']==2503878,'default exact cost')
         bodyclean('initial')
         page.screenshot(path=str(out/'analysis.png'),full_page=True)

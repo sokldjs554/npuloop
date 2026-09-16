@@ -1,5 +1,7 @@
 # npuloop 분석 화면 재구성·검증 — 2026-09-16
 
+> 이 문서는 모델 실험 화면 추가 **이전** 분석 Workbench의 검증 이력입니다. 현재 첫 화면과 실행 방법은 [DEMO_GUIDE.md](DEMO_GUIDE.md), [STUDY_RUNNER.md](STUDY_RUNNER.md)를 따릅니다. 아래 테스트 수와 스크린샷은 해당 이전 버전의 기록이며 최신 통과 수로 사용하지 않습니다.
+
 ## 결과물
 
 `npuloop_workbench_20260916.zip`은 전체 프로젝트입니다. 별도 패치 적용 없이 새 폴더에 풀고 `npuloop/docs/index.html`을 엽니다.

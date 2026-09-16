@@ -1,0 +1,65 @@
+{
+  "config": {
+    "arch": "resnet",
+    "depth": 20,
+    "width": 16,
+    "act": "relu",
+    "num_classes": 10,
+    "widths": [
+      16,
+      32,
+      64
+    ],
+    "stem_stride": 1,
+    "pruned_channels": [
+      12,
+      12,
+      12,
+      24,
+      24,
+      24,
+      48,
+      48,
+      48
+    ]
+  },
+  "epochs": [
+    {
+      "epoch": 1,
+      "train_loss": 0.3383607640862465,
+      "train_acc": 0.890625,
+      "val_acc": 0.71875,
+      "lr": 0.01,
+      "epoch_sec": 0.25958776473999023,
+      "steps": 2,
+      "samples": 64,
+      "val_images": 32
+    }
+  ],
+  "hparams": {
+    "epochs": 1,
+    "lr": 0.01,
+    "wd": 0.0005,
+    "bs": 32,
+    "seed": 0,
+    "optimizer": "sgd",
+    "steps_per_epoch": 2,
+    "requested_steps_per_epoch": 2,
+    "schedule": "constant_short_run"
+  },
+  "splits": {
+    "train": 472,
+    "val": 40,
+    "test": 500
+  },
+  "selection": "highest validation accuracy; ties select the later epoch; test never selects",
+  "final_val_acc": 0.71875,
+  "best_val_acc": 0.71875,
+  "selected_epoch": 1,
+  "train_minutes": 0.005053814252217611,
+  "final_test_acc": 0.75,
+  "test_acc": 0.75,
+  "actual_steps": 2,
+  "actual_samples": 64,
+  "weights_changed": true
+}

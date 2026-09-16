@@ -1,0 +1,55 @@
+name: model-workbench
+on:
+  push:
+    paths: ['demo/**', 'docs/**', 'npuloop/**', 'tests/**', 'tools/check_*browser.py', '.github/workflows/model-workbench.yml']
+  pull_request:
+    paths: ['demo/**', 'docs/**', 'npuloop/**', 'tests/**', 'tools/check_*browser.py', '.github/workflows/model-workbench.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  training-and-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install runtime and browser dependencies
+        run: |
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install numpy pytest playwright
+          python -m playwright install --with-deps chromium
+          sudo apt-get install -y fonts-noto-cjk
+      - name: Run actual model change, training, PTQ, and integer evaluation
+        run: |
+          python -m npuloop.study_runner \
+            --checkpoint examples/quickstart/resnet20_relu.pt \
+            --data examples/quickstart/cifar10_sample.npz \
+            --out runs/model-workbench-ci \
+            --operation prune --prune-ratio 0.25 \
+            --epochs 1 --steps-per-epoch 2 \
+            --eval-images 32 --calibration-images 32 --threads 2
+      - name: Verify generated HTML matches source assets
+        run: |
+          python demo/build.py --from-configs demo/model_configs.json
+          python -m pytest -q tests/test_study_data.py tests/test_study_entrypoint.py tests/test_study_import.py
+      - name: Exercise model studies and import the actual training report
+        run: python tools/check_study_browser.py --report runs/model-workbench-ci/study.json --output verification/model-study/browser
+      - name: Exercise existing NPU and integer workspaces
+        run: python tools/check_workbench_browser.py --output verification/model-study/legacy-browser
+      - name: Upload execution and screen evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-workbench-verification
+          path: |
+            verification/model-study/browser
+            verification/model-study/legacy-browser
+            runs/model-workbench-ci/study.json
+            runs/model-workbench-ci/training_log.json
+          retention-days: 14

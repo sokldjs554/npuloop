@@ -231,10 +231,16 @@ class NumpyEngine:
 
     def evaluate(self, ds, batch_size: int = 200, limit: int | None = None, split: str = "test") -> float:
         """Top-1 accuracy of the integer graph on the 'test' (default) or 'val' split."""
+        if limit is not None and limit < 1:
+            raise ValueError("evaluation limit must be positive")
         correct = 0; total = 0
         for xb, yb in ds.batches(split, batch_size):
+            if limit is not None:
+                xb, yb = xb[:limit - total], yb[:limit - total]
             logits = self.predict(xb.numpy())
             correct += int((logits.argmax(1) == yb.numpy()).sum()); total += len(yb)
-            if limit and total >= limit:
+            if limit is not None and total >= limit:
                 break
+        if not total:
+            raise ValueError(f"cannot evaluate an empty {split} split")
         return correct / total

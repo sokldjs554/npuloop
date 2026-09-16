@@ -1,6 +1,6 @@
 # 실험 E1–E17
 
-[← README](../README.md) · [설계 문서](DESIGN.md) · [기술 보고서](report/npuloop_report.md) · [선행 연구](RELATED.md)
+[← README](https://github.com/sokldjs554/npuloop/blob/master/README.md) · [설계 문서](https://github.com/sokldjs554/npuloop/blob/master/docs/DESIGN.md) · [기술 보고서](https://github.com/sokldjs554/npuloop/blob/master/docs/report/npuloop_report.md) · [선행 연구](https://github.com/sokldjs554/npuloop/blob/master/docs/RELATED.md)
 
 CIFAR-10, CPU 4코어. 숫자는 전부 `results/*.json`에서 `make tables`(= `python tools/readme_tables.py --inject README.md docs/EXPERIMENTS.md`)로
 생성한 것입니다. 정확도는 따로 적지 않으면 test 10,000장 기준이고, `simulated`로 표시한 사이클·활용률은 가상 NPU 비용 모델 값입니다.
@@ -326,7 +326,7 @@ Vela는 이 연산을 둘로 쪼개므로 연산자 개수도 2 대 1로 어긋�
 * **SiLU 모델(LUT 활성함수)도 PTQ에 강합니다.** FP32 90.34% → npu-default 90.35%, 정수 엔진 90.26%. LUT 노드의 국소 불일치는 정확히 0(테이블 조회는 fake-quant의 "양자화→활성함수→양자화"와 동일한 함수)이고, 레이어당 양자화 지점이 하나 더 있어도 정확도는 ReLU 모델과 같습니다. lint가 SiLU 모델의 양자화 강건성 점수를 75점으로 깎은 것은 **이 네트워크에서는 과한 경고**였습니다(E3에서 다시 다룹니다). 다만 pow2 스킴에서는 SiLU 모델이 정수 엔진에서 fake-quant보다 0.75%p를 더 잃습니다(top-1 일치 95.2%, 출력 코드 83% 불일치). SiLU의 진짜 비용은 정확도가 아니라 **효율성**(strict NPU에서 45배 사이클)입니다.
 * **MobileNetV2-0.5도 7개 스킴 전부에서 −0.00~+0.14%p 안입니다.** depthwise·6배 확장 채널이 있어도 per-tensor 가중치(90.23%)가 per-channel(90.30%)보다 나쁘지 않습니다 — E4(a)·E3에서 이유를 다룹니다. 정수 엔진과 fake-quant의 차이도 7개 스킴 모두 ±0.1%p 안이고, 가장 크게 어긋나는 쪽은 역시 pow2(top-1 일치 96.8%, 출력 코드 불일치 75%)입니다. 2의 거듭제곱 스케일은 residual add의 requant에서 정확한 .5 타이를 만들고, fake-quant(half-even)와 정수 엔진(half-away)이 이 타이를 다르게 반올림해 불일치가 누적됩니다. 정확도 예측기로서 fake-quant가 가장 못 믿을 만한 곳이 바로 이 "타이가 많은 스킴"입니다.
 * **ViT는 fake-quant와 정수 엔진이 가장 많이 갈립니다.** 스킴 간 fake-quant 편차는 ±0.2%p로 CNN과 비슷하지만, 정수 엔진과의 차이는 최대 +0.45%p(per-tensor-mse, 2,000장), top-1 일치는 96~99%, 출력 코드 불일치는 64~84%로 다섯 모델 중 가장 높습니다. 원인은 E9에서 LayerNorm으로 좁혀집니다.
-* **`sym-act`(대칭 int8 활성값)는 처음 실행에서 정수 엔진 정확도가 9%로 무너졌습니다.** "requant clamp가 곧 ReLU"라는 가정이 `qmin=-127`에서는 틀리기 때문입니다. fake-quant만 보면 절대 안 보이는 버그를 정수 엔진이 잡았고, export 단계에서 노드별 clamp 하한을 `zp`로 명시하도록 고쳤습니다 ([docs/INTEGER_DATAPATH.md](INTEGER_DATAPATH.md)).
+* **`sym-act`(대칭 int8 활성값)는 처음 실행에서 정수 엔진 정확도가 9%로 무너졌습니다.** "requant clamp가 곧 ReLU"라는 가정이 `qmin=-127`에서는 틀리기 때문입니다. fake-quant만 보면 절대 안 보이는 버그를 정수 엔진이 잡았고, export 단계에서 노드별 clamp 하한을 `zp`로 명시하도록 고쳤습니다 ([docs/INTEGER_DATAPATH.md](https://github.com/sokldjs554/npuloop/blob/master/docs/INTEGER_DATAPATH.md)).
 
 <a id="e15"></a>
 ### E15. 같은 이미지에서 잰 오차 막대 — 정확도 차이는 0과 구분되는가, 코드는 얼마나 다른가
@@ -649,4 +649,4 @@ README의 요약판보다 자세한 전체 목록입니다.
 * **활성함수 베이스라인 2개를 학습하지 못했습니다.** 계획했던 ResNet-20 GELU·HardSwish 베이스라인은 CPU 시간 때문에 빠졌습니다(E4(b)의 HardSwish는 SiLU 모델을 교체·healing한 것). LUT 활성함수에 대한 결론은 SiLU 한 모델에 기댑니다.
 * **CLE의 이득과 lint 점수의 보정을 보이지 못했습니다.** 이 저장소의 체크포인트에는 CLE가 고칠 만한 채널 범위 불균형이 없고(최대 6배), lint 점수는 순위는 맞지만 크기가 보정되지 않았습니다(E3). ImageNet 사전학습 체크포인트가 필요한데 이 환경에서는 가중치 호스트가 막혀 있어 Imagenette를 처음부터 학습하는 것으로 대신했습니다(E12).
 * **에너지 모델은 자릿수 추정입니다.** MAC·SRAM·DRAM·벡터·호스트 항목의 pJ 상수는 45 nm 공개 수치에서 가져온 것이라 절대값이 아니라 프리셋·모델 간 비율을 읽는 용도입니다. TFLite 교차 검증도 conv·pool·fc 세 op에 한정됩니다(depthwise·add·softmax는 아직).
-* **CPU 학습 환경 주의(oneDNN 버그).** oneDNN 3.12(torch 2.14.0에 포함)와 upstream main의 1×1 conv backward-weights 구현(`jit_avx2_1x1`·`jit_avx512_common_1x1`)은 channels_last이고 stride > 1이며 입력 채널 수가 ISA 채널 블록(AVX2 8, AVX-512 16)보다 작으면 rtus 작업공간 밖에 써서 **조용히 틀린 diff_weights를 내거나 세그폴트**를 냅니다(넘친 자리가 리듀서 배리어면 이 저장소 CI처럼 멈추기도 하는데, 그 증상은 환경 의존입니다). 이 저장소의 CI가 간헐적으로 멈춘 원인이었고, benchdnn으로 라이브러리 단독 재현과 두 줄 패치 검증(upstream main 960edf5)까지 마쳐 보고서로 정리했습니다([docs/upstream/](upstream/onednn_1x1_bwd_weights_rtus_overflow.md): 보고서·패치·`tools/onednn_1x1_repro.py`). 공식 1×1 벤치 스위트는 최소 입력 채널이 16이라 이 버그를 잡지 못합니다. `ONEDNN_MAX_CPU_ISA=AVX2`로 어느 CPU에서나 재현되며 CI는 이 설정으로도 전체 스위트를 돌립니다. 이 저장소의 실험 모델은 stride > 1인 1×1 conv의 입력 채널이 모두 16 이상이라 결과와 무관합니다.
+* **CPU 학습 환경 주의(oneDNN 버그).** oneDNN 3.12(torch 2.14.0에 포함)와 upstream main의 1×1 conv backward-weights 구현(`jit_avx2_1x1`·`jit_avx512_common_1x1`)은 channels_last이고 stride > 1이며 입력 채널 수가 ISA 채널 블록(AVX2 8, AVX-512 16)보다 작으면 rtus 작업공간 밖에 써서 **조용히 틀린 diff_weights를 내거나 세그폴트**를 냅니다(넘친 자리가 리듀서 배리어면 이 저장소 CI처럼 멈추기도 하는데, 그 증상은 환경 의존입니다). 이 저장소의 CI가 간헐적으로 멈춘 원인이었고, benchdnn으로 라이브러리 단독 재현과 두 줄 패치 검증(upstream main 960edf5)까지 마쳐 보고서로 정리했습니다([docs/upstream/](https://github.com/sokldjs554/npuloop/blob/master/docs/upstream/onednn_1x1_bwd_weights_rtus_overflow.md): 보고서·패치·`tools/onednn_1x1_repro.py`). 공식 1×1 벤치 스위트는 최소 입력 채널이 16이라 이 버그를 잡지 못합니다. `ONEDNN_MAX_CPU_ISA=AVX2`로 어느 CPU에서나 재현되며 CI는 이 설정으로도 전체 스위트를 돌립니다. 이 저장소의 실험 모델은 stride > 1인 1×1 conv의 입력 채널이 모두 16 이상이라 결과와 무관합니다.

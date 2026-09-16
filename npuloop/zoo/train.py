@@ -21,14 +21,20 @@ from .models import ResNetCIFAR, MobileNetV2CIFAR, build_model, count_params
 def evaluate(model: nn.Module, ds: CIFAR10NPZ, batch_size: int = 500, channels_last: bool = True, limit: int | None = None,
              split: str = "test") -> float:
     """Top-1 accuracy on the 'test' (default) or 'val' split, optionally only its first `limit` images."""
+    if limit is not None and limit < 1:
+        raise ValueError("evaluation limit must be positive")
     model.eval()
     correct = 0; total = 0
     for xb, yb in ds.batches(split, batch_size):
+        if limit is not None:
+            xb, yb = xb[:limit - total], yb[:limit - total]
         if channels_last:
             xb = xb.to(memory_format=torch.channels_last)
         correct += (model(xb).argmax(1) == yb).sum().item(); total += len(yb)
-        if limit and total >= limit:
+        if limit is not None and total >= limit:
             break
+    if not total:
+        raise ValueError(f"cannot evaluate an empty {split} split")
     return correct / total
 
 
@@ -43,6 +49,11 @@ def fit(model: nn.Module, ds: CIFAR10NPZ, epochs: int, lr: float = 0.1, wd: floa
     checkpoint, `test_acc`, and for the last epoch, `final_test_acc`). When `out` is None nothing is selected: the
     caller gets the final-epoch model, and the log still carries the per-epoch validation curve.
     """
+    if epochs < 1 or bs < 1 or (steps_per_epoch is not None and steps_per_epoch < 1):
+        raise ValueError("epochs, batch size and training steps must be positive")
+    available_steps = len(ds.x_train) // bs
+    if not available_steps:
+        raise ValueError("training split must contain at least one full batch")
     torch.manual_seed(seed)
     rng = np.random.default_rng(seed)
     if channels_last:
@@ -55,13 +66,21 @@ def fit(model: nn.Module, ds: CIFAR10NPZ, epochs: int, lr: float = 0.1, wd: floa
     groups = [{"params": decay, "weight_decay": wd}, {"params": no_decay, "weight_decay": 0.0}]
     opt = (torch.optim.AdamW(groups, lr=lr) if optimizer == "adamw"
            else torch.optim.SGD(groups, lr=lr, momentum=0.9, nesterov=True))
-    spe = steps_per_epoch or len(ds.x_train) // bs
+    spe = min(steps_per_epoch, available_steps) if steps_per_epoch is not None else available_steps
     total = spe * epochs
-    warmup_pct = max(warmup_pct, 2.0 / total) if total > 4 else 0.5   # OneCycle needs >= 2 warm-up steps
-    sched = torch.optim.lr_scheduler.OneCycleLR(opt, max_lr=lr, total_steps=total, pct_start=warmup_pct,
-                                                anneal_strategy="cos", div_factor=div_factor, final_div_factor=final_div)
+    # A two-step OneCycle with pct_start=.5 has a zero-length first phase. For
+    # diagnostic runs of 1--4 steps, use real optimizer updates at constant lr.
+    if total <= 4:
+        sched = torch.optim.lr_scheduler.ConstantLR(opt, factor=1.0, total_iters=total)
+        schedule = "constant_short_run"
+    else:
+        warmup_pct = max(warmup_pct, 2.0 / total)   # OneCycle needs >= 2 warm-up steps
+        sched = torch.optim.lr_scheduler.OneCycleLR(opt, max_lr=lr, total_steps=total, pct_start=warmup_pct,
+                                                    anneal_strategy="cos", div_factor=div_factor, final_div_factor=final_div)
+        schedule = "onecycle"
     log = {"config": getattr(model, "config", None), "epochs": [],
-           "hparams": dict(epochs=epochs, lr=lr, wd=wd, bs=bs, seed=seed, optimizer=optimizer),
+           "hparams": dict(epochs=epochs, lr=lr, wd=wd, bs=bs, seed=seed, optimizer=optimizer,
+                           steps_per_epoch=spe, requested_steps_per_epoch=steps_per_epoch, schedule=schedule),
            "splits": dict(train=len(ds.x_train), val=len(ds.x_val), test=len(ds.x_test)),
            "selection": "best.pt = highest val_acc epoch; test split evaluated once at the end"}
     best = -1.0; best_epoch = 0; start_ep = 0
@@ -79,7 +98,7 @@ def fit(model: nn.Module, ds: CIFAR10NPZ, epochs: int, lr: float = 0.1, wd: floa
                else evaluate(model, ds, channels_last=channels_last, limit=eval_limit, split="val"))
     for ep in range(start_ep, epochs):
         model.train()
-        tl = tc = tn = 0
+        tl = tc = tn = steps = 0
         te = time.time()
         for it, (xb, yb) in enumerate(ds.train_batches(bs, rng)):
             if it >= spe:
@@ -90,12 +109,15 @@ def fit(model: nn.Module, ds: CIFAR10NPZ, epochs: int, lr: float = 0.1, wd: floa
             loss = F.cross_entropy(out_, yb)
             opt.zero_grad(set_to_none=True); loss.backward(); opt.step(); sched.step()
             tl += loss.item() * len(yb); tc += (out_.argmax(1) == yb).sum().item(); tn += len(yb)
+            steps += 1
         val_acc = evaluate(model, ds, channels_last=channels_last, limit=eval_limit, split="val")
         if val_acc >= best:                      # ties go to the later (more trained) epoch
             best, best_epoch = val_acc, ep + 1
             if out:
                 torch.save({"config": getattr(model, "config", None), "state_dict": model.state_dict()}, os.path.join(out, "best.pt"))
-        rec = dict(epoch=ep + 1, train_loss=tl / tn, train_acc=tc / tn, val_acc=val_acc, lr=sched.get_last_lr()[0], epoch_sec=time.time() - te)
+        rec = dict(epoch=ep + 1, train_loss=tl / tn, train_acc=tc / tn, val_acc=val_acc, lr=sched.get_last_lr()[0],
+                   epoch_sec=time.time() - te, steps=steps, samples=tn,
+                   val_images=min(eval_limit, len(ds.x_val)) if eval_limit is not None else len(ds.x_val))
         log["epochs"].append(rec)
         print(log_prefix + json.dumps(rec), flush=True)
         if out:
@@ -133,7 +155,10 @@ def load_checkpoint(path: str) -> nn.Module:
         raise ValueError("Invalid checkpoint: expected config with arch and a tensor state_dict")
     if ck["config"] and ck["config"].get("pruned_channels"):
         from ..prune.structured import rebuild_from_config
-        m = rebuild_from_config(ck["config"])
+        # ViT's positional embeddings fix its token count. Reconstruct pruning
+        # with the configured input size, not an unconditional 32px trace.
+        image_size = ck["config"].get("img", 32) if ck["config"]["arch"] == "vit" else 32
+        m = rebuild_from_config(ck["config"], input_shape=(3, image_size, image_size))
     else:
         m = build_model(ck["config"])
     m.load_state_dict(ck["state_dict"]); m.eval()

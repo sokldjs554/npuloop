@@ -3,35 +3,57 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="npuloop — NPU 모델의 지원 연산과 추정 비용, 양자화 및 정수 실행 결과를 분석하는 워크벤치">
+<meta name="description" content="npuloop — 모델 구조 수정, 회복 학습, 양자화와 프루닝 결과를 비교하고 NPU 제약을 검증하는 딥러닝 실험 워크벤치">
 <meta name="color-scheme" content="light dark">
-<title>npuloop · NPU 모델 분석·검증</title>
+<title>npuloop · 모델 실험·경량화</title>
 <style>/*__WORKBENCH_CSS__*/</style>
+<style>/*__STUDY_CSS__*/</style>
 </head>
 <body>
 <a class="skip-link" href="#main">본문으로 이동</a>
 <aside class="sidebar" aria-label="주 메뉴">
- <a class="brand" href="#analysis" aria-label="npuloop 모델 분석"><svg class="brand-icon" viewBox="0 0 32 32" aria-hidden="true"><path d="M5 8h10v10H5zM17 14h10v10H17zM10 18v6h7M22 14V8h-7"/></svg><span>npu<strong>loop</strong></span></a>
- <div class="sidebar-caption">모델 분석 워크벤치</div>
+ <a class="brand" href="#studies" aria-label="npuloop 모델 실험"><svg class="brand-icon" viewBox="0 0 32 32" aria-hidden="true"><path d="M5 8h10v10H5zM17 14h10v10H17zM10 18v6h7M22 14V8h-7"/></svg><span>npu<strong>loop</strong></span></a>
+ <div class="sidebar-caption">딥러닝 모델 실험 워크벤치</div>
  <div class="nav-label">WORKSPACE</div>
  <nav id="main-nav">
-  <a href="#analysis" data-nav="analysis" class="nav-item active" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>모델 분석</a>
+  <a href="#studies" data-nav="studies" class="nav-item active" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5m0 14h16M7 15l4-6 4 3 5-7"/></svg>모델 실험</a>
+  <a href="#analysis" data-nav="analysis" class="nav-item"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>NPU 분석</a>
   <a href="#research" data-nav="research" class="nav-item"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16M4 12h6M14 12h6M4 19h16M9 9l3 3-3 3M15 9l-3 3 3 3"/></svg>정수 검증</a>
   <a href="#experiments" data-nav="experiments" class="nav-item"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4zM4 10h16M10 4v16"/></svg>실험 기록<span class="nav-count">17</span></a>
   <a href="#resources" data-nav="resources" class="nav-item"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h10l4 4v14H5zM14 3v5h5M8 12h8M8 16h6"/></svg>재현 자료</a>
  </nav>
  <div class="sidebar-bottom">
   <div class="local-indicator"><span></span>로컬 분석 환경</div>
-  <p>가상 NPU 비용 추정<br>저장된 실험 결과 조회</p>
+  <p>학습·경량화 실험 기록<br>가상 NPU 비용 추정</p>
   <div class="sidebar-links"><a href="https://github.com/sokldjs554/npuloop" target="_blank" rel="noopener noreferrer">GitHub ↗</a><button id="theme-toggle" type="button" aria-label="어두운 테마로 전환">다크 모드</button></div>
  </div>
 </aside>
 <div class="app">
- <header class="topbar"><div class="breadcrumb">npuloop <span>/</span> <strong id="breadcrumb-current">모델 분석</strong></div><div class="top-actions"><button id="theme-mobile" class="mobile-theme" aria-label="화면 테마 전환" type="button">◐</button><span class="badge neutral">예제 데이터</span><a class="quiet-link" href="research/npuloop_thesis.pdf" target="_blank" rel="noopener">논문 PDF <span aria-hidden="true">↗</span></a></div></header>
+ <header class="topbar"><div class="breadcrumb">npuloop <span>/</span> <strong id="breadcrumb-current">모델 실험</strong></div><div class="top-actions"><button id="theme-mobile" class="mobile-theme" aria-label="화면 테마 전환" type="button">◐</button><span class="badge neutral">저장된 실험 데이터</span><a class="quiet-link" href="research/npuloop_thesis.pdf" target="_blank" rel="noopener">논문 PDF <span aria-hidden="true">↗</span></a></div></header>
  <main id="main" tabindex="-1">
- <div class="page-heading"><div><h1 id="page-title">NPU 모델 분석·검증</h1><p id="page-description">지원 연산, 추정 비용 및 모델 변경 결과</p></div><button id="export-report" class="btn secondary" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M5 16v5h14v-5"/></svg>분석 JSON 내보내기</button></div>
+ <div class="page-heading"><div><h1 id="page-title">모델 실험·경량화</h1><p id="page-description">태스크와 데이터에 맞춘 구조 변경, 회복 학습, 양자화 결과</p></div><button id="export-report" class="btn secondary" type="button" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M5 16v5h14v-5"/></svg>분석 JSON 내보내기</button></div>
  <div id="error-banner" role="alert" hidden></div>
- <section data-view="analysis" id="view-analysis" aria-label="모델 분석">
+ <section data-view="studies" id="view-studies" aria-label="모델 실험·경량화">
+  <div class="context-bar study-controls"><label>태스크<select id="study-task"><option value="all">전체 태스크</option><option value="classification">이미지 분류</option><option value="super-resolution">초해상도</option></select></label><label class="study-select-label">모델·실험<select id="study-select"></select></label><label>가상 NPU 프리셋<select id="study-preset"></select></label></div>
+  <div class="study-intro"><div><span class="overline" id="study-kind"></span><h2 id="study-title"></h2><p id="study-subtitle"></p></div><div class="study-actions"><button id="study-source" class="btn subtle">원본 기록</button><button id="study-export" class="btn secondary">실험 JSON 저장</button></div></div>
+  <div id="study-context"></div>
+  <div id="study-metrics" class="metric-grid"></div>
+  <div class="study-charts"><div class="panel study-chart-panel"><div class="panel-head"><div><h2>학습 기록</h2><p id="study-training-caption"></p></div><span class="badge neutral">측정</span></div><div id="study-training"></div></div><div class="panel study-chart-panel"><div class="panel-head"><div><h2>정확도와 연산 비용</h2><p>동일 실험의 FP32 정확도 · 가상 NPU 사이클</p></div><span class="badge blue">비용 추정</span></div><div id="study-tradeoff"></div></div></div>
+  <div class="section-heading"><div><h2>변경안 비교</h2><p>행을 선택하면 해당 변경안의 학습 기록과 지표가 표시됩니다.</p></div><span class="badge neutral" id="study-variant-count"></span></div>
+  <div class="panel table-container" id="study-variants"></div>
+  <p class="footnote" id="study-metric-notes"></p>
+  <div class="study-budget panel"><div><h2>변경안 선택 조건</h2><p class="muted">기준 모델 대비 FP32 정확도와 추정 사이클로 판정</p></div><form id="study-budget-form"><label>허용 정확도 하락 (%p)<input id="study-max-drop" type="number" min="0" max="100" step="0.1" value="1" required></label><label>최소 사이클 절감 (%)<input id="study-min-saving" type="number" min="0" max="100" step="1" value="0" required></label><button id="study-apply-budget" class="btn secondary" type="submit">조건 적용</button></form><div id="study-decision" role="status"></div></div>
+  <details class="panel study-run"><summary><span>내 모델로 실험 실행</span><span class="muted">Python 학습 실행 · 결과 JSON 가져오기</span></summary><div class="study-run-content"><p>체크포인트와 데이터로 구조 수정, 회복 학습, PTQ, 정수 평가를 실행합니다. 아래 번들 샘플은 실행 확인용이며 전체 데이터 벤치마크와 구분됩니다.</p><pre class="command">python -m pip install -e '.[dev]'
+python -m npuloop.study_runner \
+  --checkpoint examples/quickstart/resnet20_relu.pt \
+  --data examples/quickstart/cifar10_sample.npz \
+  --out runs/model-study \
+  --operation prune --prune-ratio 0.25 \
+  --epochs 1 --steps-per-epoch 2 \
+  --eval-images 32 --calibration-images 32 --threads 2</pre><div class="study-import-row"><label class="study-file-label">실행 결과 JSON<input id="study-import" type="file" accept=".json,application/json"></label><a class="btn subtle" href="reference/STUDY_RUNNER.md" target="_blank" rel="noopener">입력 형식·실행 안내 ↗</a></div><p id="study-import-status" role="status" class="footnote"></p><div id="study-import-result"></div><p class="footnote">브라우저는 저장된 결과를 비교합니다. 새 학습은 Python에서 실행하며 파일 가져오기는 이 브라우저 안에서 처리됩니다.</p></div></details>
+  <div class="study-links"><a href="#analysis">연산자·지원 조건 분석 →</a><a href="#research">모의·정수 출력 검증 →</a><a href="reference/RESEARCH_SUMMARY.md" target="_blank" rel="noopener">연구 요약 ↗</a></div>
+ </section>
+ <section data-view="analysis" id="view-analysis" aria-label="모델 분석" hidden>
   <div class="context-bar"><label>모델<select id="model-select" aria-label="분석 모델"></select></label><label>가상 NPU 프리셋<select id="preset-select" aria-label="가상 NPU 프리셋"></select></label><div id="model-meta" class="model-meta"></div></div>
   <div class="tabs" role="tablist" aria-label="모델 분석 상세"><button role="tab" id="tab-summary" data-analysis-tab="summary" aria-controls="analysis-summary" aria-selected="true">분석 요약</button><button role="tab" id="tab-operators" data-analysis-tab="operators" aria-controls="analysis-operators" aria-selected="false" tabindex="-1">연산자 상세</button><button role="tab" id="tab-comparison" data-analysis-tab="comparison" aria-controls="analysis-comparison" aria-selected="false" tabindex="-1">변경 비교</button><button role="tab" id="tab-settings" data-analysis-tab="settings" aria-controls="analysis-settings" aria-selected="false" tabindex="-1">비용 설정</button><span class="tabs-trailing" id="config-state">기본 프리셋</span></div>
   <div id="analysis-summary" role="tabpanel" aria-labelledby="tab-summary"></div>
@@ -77,7 +99,7 @@
 make quickstart
 python -m pytest -q</pre><p class="footnote">샘플 데이터와 체크포인트 2개가 포함되어 있습니다. 전체 논문 실험의 재현에는 원본 데이터와 해당 학습 가중치가 필요합니다.</p></div><div class="panel padded"><h2>데이터 출처</h2><dl id="data-provenance" class="property-list"></dl><p class="footnote">가상 NPU 프리셋은 특정 제조사의 실제 구조를 나타내지 않습니다. 이 화면은 모델 학습, 칩 실행 또는 배포를 수행하지 않습니다.</p></div></div>
  </section>
- <footer class="page-footer"><span>npuloop <span class="footer-divider">/</span> 모델 분석·정수 실행 검증</span><span id="footer-context">가상 NPU 추정 · 실리콘 실측 아님</span></footer>
+ <footer class="page-footer"><span>npuloop <span class="footer-divider">/</span> 모델 연구·경량화·정수 검증</span><span id="footer-context">저장된 실험 기록 · NPU 비용은 시뮬레이션</span></footer>
  </main>
 </div>
 <dialog id="record-dialog" aria-labelledby="record-title"><div class="dialog-header"><div><span class="overline">SOURCE RECORD</span><h2 id="record-title">원본 기록</h2></div><button id="close-dialog" class="icon-button" aria-label="원본 기록 닫기">×</button></div><pre id="record-json" tabindex="0"></pre><div class="dialog-footer"><span class="muted">저장된 JSON · 읽기 전용</span><button id="download-record" class="btn primary">JSON 저장</button></div></dialog>
@@ -86,6 +108,8 @@ python -m pytest -q</pre><p class="footnote">샘플 데이터와 체크포인트
 <script id="npuloop-cost">/*__COST_MODEL__*/</script>
 <script id="npuloop-evidence">/*__GUIDED_DATA__*/</script>
 <script id="npuloop-workbench-model">/*__WORKBENCH_MODEL__*/</script>
+<script id="npuloop-study-data">/*__STUDY_DATA__*/</script>
+<script id="npuloop-study-ui">/*__STUDY_UI__*/</script>
 <script id="npuloop-workbench-ui">/*__WORKBENCH_UI__*/</script>
 </body>
 </html>

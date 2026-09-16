@@ -12,7 +12,9 @@
 
 GitHub Actions의 `import-approved-workbench` 실행 35067065923에서 전체 테스트, AVX2 제한 테스트, 번들 체크포인트 quickstart, 논문 표 재생성, PDF 빌드 및 브라우저 검사를 수행했습니다. 기록은 `verification/publish/`에 있습니다. 이 실행은 검증용 브랜치에만 커밋했으며, 공개 사이트에 게시했다는 근거는 아닙니다.
 
-최종 소스의 단위 테스트는 `tests`, 논문 검사는 `paper-quality`, 공개 사이트 배포는 `pages` 워크플로가 수행합니다. `pages`의 마지막 검사는 공개 HTML, 논문 PDF 및 근거 파일 4개의 응답 바이트를 배포 커밋의 파일과 대조합니다. 결과는 해당 실행의 `public-site-verification` 아티팩트에 저장됩니다.
+최종 소스의 단위 테스트는 `tests`, 논문 검사는 `paper-quality`, 공개 사이트 배포는 `pages` 워크플로가 수행합니다. `pages`의 마지막 검사는 공개 HTML, 논문 PDF 및 실행·연구·재현 근거 파일의 응답 바이트를 배포 커밋의 파일과 대조합니다. 결과는 해당 실행의 `public-site-verification` 아티팩트에 저장됩니다.
+
+모델 실험 화면의 `model-workbench` CI 작업은 번들 구조 수정·실제 학습·정수 평가를 실행하고, 생성된 JSON 가져오기와 320–1440px 화면을 검사합니다. 화면 이미지는 해당 실행의 `model-workbench-verification` 아티팩트에 저장됩니다.
 
 ## 검증하지 않은 범위
 

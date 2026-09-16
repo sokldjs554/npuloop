@@ -181,14 +181,20 @@ def calibrate_sequential(gm: fx.GraphModule, batches: list[torch.Tensor]) -> fx.
 def evaluate(gm: nn.Module, ds, batch_size: int = 500, channels_last: bool = False, limit: int | None = None,
              split: str = "test") -> float:
     """Top-1 accuracy on the 'test' (default) or 'val' split (optionally only its first `limit` images)."""
+    if limit is not None and limit < 1:
+        raise ValueError("evaluation limit must be positive")
     gm.eval()
     correct = 0; total = 0
     for xb, yb in ds.batches(split, batch_size):
+        if limit is not None:
+            xb, yb = xb[:limit - total], yb[:limit - total]
         if channels_last:
             xb = xb.to(memory_format=torch.channels_last)
         correct += (gm(xb).argmax(1) == yb).sum().item(); total += len(yb)
-        if limit and total >= limit:
+        if limit is not None and total >= limit:
             break
+    if not total:
+        raise ValueError(f"cannot evaluate an empty {split} split")
     return correct / total
 
 

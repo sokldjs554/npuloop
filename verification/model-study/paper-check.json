@@ -1,0 +1,43 @@
+{
+  "checks": [
+    "paper_structure_and_known_claim_regressions",
+    "table_regeneration_attempt"
+  ],
+  "errors": [],
+  "independent_experiment_rerun": false,
+  "historical_checkpoint_identity_verified": false,
+  "generator_runs": [
+    {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python3",
+        "paper/make_tables.py",
+        "--lang",
+        "ko"
+      ],
+      "exit_code": 0,
+      "stdout": "tab1_rows_ko.tex: 12 rows\ntab2_rows_ko.tex: 4 rows\ntab3_rows_ko.tex: 4 rows\ntab4_rows_ko.tex: 2 rows\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python3",
+        "paper/make_thesis.py"
+      ],
+      "exit_code": 0,
+      "stdout": "th_baselines.tex: 5 rows\nth_operators.tex: 9 rows\nth_requant.tex: 9 rows\nth_tflite.tex: 12 rows\nth_vela.tex: 5 rows\nfig3_operators_ko.pdf\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python3",
+        "paper/make_figs.py",
+        "--lang",
+        "ko"
+      ],
+      "exit_code": 0,
+      "stdout": "wrote fig1_decomposition_ko.pdf, fig2_rounding_ko.pdf\n",
+      "stderr": ""
+    }
+  ],
+  "status": "passed"
+}

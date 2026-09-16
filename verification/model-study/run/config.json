@@ -1,0 +1,22 @@
+{
+  "checkpoint": "examples/quickstart/resnet20_relu.pt",
+  "data": "examples/quickstart/cifar10_sample.npz",
+  "out": "verification/model-study/run",
+  "preset": "edge-10tops",
+  "operation": "prune",
+  "prune_ratio": 0.25,
+  "activation": "relu6",
+  "epochs": 1,
+  "steps_per_epoch": 2,
+  "eval_images": 32,
+  "calibration_images": 32,
+  "seed": 0,
+  "threads": 2,
+  "batch_size": 32,
+  "lr": 0.01,
+  "actual_eval_images": 32,
+  "actual_calibration_images": 32,
+  "actual_validation_images": 32,
+  "actual_batch_size": 32,
+  "actual_steps_per_epoch": 2
+}
