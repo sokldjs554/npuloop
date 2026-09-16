@@ -1,11 +1,25 @@
-# npuloop — 가상 NPU 제약을 분석하고 정수 실행을 검증하는 양자화·프루닝 툴킷
+# npuloop — 가상 NPU 제약에 맞춘 모델 변경·학습·경량화 실험
 
 [![tests](https://github.com/sokldjs554/npuloop/actions/workflows/ci.yml/badge.svg)](https://github.com/sokldjs554/npuloop/actions/workflows/ci.yml)
 
-> **모델 구조, 양자화 결과 및 실행 경로를 분석하는 도구입니다.**
-> 가상 NPU의 지원 연산과 추정 비용을 계산하고, 저장된 정확도와 정수 출력의 차이를 비교합니다.
-> Python CLI는 모델 변경·양자화·export 및 NumPy/C++ 정수 검증을 수행합니다.
+> **모델을 가상 NPU의 연산 제약에 맞게 변경하고, 재학습·양자화·프루닝 전후의 정확도와 추정 실행 비용을 비교한 연구·개발 프로젝트입니다.**
+> PyTorch 학습·실험 스크립트와 Python CLI를 연결하고, 내보낸 정수 그래프는 NumPy/C++로 검증합니다.
+> 정확도는 저장된 실험의 측정값, NPU 사이클은 가상 프리셋의 추정값입니다.
 > 브라우저는 비용 계산과 기존 실험 결과 조회를 제공합니다. 실제 NPU 실행이나 재학습 기능은 아닙니다.
+
+## 모델을 어떻게 바꾸고 검증했는가
+
+| 실험 | 변경과 학습 | 기존 결과에서 확인한 내용 |
+|---|---|---|
+| **E4 · 활성함수 변경과 복구 학습** | ResNet-20의 SiLU를 ReLU로 교체하고 3 epoch 재학습 | FP32 정확도 **90.34% → 교체 직후 40.36% → 재학습 후 89.74%**. 같은 실험의 INT8 정수 정확도는 90.26% → 89.81%. 구조 변경의 정확도 손실과 회복을 함께 측정 |
+| **E6 · 구조적 프루닝** | 균일·배열 정렬·비용 기반 채널 선택을 비교하고 각각 3 epoch 미세조정 | ResNet-20의 균일 0.5 조건에서 MACs **40.81M → 20.76M**, `edge-10tops` 추정 사이클 **34,417 → 27,739**, FP32 정확도 **89.59% → 87.22%**. 연산량 감소와 추정 사이클 감소가 비례하지 않으며 정확도 손실도 발생 |
+| **E9 · NPU 조건에 따른 모델 변경** | ViT의 GELU를 ReLU로 교체하고 3 epoch 재학습 | FP32 **80.98% → 80.95%**. strict 프리셋의 추정 사이클은 **2,503,878 → 1,708,230**, LUT 지원 프리셋에서는 **52,246 → 52,054**. 같은 변경의 효과가 지원 연산에 따라 달라짐 |
+
+근거: [E4 원본 결과](results/e4_surgery.json), [E6 원본 결과](results/e6_pruning.json), [E9 원본 결과](results/e9_customer_intake.json). 이 표는 기존 결과를 요약하며 새 학습 결과가 아닙니다. E4·E6·E9의 수치를 서로 다른 실험 사이의 전후 비교로 연결하지 않습니다. E6의 `int8_acc`는 모의 양자화 평가이고, 위 표에서는 FP32 `ft_acc`를 사용했습니다.
+
+PTQ·QAT·보정은 개선 여부를 비교하는 실험으로 다뤘습니다. 예를 들어 E4의 SiLU 모델은 PTQ 정수 정확도 90.26%에서 2 epoch QAT 후 90.01%로 낮아졌습니다. QAT나 배열 정렬을 적용했다는 사실만으로 성능 개선을 주장하지 않습니다.
+
+모델 개발 흐름은 **데이터 준비·분할 → PyTorch 학습 → 구조 변경·미세조정 → 보정·양자화 → 정수 export → 정확도·비용·출력 비교**입니다. 분류 모델 외에 E12의 Imagenette 평가와 E17의 초해상 출력 분석을 포함합니다. 전체 구현 경로와 측정 조건은 [프로젝트 설명](docs/RESEARCH_SUMMARY.md), [실험 문서](docs/EXPERIMENTS.md), [재현 범위](docs/REPRODUCTION_REQUIREMENTS.md)에 정리했습니다.
 
 ## 실행 방법
 
@@ -39,9 +53,9 @@ make quickstart
 | `npuloop export` + `int8_runner` | 정수 그래프를 `.npuloop` 파일로 내보내고 **파이썬 없는 C++ 실행기**로 같은 답을 냄 |
 
 **3. 전체 재현.** 데이터셋 준비·학습·실험은 [docs/USAGE.md](docs/USAGE.md), 실험 결과 전문은 [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md)에 있습니다.
-README와 실험 문서의 모든 표는 `results/*.json`에서 `make tables`로 생성됩니다.
+README와 실험 문서의 `TABLE` 표시 구간은 `results/*.json`에서 `make tables`로 생성됩니다. 상단 모델 변경 요약은 링크한 원본 결과를 대조해 작성했습니다.
 
-## 주요 연구 결과
+## 정수 실행의 차이를 조사한 결과
 
 <!-- npuloop-submission-review-20260916 -->
 [수정한 장문 연구 원고](paper/npuloop_thesis_reviewed.pdf) · [프로젝트 설명](docs/RESEARCH_SUMMARY.md) · [검증 범위](docs/VALIDATION_SCOPE.md) · [재현 자료](docs/REPRODUCTION_REQUIREMENTS.md)
@@ -50,11 +64,11 @@ E15의 분류 모델 6종·양자화 방식 2종에서 관측된 정확도 차�
 
 ## 연구 배경
 
-이전 프로젝트들([ondevice-pcb-inspection](https://github.com/sokldjs554/ondevice-pcb-inspection), [edgesight-soc](https://github.com/sokldjs554/edgesight-soc))에서
-PTQ INT8 배포와 RTL NPU를 각각 만들고 나니 두 세계 사이에 구멍이 보였습니다. **모델 쪽**은 `torch.round`로 흉내 낸 fake-quant 정확도와 FLOPs로
-결정하고, **하드웨어 쪽**은 int32 누산기·고정소수점 requant·배열 타일링으로 실제 사이클과 실제 정확도를 만듭니다.
-"fake-quant가 90%면 NPU에서도 90%인가?", "FLOPs를 반으로 줄이면 사이클도 반이 되는가?"에 **숫자로** 답하는 것이 목표였습니다
-(선행 연구 조사는 [docs/RELATED.md](docs/RELATED.md)).
+연산량이 작은 모델이 어떤 NPU 조건에서도 유리한지, 지원하지 않는 활성함수를 바꾼 뒤 정확도를 얼마나 회복할 수 있는지 확인하고자 했습니다.
+모델 변경과 경량화 후보를 학습·보정한 뒤 정확도와 가상 프리셋의 비용을 함께 비교했습니다.
+또한 모의 양자화의 정확도가 유지돼도 내보낸 정수 프로그램의 출력 코드까지 일치하는지 확인하기 위해 정수 실행 경로를 구현했습니다.
+실제 칩 성능까지 검증한 연구는 아니며, 지원 연산 가정·추정 비용·호스트 정수 실행 결과를 구분합니다.
+선행 연구와 비교 범위는 [docs/RELATED.md](docs/RELATED.md)에 있습니다.
 
 ```mermaid
 flowchart LR
@@ -96,6 +110,8 @@ flowchart LR
 
 온칩 실행 = 가상 프리셋에서 모든 op 지원으로 판정됨(호스트 폴백 없음, 실측 아님). strict = LUT·softmax·layernorm 지원이 없는 프리셋.
 <!-- /TABLE:E9 -->
+
+E9의 FP32 정확도는 전체 테스트셋, INT8 정수 정확도는 고정된 2,000장 부분집합의 값입니다. 각 열의 변경 전후만 비교하며 FP32와 INT8의 차이를 양자화 손실로 직접 계산하지 않습니다. 전체 테스트셋에서 모의·정수 실행을 같은 조건으로 비교한 연구는 E15입니다.
 
 * **같은 처방도 칩이 다르면 값이 달라집니다.** 고객 A의 GELU 6개를 ReLU로 바꾸는 처방은 LUT가 있는 `edge-10tops`에서 약 **0.37% 절감**(52,246 → 52,054 추정 사이클),
   LUT가 없는 `edge-10tops-strict`에서는 **−32%**(2,503,878 → 1,708,230)입니다. 비용 모델을 루프 안에 두면 "이 칩에서 이 수술은 의미가 없다"를 재학습 전에 압니다.
@@ -218,7 +234,7 @@ docs/                    EXPERIMENTS · USAGE · DESIGN · INTEGER_DATAPATH · R
 | [docs/USAGE.md](docs/USAGE.md) | 설치·학습·CLI·실험 재현·파이썬 API |
 | [docs/upstream/](docs/upstream/) | oneDNN 버그 보고서와 패치 |
 | [paper/](paper/) | 현재 검토한 장문판과 이전 단문 초안의 상태·빌드 방법 |
-| [라이브 데모](https://sokldjs554.github.io/npuloop/) | 기존 공개 페이지 — 이번 통합본은 아직 미배포. 현재 수정 화면은 `docs/index.html` |
+| [공개 Workbench](https://sokldjs554.github.io/npuloop/) | 모델 분석·정수 검증·E1–E17 기록 및 현재 연구 원고. 게시 기준과 검증 기록은 [배포 안내](docs/DEPLOYMENT.md) 참조 |
 
 ## 데이터와 외부 도구
 
