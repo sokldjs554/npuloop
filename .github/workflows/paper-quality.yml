@@ -1,0 +1,46 @@
+name: paper-quality
+on:
+  push:
+    paths: ['paper/**', 'results/**', 'tools/submission_quality.py', 'submission_checks/**', '.github/workflows/paper-quality.yml']
+  pull_request:
+    paths: ['paper/**', 'results/**', 'tools/submission_quality.py', 'submission_checks/**', '.github/workflows/paper-quality.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  paper-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install document build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y texlive-luatex texlive-lang-korean texlive-latex-extra texlive-fonts-recommended fonts-texgyre fonts-nanum fonts-liberation
+          python -m pip install numpy matplotlib pytest
+      - name: Test the documentation check utilities
+        run: python -m pytest -q submission_checks/tests
+      - name: Check stored-result table freshness in an isolated copy
+        run: python tools/submission_quality.py --regenerate --report paper-quality-report.json
+      - name: Build reviewed long-form manuscript
+        working-directory: paper
+        run: |
+          for pass in 1 2 3; do
+            lualatex -interaction=nonstopmode -halt-on-error npuloop_thesis.tex
+          done
+          if grep -E 'undefined references|undefined citations|Overfull \\hbox|Missing character:' npuloop_thesis.log; then
+            echo 'Resolve document build warnings before submission.'
+            exit 1
+          fi
+      - name: Save the built manuscript and check log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reviewed-paper
+          path: |
+            paper/npuloop_thesis.pdf
+            paper/npuloop_thesis.log
+            paper-quality-report.json

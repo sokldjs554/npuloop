@@ -59,7 +59,7 @@ def fit_sr(model: nn.Module, ds: SRPairs, epochs: int, lr: float = 1e-3, wd: flo
     if out:
         os.makedirs(out, exist_ok=True)
     if resume and state_path and os.path.exists(state_path):
-        st = torch.load(state_path, weights_only=False)
+        st = torch.load(state_path, weights_only=True, map_location="cpu")
         model.load_state_dict(st["model"]); opt.load_state_dict(st["opt"]); sched.load_state_dict(st["sched"])
         rng = np.random.default_rng(); rng.bit_generator.state = st["rng"]; torch.set_rng_state(st["torch_rng"])
         log, best, best_epoch, start_ep = st["log"], st["best"], st.get("best_epoch", 0), st["epoch"]
@@ -97,7 +97,7 @@ def fit_sr(model: nn.Module, ds: SRPairs, epochs: int, lr: float = 1e-3, wd: flo
     log["train_minutes"] = (time.time() - t0) / 60
     log["final_test_psnr"] = evaluate_psnr(model, ds, "test")
     if out and best_epoch:
-        selected = torch.load(os.path.join(out, "best.pt"), weights_only=False)["state_dict"]
+        selected = torch.load(os.path.join(out, "best.pt"), weights_only=True, map_location="cpu")["state_dict"]
         final_state = {k: v.detach().clone() for k, v in model.state_dict().items()}
         model.load_state_dict(selected)
         log["test_psnr"] = evaluate_psnr(model, ds, "test")

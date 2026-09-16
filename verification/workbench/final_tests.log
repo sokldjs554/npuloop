@@ -1,0 +1,10 @@
+.......s.....s....................ss.................................... [ 32%]
+........................................................................ [ 64%]
+........................................................................ [ 96%]
+.........                                                                [100%]
+=========================== short test summary info ============================
+SKIPPED [1] tests/test_attention_concat.py:66: no softmax in this model
+SKIPPED [1] tests/test_bench.py:47: CIFAR-10 npz not available
+SKIPPED [1] tests/test_data.py:8: CIFAR-10 npz not available
+SKIPPED [1] tests/test_data.py:18: CIFAR-10 npz not available
+221 passed, 4 skipped in 25.09s

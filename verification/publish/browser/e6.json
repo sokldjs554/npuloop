@@ -1,0 +1,815 @@
+{
+  "meta": {
+    "ft_epochs": 3,
+    "specs": [
+      "tiny-1tops",
+      "edge-10tops",
+      "pcie-80tops"
+    ],
+    "greedy_spec": "edge-10tops"
+  },
+  "records": [
+    {
+      "model": "resnet20_relu",
+      "strategy": "none",
+      "ratio": 1,
+      "align": 0,
+      "keep": [
+        16,
+        16,
+        16,
+        32,
+        32,
+        32,
+        64,
+        64,
+        64
+      ],
+      "float_acc": 0.8959,
+      "ft_acc": 0.8959,
+      "int8_acc": 0.8954,
+      "macs": 40813184,
+      "params": 271690,
+      "tiny-1tops": {
+        "cycles": 87730,
+        "util": 0.4543100991679015,
+        "latency_ms": 0.17546
+      },
+      "edge-10tops": {
+        "cycles": 34417,
+        "util": 0.1447563159194584,
+        "latency_ms": 0.057361666666666665
+      },
+      "pcie-80tops": {
+        "cycles": 22791,
+        "util": 0.05464962183537361,
+        "latency_ms": 0.0189925
+      },
+      "provenance": "measured+simulated",
+      "timestamp": "2026-09-10T12:10:00"
+    },
+    {
+      "model": "resnet20_relu",
+      "strategy": "uniform",
+      "ratio": 0.75,
+      "align": 0,
+      "keep": [
+        12,
+        12,
+        12,
+        24,
+        24,
+        24,
+        48,
+        48,
+        48
+      ],
+      "acc_after_prune": 0.6082,
+      "ft_acc": 0.8904,
+      "int8_acc": 0.8905,
+      "ft_epochs": 3,
+      "greedy_steps": null,
+      "target_reached": null,
+      "achieved_ratio": null,
+      "minutes": 8.86976539293925,
+      "macs": 30786176,
+      "params": 204790,
+      "tiny-1tops": {
+        "cycles": 77848,
+        "util": 0.386196498304388,
+        "latency_ms": 0.155696
+      },
+      "edge-10tops": {
+        "cycles": 30025,
+        "util": 0.12516496669442131,
+        "latency_ms": 0.050041666666666665
+      },
+      "pcie-80tops": {
+        "cycles": 19983,
+        "util": 0.04701594011159486,
+        "latency_ms": 0.0166525
+      },
+      "provenance": "measured+simulated",
+      "timestamp": "2026-09-10T12:18:52"
+    },
+    {
+      "model": "resnet20_relu",
+      "strategy": "uniform",
+      "ratio": 0.5,
+      "align": 0,
+      "keep": [
+        8,
+        8,
+        8,
+        16,
+        16,
+        16,
+        32,
+        32,
+        32
+      ],
+      "acc_after_prune": 0.1458,
+      "ft_acc": 0.8722,
+      "int8_acc": 0.874,
+      "ft_epochs": 3,
+      "greedy_steps": null,
+      "target_reached": null,
+      "achieved_ratio": null,
+      "minutes": 7.457808069388071,
+      "macs": 20759168,
+      "params": 137890,
+      "tiny-1tops": {
+        "cycles": 60922,
+        "util": 0.33276361577098584,
+        "latency_ms": 0.121844
+      },
+      "edge-10tops": {
+        "cycles": 27739,
+        "util": 0.09135434316305563,
+        "latency_ms": 0.046231666666666664
+      },
+      "pcie-80tops": {
+        "cycles": 18129,
+        "util": 0.03494508970434111,
+        "latency_ms": 0.0151075
+      },
+      "provenance": "measured+simulated",
+      "timestamp": "2026-09-10T12:26:20"
+    },
+    {
+      "model": "resnet20_relu",
+      "strategy": "uniform",
+      "ratio": 0.25,
+      "align": 0,
+      "keep": [
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        16,
+        16,
+        16
+      ],
+      "acc_after_prune": 0.1582,
+      "ft_acc": 0.8427,
+      "int8_acc": 0.8415,
+      "ft_epochs": 3,
+      "greedy_steps": null,
+      "target_reached": null,
+      "achieved_ratio": null,
+      "minutes": 6.971275579929352,
+      "macs": 14271104,
+      "params": 74458,
+      "tiny-1tops": {
+        "cycles": 54652,
+        "util": 0.25500667862109344,
+        "latency_ms": 0.109304
+      },
+      "edge-10tops": {
+        "cycles": 25453,
+        "util": 0.06844293894629316,
+        "latency_ms": 0.04242166666666667
+      },
+      "pcie-80tops": {
+        "cycles": 16275,
+        "util": 0.026760032642089093,
+        "latency_ms": 0.0135625
+      },
+      "provenance": "measured+simulated",
+      "timestamp": "2026-09-10T12:33:19"
+    },
+    {
+      "model": "resnet20_relu",
+      "strategy": "aligned",
+      "ratio": 0.5,
+      "align": 16,
+      "keep": [
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        32,
+        32,
+        32
+      ],
+      "acc_after_prune": 0.3402,
+      "ft_acc": 0.8775,
+      "int8_acc": 0.8782,
+      "ft_epochs": 3,
+      "greedy_steps": null,
+      "target_reached": null,
+      "achieved_ratio": null,
+      "minutes": 8.535869856675466,
+      "macs": 27837056,
+      "params": 144826,
+      "tiny-1tops": {
+        "cycles": 67630,
+        "util": 0.40196103800088717,
+        "latency_ms": 0.13526
+      },
+      "edge-10tops": {
+        "cycles": 29845,
+        "util": 0.11385753476294187,
+        "latency_ms": 0.04974166666666666
+      },
+      "pcie-80tops": {
+        "cycles": 19083,
+        "util": 0.044517084905413194,
+        "latency_ms": 0.0159025
+      },
+      "provenance": "measured+simulated",
+      "timestamp": "2026-09-10T12:41:51"
+    },
+    {
+      "model": "resnet20_relu",
+      "strategy": "aligned",
+      "ratio": 0.5,
+      "align": 32,
+      "keep": [
+        16,
+        16,
+        16,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32
+      ],
+      "acc_after_prune": 0.5228,
+      "ft_acc": 0.8862,
+      "int8_acc": 0.8862,
+      "ft_epochs": 3,
+      "greedy_steps": null,
+      "target_reached": null,
+      "achieved_ratio": null,
+      "minutes": 9.01200840473175,
+      "macs": 34325120,
+      "params": 170218,
+      "tiny-1tops": {
+        "cycles": 71830,
+        "util": 0.4666660865933454,
+        "latency_ms": 0.14366
+      },
+      "edge-10tops": {
+        "cycles": 31753,
+        "util": 0.13195849604761756,
+        "latency_ms": 0.052921666666666665
+      },
+      "pcie-80tops": {
+        "cycles": 20415,
+        "util": 0.05131126775655156,
+        "latency_ms": 0.0170125
+      },
+      "provenance": "measured+simulated",
+      "timestamp": "2026-09-10T12:50:51"
+    },
+    {
+      "model": "resnet20_relu",
+      "strategy": "cost-greedy",
+      "ratio": 0.85,
+      "align": 8,
+      "keep": [
+        8,
+        8,
+        8,
+        24,
+        8,
+        8,
+        64,
+        64,
+        32
+      ],
+      "acc_after_prune": 0.3439,
+      "ft_acc": 0.8854,
+      "int8_acc": 0.8852,
+      "ft_epochs": 3,
+      "greedy_steps": 14,
+      "target_reached": true,
+      "achieved_ratio": 0.8483307667722346,
+      "minutes": 7.932821794350942,
+      "macs": 23413376,
+      "params": 196698,
+      "tiny-1tops": {
+        "cycles": 70342,
+        "util": 0.32504940149555034,
+        "latency_ms": 0.140684
+      },
+      "edge-10tops": {
+        "cycles": 29197,
+        "util": 0.09788944497722368,
+        "latency_ms": 0.048661666666666666
+      },
+      "pcie-80tops": {
+        "cycles": 19491,
+        "util": 0.03665894675747781,
+        "latency_ms": 0.0162425
+      },
+      "provenance": "measured+simulated",
+      "timestamp": "2026-09-10T12:58:47"
+    },
+    {
+      "model": "resnet20_relu",
+      "strategy": "cost-greedy",
+      "ratio": 0.7,
+      "align": 8,
+      "keep": [
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8
+      ],
+      "acc_after_prune": 0.1005,
+      "ft_acc": 0.8113,
+      "int8_acc": 0.8115,
+      "ft_epochs": 3,
+      "greedy_steps": 33,
+      "target_reached": false,
+      "achieved_ratio": 0.7201964145625708,
+      "minutes": 7.068646244208018,
+      "macs": 12649088,
+      "params": 49090,
+      "tiny-1tops": {
+        "cycles": 52756,
+        "util": 0.23414635302145728,
+        "latency_ms": 0.105512
+      },
+      "edge-10tops": {
+        "cycles": 24787,
+        "util": 0.06229386876185097,
+        "latency_ms": 0.04131166666666666
+      },
+      "pcie-80tops": {
+        "cycles": 15681,
+        "util": 0.024617022591033735,
+        "latency_ms": 0.0130675
+      },
+      "provenance": "measured+simulated",
+      "timestamp": "2026-09-10T13:05:52"
+    },
+    {
+      "model": "resnet20_relu",
+      "strategy": "cost-greedy",
+      "ratio": 0.55,
+      "align": 8,
+      "keep": [
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8
+      ],
+      "acc_after_prune": 0.1005,
+      "ft_acc": 0.8113,
+      "int8_acc": 0.8115,
+      "ft_epochs": 3,
+      "greedy_steps": 33,
+      "target_reached": false,
+      "achieved_ratio": 0.7201964145625708,
+      "minutes": 7.062796827157339,
+      "macs": 12649088,
+      "params": 49090,
+      "tiny-1tops": {
+        "cycles": 52756,
+        "util": 0.23414635302145728,
+        "latency_ms": 0.105512
+      },
+      "edge-10tops": {
+        "cycles": 24787,
+        "util": 0.06229386876185097,
+        "latency_ms": 0.04131166666666666
+      },
+      "pcie-80tops": {
+        "cycles": 15681,
+        "util": 0.024617022591033735,
+        "latency_ms": 0.0130675
+      },
+      "provenance": "measured+simulated",
+      "timestamp": "2026-09-10T13:12:55"
+    },
+    {
+      "model": "cust_inception",
+      "strategy": "none",
+      "ratio": 1,
+      "align": 0,
+      "keep": [
+        32,
+        16,
+        32,
+        8,
+        16,
+        64,
+        32,
+        64,
+        16,
+        32,
+        128,
+        32
+      ],
+      "float_acc": 0.8959,
+      "ft_acc": 0.8959,
+      "int8_acc": 0.8955,
+      "macs": 53971456,
+      "params": 422338,
+      "tiny-1tops": {
+        "cycles": 99068,
+        "util": 0.5320234586344733,
+        "latency_ms": 0.198136
+      },
+      "edge-10tops": {
+        "cycles": 31224,
+        "util": 0.21100155329233922,
+        "latency_ms": 0.05204
+      },
+      "pcie-80tops": {
+        "cycles": 19992,
+        "util": 0.08238686099439776,
+        "latency_ms": 0.01666
+      },
+      "provenance": "measured+simulated",
+      "timestamp": "2026-09-11T01:17:39"
+    },
+    {
+      "model": "cust_inception",
+      "strategy": "uniform",
+      "ratio": 0.5,
+      "align": 0,
+      "keep": [
+        16,
+        8,
+        16,
+        8,
+        8,
+        32,
+        16,
+        32,
+        8,
+        16,
+        64,
+        16
+      ],
+      "acc_after_prune": 0.101,
+      "ft_acc": 0.8578,
+      "int8_acc": 0.8588,
+      "ft_epochs": 3,
+      "greedy_steps": null,
+      "target_reached": null,
+      "achieved_ratio": null,
+      "minutes": 5.585702196756999,
+      "macs": 16861696,
+      "params": 151914,
+      "tiny-1tops": {
+        "cycles": 42364,
+        "util": 0.3886908696062695,
+        "latency_ms": 0.084728
+      },
+      "edge-10tops": {
+        "cycles": 17580,
+        "util": 0.11708262229806599,
+        "latency_ms": 0.0293
+      },
+      "pcie-80tops": {
+        "cycles": 11484,
+        "util": 0.04480826584813654,
+        "latency_ms": 0.00957
+      },
+      "provenance": "measured+simulated",
+      "timestamp": "2026-09-11T01:23:14"
+    },
+    {
+      "model": "cust_inception",
+      "strategy": "cost-greedy",
+      "ratio": 0.7,
+      "align": 8,
+      "keep": [
+        8,
+        8,
+        32,
+        8,
+        16,
+        64,
+        32,
+        64,
+        16,
+        32,
+        56,
+        32
+      ],
+      "acc_after_prune": 0.1482,
+      "ft_acc": 0.8768,
+      "int8_acc": 0.876,
+      "ft_epochs": 3,
+      "greedy_steps": 13,
+      "target_reached": true,
+      "achieved_ratio": 0.6889572124007174,
+      "minutes": 9.27455015182495,
+      "macs": 33335808,
+      "params": 236626,
+      "tiny-1tops": {
+        "cycles": 65096,
+        "util": 0.5000998525255008,
+        "latency_ms": 0.130192
+      },
+      "edge-10tops": {
+        "cycles": 21512,
+        "util": 0.1891647685013016,
+        "latency_ms": 0.035853333333333334
+      },
+      "pcie-80tops": {
+        "cycles": 14871,
+        "util": 0.06841020274359491,
+        "latency_ms": 0.0123925
+      },
+      "provenance": "measured+simulated",
+      "timestamp": "2026-09-11T01:32:30"
+    },
+    {
+      "model": "cust_vit",
+      "strategy": "none",
+      "ratio": 1,
+      "align": 0,
+      "keep": [
+        256,
+        256,
+        256,
+        256,
+        256,
+        256
+      ],
+      "float_acc": 0.8098,
+      "ft_acc": 0.8098,
+      "int8_acc": 0.8087,
+      "macs": 57017600,
+      "params": 799370,
+      "tiny-1tops": {
+        "cycles": 164556,
+        "util": 0.33837265125549965,
+        "latency_ms": 0.329112
+      },
+      "edge-10tops": {
+        "cycles": 52246,
+        "util": 0.13321893063583815,
+        "latency_ms": 0.08707666666666666
+      },
+      "pcie-80tops": {
+        "cycles": 32379.094452773617,
+        "util": 0.05373958388607582,
+        "latency_ms": 0.026982578710644682
+      },
+      "provenance": "measured+simulated",
+      "timestamp": "2026-09-11T01:33:46"
+    },
+    {
+      "model": "cust_vit",
+      "strategy": "uniform",
+      "ratio": 0.5,
+      "align": 0,
+      "keep": [
+        128,
+        128,
+        128,
+        128,
+        128,
+        128
+      ],
+      "acc_after_prune": 0.6189,
+      "ft_acc": 0.7998,
+      "int8_acc": 0.8013,
+      "ft_epochs": 3,
+      "greedy_steps": null,
+      "target_reached": null,
+      "achieved_ratio": null,
+      "minutes": 11.548569536209106,
+      "macs": 44434688,
+      "params": 601994,
+      "tiny-1tops": {
+        "cycles": 132588,
+        "util": 0.3272788638489154,
+        "latency_ms": 0.265176
+      },
+      "edge-10tops": {
+        "cycles": 42790,
+        "util": 0.12676224000934797,
+        "latency_ms": 0.07131666666666667
+      },
+      "pcie-80tops": {
+        "cycles": 28725.382308845576,
+        "util": 0.04720699790590522,
+        "latency_ms": 0.023937818590704648
+      },
+      "provenance": "measured+simulated",
+      "timestamp": "2026-09-11T01:45:19"
+    },
+    {
+      "model": "cust_vit",
+      "strategy": "cost-greedy",
+      "ratio": 0.7,
+      "align": 8,
+      "keep": [
+        8,
+        8,
+        8,
+        8,
+        8,
+        8
+      ],
+      "acc_after_prune": 0.1283,
+      "ft_acc": 0.5734,
+      "int8_acc": 0.5732,
+      "ft_epochs": 3,
+      "greedy_steps": 186,
+      "target_reached": false,
+      "achieved_ratio": 0.7155380316196456,
+      "minutes": 9.220054324467977,
+      "macs": 32638208,
+      "params": 416954,
+      "tiny-1tops": {
+        "cycles": 107772,
+        "util": 0.2957470400475077,
+        "latency_ms": 0.215544
+      },
+      "edge-10tops": {
+        "cycles": 37384,
+        "util": 0.1065738350631286,
+        "latency_ms": 0.06230666666666667
+      },
+      "pcie-80tops": {
+        "cycles": 26529.382308845576,
+        "util": 0.0375447513592465,
+        "latency_ms": 0.022107818590704646
+      },
+      "provenance": "measured+simulated",
+      "timestamp": "2026-09-11T01:54:32"
+    },
+    {
+      "model": "mnv2_050_relu6",
+      "strategy": "none",
+      "ratio": 1,
+      "align": 0,
+      "keep": [
+        16,
+        8,
+        48,
+        96,
+        96,
+        96,
+        96,
+        96,
+        192,
+        192,
+        192,
+        192,
+        288,
+        288,
+        288,
+        480,
+        480,
+        480,
+        160
+      ],
+      "float_acc": 0.9023,
+      "ft_acc": 0.9023,
+      "int8_acc": 0.903,
+      "macs": 27969024,
+      "params": 691218,
+      "tiny-1tops": {
+        "cycles": 200536,
+        "util": 0.1205394542625763,
+        "latency_ms": 0.401072
+      },
+      "edge-10tops": {
+        "cycles": 87056,
+        "util": 0.034708262497702626,
+        "latency_ms": 0.14509333333333332
+      },
+      "pcie-80tops": {
+        "cycles": 67351.16341829085,
+        "util": 0.011215702694080787,
+        "latency_ms": 0.056125969515242374
+      },
+      "provenance": "measured+simulated",
+      "timestamp": "2026-09-11T01:55:48"
+    },
+    {
+      "model": "mnv2_050_relu6",
+      "strategy": "uniform",
+      "ratio": 0.5,
+      "align": 0,
+      "keep": [
+        8,
+        8,
+        24,
+        48,
+        48,
+        48,
+        48,
+        48,
+        96,
+        96,
+        96,
+        96,
+        144,
+        144,
+        144,
+        240,
+        240,
+        240,
+        80
+      ],
+      "acc_after_prune": 0.1273,
+      "ft_acc": 0.8837,
+      "int8_acc": 0.8841,
+      "ft_epochs": 3,
+      "greedy_steps": null,
+      "target_reached": null,
+      "achieved_ratio": null,
+      "minutes": 5.666079298655192,
+      "macs": 13683712,
+      "params": 333754,
+      "tiny-1tops": {
+        "cycles": 116166,
+        "util": 0.10151421242015736,
+        "latency_ms": 0.232332
+      },
+      "edge-10tops": {
+        "cycles": 67118.75,
+        "util": 0.02196200763572027,
+        "latency_ms": 0.11186458333333334
+      },
+      "pcie-80tops": {
+        "cycles": 57570.3928035982,
+        "util": 0.006401130981634842,
+        "latency_ms": 0.047975327336331836
+      },
+      "provenance": "measured+simulated",
+      "timestamp": "2026-09-11T03:19:30"
+    },
+    {
+      "model": "mnv2_050_relu6",
+      "strategy": "cost-greedy",
+      "ratio": 0.7,
+      "align": 8,
+      "keep": [
+        16,
+        8,
+        48,
+        96,
+        96,
+        96,
+        96,
+        96,
+        192,
+        192,
+        192,
+        192,
+        288,
+        288,
+        208,
+        208,
+        208,
+        208,
+        24
+      ],
+      "acc_after_prune": 0.2553,
+      "ft_acc": 0.8973,
+      "int8_acc": 0.8978,
+      "ft_epochs": 3,
+      "greedy_steps": 129,
+      "target_reached": false,
+      "achieved_ratio": 0.8070207682411321,
+      "minutes": 14.377699581782023,
+      "macs": 21816832,
+      "params": 316298,
+      "tiny-1tops": {
+        "cycles": 141017,
+        "util": 0.1297042200585745,
+        "latency_ms": 0.282034
+      },
+      "edge-10tops": {
+        "cycles": 70256,
+        "util": 0.0325425942268276,
+        "latency_ms": 0.11709333333333333
+      },
+      "pcie-80tops": {
+        "cycles": 60529.66416791604,
+        "util": 0.009442942280571366,
+        "latency_ms": 0.0504413868065967
+      },
+      "provenance": "measured+simulated",
+      "timestamp": "2026-09-11T03:33:53"
+    }
+  ]
+}

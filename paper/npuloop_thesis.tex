@@ -17,9 +17,9 @@
                                   SmallCapsFont=NanumMyeongjo]
 \setsanshangulfont{NanumGothic}
 \setmonohangulfont{NanumGothicCoding}[Scale=MatchLowercase]
-\setmainfont{TeX Gyre Termes}
-\setsansfont{TeX Gyre Heros}
-\setmonofont{TeX Gyre Cursor}[Scale=MatchLowercase]
+\IfFontExistsTF{TeX Gyre Termes}{\setmainfont{TeX Gyre Termes}}{\setmainfont{Liberation Serif}[SmallCapsFont={Liberation Serif}]}
+\IfFontExistsTF{TeX Gyre Heros}{\setsansfont{TeX Gyre Heros}}{\setsansfont{Liberation Sans}}
+\IfFontExistsTF{TeX Gyre Cursor}{\setmonofont{TeX Gyre Cursor}[Scale=MatchLowercase]}{\setmonofont{Liberation Mono}[Scale=MatchLowercase]}
 % 영문 참고문헌의 마침표·쉼표가 CJK 모양이 되지 않도록 끈다.
 \hangulpunctuations=0
 \hyphenation{gemmlowp}
@@ -33,6 +33,8 @@
 \usepackage{url}
 \usepackage{titlesec}
 \usepackage[hidelinks]{hyperref}
+\hypersetup{pdftitle={모의 양자화와 정수 실행의 격차를 연산자 단위로 측정하기},pdfauthor={윤기혁}}
+\emergencystretch=1em
 
 \renewcommand{\contentsname}{차 례}
 \renewcommand{\listfigurename}{그림 차례}
@@ -64,9 +66,10 @@
 \vspace{6mm}
 {\large INT8 NPU 배포를 위한 비트 정확 정수 엔진과 그 위에서의 측정\par}
 \vfill
-{\large \textsc{[저자 성명]}\par}
+{\large 윤기혁\par}
 \vspace{4mm}
-{\large 2026년 9월\par}
+{\large 2026년 9월\par}\vspace{3mm}
+{\small 개인 연구 원고 · 학위 제출물 및 게재 논문 아님\par}
 \vspace{10mm}
 {\small 저장소 \url{https://github.com/sokldjs554/npuloop}\par}
 \vspace{20mm}
@@ -79,31 +82,31 @@
 \chapter*{초 록}
 \addcontentsline{toc}{chapter}{초록}
 
-INT8 가속기에 신경망을 올리는 작업은 서로 다른 두 프로그램을 다룬다. 판단에 쓰이는 쪽은 양자화--역양자화
-노드를 삽입한 부동소수점 그래프, 곧 모의(fake) 양자화이고, 장치에서 실제로 도는 쪽은 int8 가중치와 int32
-누산기와 고정소수점 곱셈-시프트 재양자화로 이루어진 정수 프로그램이다. 현업은 둘을 바꿔 써도 되는 것으로
-다루지만, 그 가정이 어디까지 성립하는지는 정확도 이외의 축에서 측정된 바가 없다.
+INT8 배포를 준비할 때 모의(fake) 양자화의 부동소수점 그래프와 실제 정수 연산 경로가
+얼마나 일치하는지 확인해야 한다. 이 원고는 동일한 양자화 파라미터를 사용하는 두 실행 경로를
+정확도와 정수 코드의 두 관점에서 비교한다. 정수 엔진은 TensorFlow Lite 참조 커널의
+합성곱·평균 풀링·완전 연결 계층을 포함한 시험 모델에서, 같은 스케일과 영점을 사용한
+$1{,}000$장 입력의 비교 대상 모든 텐서와 비트 단위로 일치했다. 이 검증은 다른 연산자나
+실제 NPU 하드웨어 전체의 일치를 보장하지 않는다.
 
-이 논문은 그 격차를 연산자 단위로 측정한다. 먼저 TensorFlow Lite 참조 커널과 비트 단위로 일치하는 정수
-엔진을 만들고, TensorFlow Lite 완전 정수 모델의 스케일과 영점으로 정수 그래프를 세워 $1000$장의 모든
-텐서에서 일치함을 확인해 측정 기준을 외부에 고정했다. 그 위에서 모의 양자화 그래프와 정수 실행의 차이를
-연산자 자신의 정수 연산이 만드는 몫(국소 불일치, 교사 강제로 분리)과 종단간 실행에서 살아남는 몫(전파
-불일치)으로 나누어, 신경망 7종과 양자화 방식 2종에 대해 전체 테스트셋에서 대응 표준오차와 함께 보고한다.
+신경망 7종과 양자화 방식 2종을 평가했다. 분류 모델 6종의 12개 비교에서 관측된
+(정수 $-$ 모의) top-1 차이의 절댓값은 최대 $0.20$~\%p였고, 각 $95\%$ 신뢰구간은 모두
+0을 포함했다. 이는 동등성의 입증이 아니다. 같은 비교에서 출력 코드의 $28.5$--$72.7\%$는
+달랐다. 품질과 출력 코드 불일치는 전체 테스트셋에서, 교사 강제 방식의 연산자별 국소
+불일치는 고정 표본 배치에서 측정했다.
 
-결과는 세 가지다. 첫째, 정확도는 맞고 텐서는 틀린다. 모의 대 정수 top-1 차이는 모두 $0.20$~\%p 이내이고
-12개 $95\%$ 신뢰구간이 전부 0을 포함하는 반면, 출력 코드는 $28.5$--$72.7\%$가 다르고 이미지의
-$95$--$100\%$에서 코드가 최소 하나 다르다. 둘째, 격차를 옮기는 연산자는 하나가 아니다. LayerNorm을 빼면
-모든 연산자의 국소 불일치가 자기 코드의 $1\%$ 미만이고 그 어긋남은 예외 없이 최하위 비트 $\pm 1$이다.
-가장 큰 국소 원천인 정수 LayerNorm($24.77\%$)을 정수에 충실한 모듈로 교체해 $0.00\%$로 만들어도 전파된
-출력 불일치는 $72.7\%$에서 $65.7\%$로만 내려간다. 셋째, 이 분리는 분류 과제의 인공물이 아니다. argmax가
-없는 초해상 신경망에서도 품질 지표(PSNR)는 $6\times10^{-4}$~dB 안쪽으로 충실한 반면 내보내는 픽셀 코드의
-$6.3$--$18.2\%$가 다르다.
+연산자 종류별로 노드별 국소 불일치율을 단순평균하면 LayerNorm 이외의 평균은 모두
+$1\%$ 미만이었다. 다만 평균 풀링의 개별 노드 최댓값은 $2.697\%$였다. 관측된 비영 국소
+코드 차이는 모두 $\pm1$ LSB였다. LayerNorm만 정수 연산으로 에뮬레이션하면 국소 불일치는
+$24.77\%$에서 $0.00\%$가 되지만 출력 코드 불일치는 $72.7\%$에서 $65.7\%$로만 줄었다.
+이는 LayerNorm 단독 교체의 한계이며, 모든 연산자의 누적 교체 가능성을 배제하지 않는다.
 
-아울러 정확도 대리지표가 값을 매기지 못하는 구현 선택을 정량화한다. 재양자화의 반올림을 산술 시프트로
-바꾸면 18개 (모델, 시드, 방식) 조합 전부에서 $0.90$--$3.37$~\%p를 잃으며, 그 손해의 부호는 시드를 넘어
-옮겨 가지만 크기는 옮겨 가지 않는다. 마지막으로, 밀집 출력 과제를 추가하는 과정에서 측정 도구 자체의
-정밀도 결함 하나가 드러났고 그 진단과 수정을 함께 기록한다. 본문의 모든 수치는 공개된 결과 파일에서
-스크립트가 생성하며, 지속적 통합이 커밋마다 그 일치를 강제한다.
+초해상 모델에서도 두 실행의 평균 PSNR 차이는 최대 약 $6.4\times10^{-4}$~dB인 반면,
+출력 픽셀 코드의 $6.3$--$18.2\%$가 달랐다. 재양자화의 반올림을 제거한
+\texttt{truncate}·\texttt{floor}는 3개 모델 × 3개 학습 반복 × 2개 반올림 모드의
+18개 비교 모두에서 기준보다 $0.90$--$3.37$~\%p 낮았다. 또한 초해상 입력으로 드러난
+입력 양자화기의 정밀도 결함을 진단·수정한 과정을 기록한다. 결과 파일에 근거한 표 재생성과
+기존 실험의 독립 재실행은 구분하며, 학습 원본 체크포인트의 미공개 한계를 명시한다.
 
 \bigskip
 \noindent\textbf{주제어}: 양자화, 정수 연산, 임베디드 추론, 신경망 처리 장치, 재현성
@@ -126,23 +129,23 @@ INT8 가속기에 신경망을 올리는 일은 서로 다른 두 프로그램�
 누산기, 고정소수점 곱셈-시프트 재양자화로 이루어진다~\cite{gemmlowp}. 현업은 둘을 바꿔 써도 되는 것으로
 다루고, 정확도에 관한 한 대체로 그렇다~\cite{nagel2021}.
 
-그러나 시뮬레이터에 요구되는 것이 정확도뿐인 것은 아니다. 실리콘 브링업과 컴파일러 검증에는 \emph{골든
-벡터}, 곧 장치가 내놓아야 할 정수 텐서 그 자체가 필요하다. 학습 후 양자화에서 회귀가 생겼을 때 추적하려면
-\emph{어느} 연산자에서 격차가 시작되었는지를 알아야 한다. 둘 다 텐서에 관한 질문이고, 저자가 아는 한 어느
-쪽도 측정된 바 없다. 공개된 양자화 벤치마크는 격차를 정확도로 환산해 보고하며~\cite{mqbench}, 배포
-툴체인의 계층별 오차 분석은 양자화된 계층이 \emph{부동소수점} 대응물에서 얼마나 떨어져 있는지를 잰다.
-시뮬레이터가 \emph{정수 실행}에서 얼마나 떨어져 있는지는 그 사이에서 빠져 있다.
+그러나 시뮬레이터에 요구되는 것이 정확도뿐인 것은 아니다. 실리콘 브링업과 컴파일러 검증에는
+장치가 내놓아야 할 정수 텐서인 \emph{골든 벡터}가 필요하다. 양자화 벤치마크는 배포 조건과 정확도의
+관계를 다루고~\cite{mqbench}, TensorFlow Lite Quantization Debugger는 계층별 오차와 전체 모델의
+오차 전파를 분석하는 기능을 제공한다~\cite{quantdebug}. 따라서 계층별 비교 자체를 새로운 방법으로
+주장하지 않는다. 이 원고는 같은 양자화 파라미터를 쓰는 모의 양자화와 명시적 정수 실행을
+\emph{코드 단위}로 대조하고, 품질 지표와 코드 일치율이 다른 양상을 보이는지 측정하는 데 초점을 둔다.
 
 이 논문의 기여는 넷이다. 첫째, 모의 양자화와 정수 실행의 차이를 연산자 단위로 분해하는 측정 방법을
 제시한다. 교사 강제로 분리한 \emph{국소} 불일치는 연산자 자신의 정수 연산이 만드는 몫을, \emph{전파}
-불일치는 종단간 실행에서 살아남는 몫을 나타낸다. 둘째, 그 분해를 신경망 7종과 양자화 방식 2종에 걸쳐 전체
-테스트셋에서 수행하고, 정확도 일치와 텐서 일치가 두 자릿수 이상 분리되어 있음을 대응 표준오차와 함께
-보인다. 셋째, 가장 자연스러운 수리 방법 --- 가장 큰 국소 원천 하나에서 시뮬레이터가 장치의 정수 연산을
+불일치는 종단간 실행에서 관측되는 차이를 나타낸다. 둘째, 신경망 7종과 양자화 방식 2종의
+품질·출력 코드는 전체 테스트셋에서 평가하고, 노드별 분해는 고정 표본 배치에서 수행한다.
+품질 차이에는 대응 표준오차를 붙이고, 코드 불일치율은 별도로 보고한다. 셋째, 가장 자연스러운 수리 방법 --- 가장 큰 국소 원천 하나에서 시뮬레이터가 장치의 정수 연산을
 쓰게 하는 것 --- 을 직접 시험하여, 국소 격차는 완전히 닫히지만 전파 격차는 거의 닫히지 않음을 보인다.
 넷째, 정확도 대리지표가 볼 수 없는 재양자화 구현 선택을 시드를 바꿔 가며 정량화한다.
 
 측정이 성립하려면 기준이 되는 정수 엔진 자체가 의심스럽지 않아야 한다. 이 논문의 엔진은 서로 독립인 두
-구현(NumPy와 C++)이 모든 중간 텐서에서 일치할 것을 테스트가 강제하고, 파이썬을 쓰지 않는 세 번째 실행기가
+구현(NumPy와 C++)이 시험 입력의 중간 텐서에서 일치할 것을 테스트가 강제하고, 독립 실행형 C++ 경로가
 직렬화된 파일로부터 같은 코드를 재현하며, 무엇보다 자기 자신이 아니라 TensorFlow Lite 참조 커널이라는 외부
 오라클에 대해 검증된다(5.7절). 5장의 모든 수치는 이 엔진 위에서 나온 것이다.
 
@@ -169,7 +172,7 @@ Q31 고정소수점 승수 $q$와 시프트 $n$으로 근사한다.
 방식이 모두 구현이 고르는 값이다.
 
 활성함수는 데이터패스에 따라 두 갈래로 갈린다. ReLU 계열은 재양자화의 clamp 경계에 흡수되므로 별도의
-연산이 필요 없고, SiLU나 GELU처럼 단조롭지만 닫힌 형태가 없는 함수는 256개 항목의 int8 룩업 테이블로
+연산이 필요 없고, 이 구현에서 SiLU·GELU 같은 활성함수는 256개 항목의 int8 룩업 테이블로
 구현한다. 후자는 입력 쪽에 양자화기가 하나 더 붙는다는 뜻이고, 이 차이는 그래프의 양자화 지점 배치를
 바꾼다. 평균 풀링은 입력 스케일을 그대로 유지한 채 정수 누적과 나눗셈으로 처리한다.
 
@@ -187,16 +190,17 @@ $\hat{x} = s\,(\mathrm{clip}(\mathrm{round}(x/s) + z,\ q_{\min},\ q_{\max}) - z)
 
 \section{관련 연구}
 
-MQBench~\cite{mqbench}는 학술 양자화와 배포 가능한 백엔드 사이의 격차를 측정하되 그것을 정확도로
-보고한다. 양자화 백서들~\cite{nagel2021,krishnamoorthi2018}은 모의 양자화를 정수 파이프라인의
-시뮬레이션으로 다루며, 그 시뮬레이션이 얼마나 충실한지는 다루지 않는다. 배포 툴체인의 계층별 오차 분석은
-양자화된 계층이 부동소수점 대응물에서 얼마나 떨어져 있는지를 신호 대 잡음비로 잰다. 이 논문의 측정은
-종류가 다르다. 시뮬레이터가 장치에서 실제로 일어나는 정수 실행에서 얼마나 떨어져 있는지를, 신호 대
-잡음비가 아니라 코드 단위로 잰다.
+MQBench~\cite{mqbench}와 양자화 백서들~\cite{nagel2021,krishnamoorthi2018}은 양자화 방식과
+배포 백엔드가 정확도에 미치는 영향을 다룬다. TensorFlow Lite Quantization Debugger의 계층별 검증은
+동일한 출처의 입력을 두 계층에 주고 차이를 비교하며, 전체 모델 검증은 두 실행 경로를 분리해
+오차 전파를 관찰한다. 직접 비교 지표에서는 부동소수점 값, 정수 값, 스케일과 영점에도 접근할 수
+있다~\cite{quantdebug}. 본 원고는 이와 관련된 진단 관점을 사용하되, 동일 파라미터의 모의 양자화와
+정수 엔진 사이의 코드 불일치, LayerNorm 개입, 반올림 선택의 비용을 함께 측정한다.
+새 정수 커널이나 계층별 비교 개념의 최초 제안이 아니라, 명시한 실행 조건에 대한 측정 연구다.
 
 정수만 쓰는 트랜스포머 추론은 정수 LayerNorm과 소프트맥스 커널을 이미 확립했다~\cite{ibert,fqvit}. 그
-연산자에 대한 이 논문의 기여는 커널이 아니라, 커널과 시뮬레이터가 어긋나는 크기이고 그것을 고치는 것만으로는
-충분하지 않다는 증거다(5.3절). 누산기 폭은 학습 시 제약으로 연구되어 왔다~\cite{a2q}. 여기서 재는 축은 그
+연산자에 대한 이 논문의 기여는 커널이 아니라, 측정한 차이의 크기와 LayerNorm 단독 교체의
+한계다(5.3절). 누산기 폭은 학습 시 제약으로 연구되어 왔다~\cite{a2q}. 여기서 재는 축은 그
 대신 재양자화 단계의 반올림, 즉 순수한 구현 선택이다(5.5절). 비용 모델 쪽에서는 SCALE-Sim~\cite{scalesim}과
 같은 사이클 정확 시뮬레이터가 표준이며, 5.7절에서 이 논문의 분석 모델을 그 도구 및 Arm Vela에 대조한다.
 
@@ -211,11 +215,12 @@ MQBench~\cite{mqbench}는 학술 양자화와 배포 가능한 백엔드 사이�
 
 표~\ref{tab:operators}와 그림~\ref{fig:operators}는 이 논문이 다루는 신경망 7종 전부에 대해, 각 노드의
 정수 커널에 시뮬레이터의 입력 코드를 먹이고(교사 강제) 그 노드의 출력만 비교한 결과를 연산자 종류별로
-모은 것이다. 측정 절차는 4.3절에 있다. 여기서는 분포만 본다.
+모은 것이다. 측정 절차는 4.3절에 있다. 국소 불일치는 고정 표본 배치에서 측정했다.
+표의 평균은 노드별 불일치율의 단순평균이며, 텐서 원소 수로 가중한 평균이 아니다.
 
 \begin{table}[!t]
 \caption[연산자별 국소 불일치]{연산자별 국소(교사 강제) 불일치. 신경망 7종 × 양자화 방식 2종의 모든 노드를 연산자 종류로 모은
-것이다. ``불일치 노드''는 국소 불일치가 0보다 큰 노드의 수, ``국소 최대 $|\Delta|$''는 그 노드들에서
+것이다. 국소 평균은 노드별 비율의 단순평균이다. ``불일치 노드''는 국소 불일치가 0보다 큰 노드의 수, ``국소 최대 $|\Delta|$''는 그 노드들에서
 관측된 코드 차이의 최댓값(LSB), ``전파 최대''는 같은 노드에서 종단간 실행이 만든 불일치의 최댓값이다.}
 \label{tab:operators}
 \centering
@@ -231,20 +236,21 @@ MQBench~\cite{mqbench}는 학술 양자화와 배포 가능한 백엔드 사이�
 \label{fig:operators}
 \end{figure}
 
-분포는 두 무리로 갈린다. 정수 LayerNorm은 자기 코드의 평균 $24.77\%$에서 어긋나고, 나머지 모든 연산자는
-$1\%$ 미만이다. 그 사이에 두 자릿수의 간격이 있고, 중간에 놓인 연산자는 없다. 평균 풀링이 $0.99\%$로
-두 번째지만 이는 반올림 동점 때문이며, 합성곱 $0.16\%$, 선형 $0.14\%$, 행렬곱 $0.27\%$, 소프트맥스
-$0.50\%$가 그 아래에 모여 있다.
+노드별 국소 불일치율의 단순평균은 LayerNorm이 $24.77\%$로 가장 높다. 다른 연산자
+종류의 평균은 모두 $1\%$ 미만이며, 평균 풀링은 $0.989\%$로 두 번째다. 따라서 LayerNorm은
+다음으로 큰 종류 평균의 약 25배다. 개별 노드까지 모두 $1\%$ 미만인 것은 아니며, 평균 풀링의
+노드별 범위는 $0.100$--$2.697\%$다. 합성곱 $0.16\%$, 선형 $0.14\%$, 행렬곱 $0.27\%$,
+소프트맥스 $0.50\%$는 각 종류의 평균값이다.
 
 크기보다 중요한 것은 \emph{어긋남의 종류}가 하나뿐이라는 사실이다. 표~\ref{tab:operators}의 ``국소 최대
-$|\Delta|$'' 열은 예외 없이 $1$이다. LayerNorm까지 포함해, 교사 강제로 잰 모든 불일치는 최하위 비트
+$|\Delta|$'' 열은 불일치가 관측된 종류에서 $1$이고, 불일치가 없는 종류에서는 $0$이다. LayerNorm까지 포함해, 교사 강제로 잰 모든 불일치는 최하위 비트
 $\pm 1$이다. 정수 커널이 크게 틀리는 경우는 관측되지 않았고, 다만 $\pm 1$이 얼마나 자주 일어나는지가
 연산자마다 다를 뿐이다.
 
 세 종류의 연산자는 정확히 $0\%$다. int8 룩업 테이블 활성함수 50개 전부, 연결(concat) 6개 전부, 그리고
 reshape·transpose 같은 구조 연산이다. 룩업 테이블은 입력 코드에서 출력 코드로 가는 결정적 사상이므로
-시뮬레이터와 엔진이 같은 표를 쓰는 한 어긋날 수 없고, 연결과 구조 연산은 코드를 옮길 뿐 산술을 하지
-않는다. 잔차 덧셈 $100$개 중 $95$개도 $0$이고, 나머지 $5$개는 원소 $100$만 개당 몇 개 수준
+시뮬레이터와 엔진이 같은 표를 쓰는 조건에서 국소 일치가 가능하다. 구조 연산은 코드의 위치를 바꾸며,
+연결은 입력 스케일을 맞추는 재양자화가 포함될 수 있다. 여기서 관측된 연결 노드의 국소 차이는 0이었다. 잔차 덧셈 $100$개 중 $95$개도 $0$이고, 나머지 $5$개는 원소 $100$만 개당 몇 개 수준
 ($0.00005$--$0.00093\%$)에서만 어긋난다.
 
 \section{무엇이 문제인가}
@@ -252,12 +258,13 @@ reshape·transpose 같은 구조 연산이다. 룩업 테이블은 입력 코드
 이 분류가 곧바로 말해 주는 것이 둘 있다.
 
 첫째, \textbf{고칠 대상이 뚜렷하다}. 트랜스포머를 INT8로 옮기는 실무자에게 ``LayerNorm을 가장 먼저
-의심하라''는 지침은 이 표에서 바로 나온다. 다른 연산자보다 두 자릿수 큰 국소 원천이 하나뿐이기 때문이다.
+점검한다''는 우선순위를 이 표에서 제안할 수 있다. 다만 이는 평가한 ViT와 양자화 조건에 대한
+관찰이며, 모든 트랜스포머의 우선순위로 일반화하지 않는다.
 
 둘째, \textbf{고쳐도 될지는 이 표만으로 알 수 없다}. 국소 불일치는 각 연산자를 고립시켜 잰 값이고,
 같은 표의 ``전파 최대'' 열은 전혀 다른 그림을 보여 준다. 국소 불일치가 정확히 $0$인 LUT 활성함수의 전파
-불일치가 $39.5\%$까지 올라가고, 잔차 덧셈은 $75.6\%$까지 간다. 자기는 아무것도 틀리지 않았는데 앞에서 온
-$\pm 1$을 그대로 실어 나른 것이다. 그러므로 가장 큰 국소 원천을 없애면 전파 격차가 그만큼 줄어드는지는
+불일치가 $39.5\%$까지 올라가고, 잔차 덧셈은 $75.6\%$까지 간다. 국소 불일치가 작거나 0이어도
+상류 차이와 이후 연산의 상호작용 때문에 전파 불일치가 클 수 있다. 그러므로 가장 큰 국소 원천을 없애면 전파 격차가 그만큼 줄어드는지는
 따로 시험해야 한다. 5.3절이 그 시험이다.
 
 % ================================================================ 4
@@ -279,7 +286,8 @@ LUT 활성함수는 256항목 표로 구워진다.
 실행은 2.1절의 gemmlowp/TensorFlow Lite 의미론을 따른다. 엔진은 세 겹으로 검증된다.
 
 \textbf{내부 일치.} 서로 독립으로 작성한 NumPy 구현과 C++ 구현이 \emph{모든} 중간 텐서에서 일치할 것을
-테스트 스위트가 강제한다. 어느 한쪽의 실수는 다른 쪽과의 불일치로 드러난다.
+테스트 스위트가 시험 입력에서 확인한다. 서로 다른 구현의 오류를 찾는 데 도움이 되지만,
+두 구현이 같은 가정을 잘못 공유한 경우는 이 비교만으로 배제할 수 없다.
 
 \textbf{직렬화 왕복.} 정수 그래프를 파일로 내보내고, 파이썬을 쓰지 않는 독립 C++ 실행기가 그 파일만으로
 같은 코드를 재현한다. 파이썬 런타임에 숨은 상태가 없음을 보인다.
@@ -287,7 +295,8 @@ LUT 활성함수는 256항목 표로 구워진다.
 \textbf{외부 오라클.} 가장 중요한 겹이다. TensorFlow Lite의 완전 정수 모델을 가져와 \emph{그}
 스케일·영점·가중치·바이어스로 정수 그래프를 세우고, TensorFlow Lite 참조 커널과 출력을 비교한다. 결과는
 5.7절에 있다. 자기 자신에 대한 일치는 구현이 일관되다는 것만 보이지만, 외부 런타임과의 비트 일치는 이
-논문이 ``정수 실행''이라 부르는 것이 실제 배포 런타임이 하는 일과 같음을 보인다.
+논문의 시험 모델에 포함된 합성곱·평균 풀링·완전 연결 계층이 지정한 참조 경로와 일치함을 보인다.
+깊이별 합성곱·덧셈·소프트맥스·LayerNorm 전체에 대한 외부 검증이나 실제 NPU 실측을 뜻하지 않는다.
 
 \section{국소 불일치와 전파 불일치}
 
@@ -314,8 +323,9 @@ LUT 활성함수는 256항목 표로 구워진다.
 \section{통계 처리}
 
 정확도 차이는 대응 표본으로 다룬다. 같은 이미지를 세 번(부동소수점, 모의 양자화, 정수) 평가하고, 이미지별
-정답 여부 차이의 평균을 표준오차 $s/\sqrt{n}$ 및 $95\%$ Wald 구간과 함께 보고한다. 두 독립 표본의 차이로
-다루면 표준오차가 과대평가되므로, 같은 이미지에서 잰 차이를 쓰는 것이 중요하다.
+정답 여부 차이의 평균을 표준오차 $s/\sqrt{n}$ 및 $95\%$ Wald 구간과 함께 보고한다.
+동일 이미지에서 얻은 결과의 대응 관계를 반영하기 위한 것이다. 신뢰구간이 0을 포함하는 것과
+사전에 정한 허용 오차 내의 동등성을 입증하는 것은 다르다. 이 연구는 동등성 검정을 수행하지 않았다.
 
 초해상처럼 이미지당 연속값(PSNR)으로 채점하는 과제에는 같은 방식의 연속형 대응 차이를 쓴다. 이미지별
 차이의 평균과 그 표준오차, $95\%$ 구간을 보고한다.
@@ -327,16 +337,17 @@ LUT 활성함수는 256항목 표로 구워진다.
 
 CIFAR-10 신경망 5종을 학습해 기준선으로 삼는다(표~\ref{tab:baselines}). ReLU를 쓰는 ResNet-20과 SiLU를 쓰는
 ResNet-20, MobileNetV2-0.5(깊이별 합성곱), 분기를 연결하는 Inception 계열 CNN, 그리고 ViT-128/6(어텐션 블록
-12개, LayerNorm 13개)이다. 여기에 Imagenette를 $128\times128$로 쓰는 신경망 2종을 더한다. ResNet-20과,
+6개, 어텐션 행렬곱 노드 12개, LayerNorm 13개)이다. 여기에 Imagenette를 $128\times128$로 쓰는 신경망 2종을 더한다. ResNet-20과,
 5.4절의 초해상 신경망이다.
 
 학습 $50{,}000$장은 고정 시드로 학습 $45{,}000$장과 검증 $5{,}000$장(클래스별 $500$장, 층화)으로 한 번
 나눈다. 체크포인트 선택은 검증 분할로만 하고 test $10{,}000$장은 선택된 체크포인트에 대해 마지막에 한 번
-평가한다. 캘리브레이션 이미지도 학습 분할에서만 뽑는다.
+평가한다. 캘리브레이션 이미지도 학습 분할에서만 뽑는다. 이는 체크포인트 선택 절차에 대한 설명이며,
+선택된 모델은 여러 양자화·개입 조건의 테스트 평가에 반복 사용된다.
 
 학습 후 양자화 방식은 둘이다. 채널별 가중치에 비대칭 활성화를 쓰는 방식(\textsc{pc})과 텐서별 가중치를
-쓰는 방식(\textsc{pt})이며, 둘 다 학습 이미지 $512$장으로 보정했다. 학습과 평가는 모두 CPU 4코어에서
-수행했다.
+쓰는 방식(\textsc{pt})이며, 둘 다 학습 이미지 $512$장으로 보정했다. 원래 학습 기록의 기준 환경은 CPU 4코어다. 평가 스크립트의 스레드 수는
+설정에 따라 다르므로 재실행 시 실행 환경과 스레드 설정을 함께 기록해야 한다.
 
 \begin{table}[!t]
 \caption[CIFAR-10 기준선]{CIFAR-10 기준선. 사이클과 배열 활용률은 가상 NPU 비용 모델(\texttt{tiny-1tops} 스펙)의 값이므로
@@ -353,9 +364,9 @@ ResNet-20, MobileNetV2-0.5(깊이별 합성곱), 분기를 연결하는 Inceptio
 
 \section{정확도와 텐서의 분리}
 
-표~\ref{tab:fidelity}이 핵심 측정이다. 모의 대 정수 정확도 차이의 최댓값은 $0.20$~\%p,
-$|\Delta|/\mathrm{SE}$의 최댓값은 $1.6$이며, 12개 신뢰구간이 모두 0을 포함한다. 이 표본 크기에서 정확도
-대리지표는 정확한 것과 구별되지 않고, 이미지 단위 top-1 일치율은 $97.9$--$99.7\%$다.
+표~\ref{tab:fidelity}가 핵심 측정이다. 모의 대 정수 정확도 차이의 최댓값은 $0.20$~\%p,
+$|\Delta|/\mathrm{SE}$의 최댓값은 $1.6$이며, 12개 신뢰구간이 모두 0을 포함한다. 이는 각 비교에서 차이를 유의하게 검출하지 못했다는 뜻이며,
+특정 허용 오차 안의 동등성을 입증한 것은 아니다. 이미지 단위 top-1 일치율은 $97.9$--$99.7\%$다.
 
 \begin{table}[!t]
 \caption[모의 양자화 대 정수 실행, 전체 테스트셋]{모의 양자화 대 비트 단위로 일치하는 정수 실행, 전체 테스트셋. \textsc{pc}는 채널별 가중치,
@@ -368,19 +379,17 @@ $|\Delta|/\mathrm{SE}$의 최댓값은 $1.6$이며, 12개 신뢰구간이 모두
 \end{table}
 
 같은 행이 텐서에서는 어긋난다. 출력 로짓 코드의 $28.5\%$(Inception-32)에서 $72.7\%$(ViT-128/6)가 다르고,
-이미지의 $95$--$100\%$에서 코드가 최소 하나 다르다. 트랜스포머가 극단이기는 하나 예외는 아니다. CNN들이
-$50$--$63\%$, 입력이 더 큰 Imagenette 모델이 $36\%$에 자리한다.
+이미지의 $95$--$100\%$에서 코드가 최소 하나 다르다. 트랜스포머가 극단이기는 하나 예외는 아니다. ResNet·MobileNet 계열은
+약 $50$--$63\%$, Inception은 약 $28$--$31\%$, Imagenette 모델은 약 $36\%$다.
 
 그림~\ref{fig:decomposition}은 이 결과를 노드 단위로 펼친 것이다. 국소 불일치는 3장에서 본 대로 작고
-평평한 반면, 전파 불일치는 첫 합성곱에서부터 --- 12개 행 전부에서 첫 격차가 그 노드다 --- 단조롭게 올라가
-출력에서 $28$--$73\%$에 이른다. 정확도가 $99\%$ 일치한다는 보고는 시뮬레이터가 검증 벡터를 공급할 수
-있다는 증거가 되지 못한다.
+편이지만, 전파 불일치는 첫 합성곱에서 시작해 --- 12개 행 전부에서 첫 격차가 그 노드다 ---
+노드에 따라 증가와 감소를 거치며 출력에서 $28$--$73\%$에 이른다. 높은 top-1 일치율만으로는 시뮬레이터가 비트 정확한 검증 벡터를 공급한다고 판단할 수 없다.
 
 \begin{figure}[!t]
 \centering
 \includegraphics[width=0.92\textwidth]{fig1_decomposition_ko.pdf}
-\caption[노드별 코드 불일치]{노드별 코드 불일치, \textsc{pc} 방식. 국소(교사 강제) 불일치는 LayerNorm을 뺀 모든 연산자에서
-$1\%$ 미만이고, 전파 불일치는 첫 합성곱에서 시작해 출력의 $50$--$73\%$까지 올라간다. 세로축은 로그
+\caption[노드별 코드 불일치]{노드별 코드 불일치, \textsc{pc} 방식. 표시한 두 모델의 국소(교사 강제) 불일치는 LayerNorm에서 특히 크다. 전파 불일치는 첫 합성곱에서 시작해 출력의 $50$--$73\%$까지 올라간다. 세로축은 로그
 눈금이며, 국소 불일치가 0인 노드는 그리지 않았다.}
 \label{fig:decomposition}
 \end{figure}
@@ -392,8 +401,10 @@ $1\%$ 미만이고, 전파 불일치는 첫 합성곱에서 시작해 출력의 
 
 표~\ref{tab:layernorm}이 결과다. LayerNorm의 국소 불일치는 $24.77\%$에서 정확히 $0.00\%$로 내려가고 로짓
 절대차 평균은 약 $23\%$ 개선된다. 그러나 전파된 출력 코드 불일치는 $72.7\%$에서 $65.7\%$로만 움직인다
-(텐서별은 $72.6\% \rightarrow 66.0\%$). 정확도는 어느 방향으로든 대응 표준오차 두 배 안쪽에서 움직이므로
-개선으로 읽을 수 없다.
+(텐서별은 $72.6\% \rightarrow 66.0\%$). 정수 프로그램의 정확도는 바뀌지 않는다.
+정수와 각 시뮬레이터의 차이 중 pc 교체 조건은 $+0.25\pm0.11$~\%p로 약 2.2 표준오차다.
+표의 각 차이는 정수 대비 값이지 두 시뮬레이터의 직접 대응 비교가 아니므로, 개입에 따른
+정확도 예측의 개선을 이 표만으로 확정하지 않는다.
 
 \begin{table}[!t]
 \caption[LayerNorm 정수 에뮬레이션]{시뮬레이터의 LayerNorm을 정수에 충실하게 바꾼 결과(ViT-128/6, $10{,}000$장). 각 방식의 두 행
@@ -405,10 +416,11 @@ $0.119 \rightarrow 0.091$, \textsc{pt}에서 $0.118 \rightarrow 0.093$으로 줄
 \fittable{\input{tab2_rows_ko}}
 \end{table}
 
-가장 큰 국소 원천 하나를 완전히 없애도 전파 격차의 10분의 1 정도만 회수된다. 남는 것이 개별적으로는 코드의
-$1\%$ 미만에서만 어긋나는 연산자들의 $\pm 1$ LSB 사건이 증폭된 결과이기 때문이다. 3.2절에서 유보했던 질문에
-대한 답은 ``아니오''다. 비트 정확한 검증 벡터는 정수 구현에서 나와야 하며, 부동소수점 시뮬레이터를 연산자
-하나씩 고쳐 나가는 길은 대체재가 되기에 너무 느리게 수렴한다.
+pc 조건에서 출력 코드 불일치는 약 7.0~\%p, 상대적으로 약 $9.6\%$ 줄었다. 따라서 가장 큰
+국소 원천인 LayerNorm만 맞추는 것으로는 출력의 비트 일치에 도달하지 못했다. 이 실험은
+\emph{LayerNorm 단독 교체}를 평가한 것이며, 다른 연산자들을 함께 또는 순차적으로 교체했을 때의
+수렴 여부를 시험하지 않았다. 골든 벡터를 사용할 때는 해당 정수 의미론과 입력 조건에 대한
+직접 검증이 필요하다.
 
 \section{출력 텐서가 결과물인 과제}
 
@@ -431,14 +443,14 @@ $49{,}152$개. PSNR은 $[0,1]$ 범위의 dB이며 배포와 똑같이 출력을 
 \end{table}
 
 표~\ref{tab:dense}는 같은 그림을 반복한다. 양자화 비용은 $0.279$~dB(\textsc{pc})와 $0.667$~dB(\textsc{pt})
-이고 시뮬레이터는 그 비용을 $6\times10^{-4}$~dB 안쪽으로 맞힌다. 이 표본 크기에서는 분해되는 차이지만
-($|\Delta|/\mathrm{SE} = 17.6$) 맞히려는 비용보다 세 자릿수 작다. 그런데도 출력 픽셀 코드의 $6.3\%$와
+이고 시뮬레이터는 그 비용을 예측한 값과 정수 결과의 차이는 최대 약 $6.4\times10^{-4}$~dB다. 이 표본 크기에서는 분해되는 차이지만
+($|\Delta|/\mathrm{SE} = 17.6$) 양자화 자체의 PSNR 변화보다 훨씬 작다. 그런데도 출력 픽셀 코드의 $6.3\%$와
 $18.2\%$가 $3{,}925$장 전부에서 다르고, 최대 3레벨까지 벌어진다.
 
 연산자별 구조는 CNN과 같다. 합성곱의 국소 불일치는 $0.06$--$0.40\%$이고 모두 최하위 비트 $\pm 1$이며, 첫
-분기점도 첫 합성곱이다. 전파 값이 분류기($28$--$73\%$)보다 작은 것은 이 신경망이 3층이라는 깊이 효과이지
-과제의 성질이 아니다. 요컨대 정확도 일치와 텐서 일치의 분리는 분류 과제의 인공물이 아니며, 시뮬레이터는
-기준 로짓 벡터를 공급할 수 없듯이 기준 이미지도 공급할 수 없다.
+분기점도 첫 합성곱이다. 전파 값이 분류기($28$--$73\%$)보다 작은 이유에는 깊이와 과제·분포 차이가 함께 관여할 수 있으나,
+본 실험은 이 요인을 분리하지 않았다. 이 초해상 조건에서도 평균 품질의 작은 차이와 코드 불일치가
+함께 관측되므로, 그 분리가 분류 과제에만 한정된 현상은 아니다.
 
 \section{재양자화 반올림과 시드}
 
@@ -466,8 +478,8 @@ $18.2\%$가 $3{,}925$장 전부에서 다르고, 최대 3레벨까지 벌어진�
 (모델, 시드, 방식) 조합 전부에서 기준보다 나빴고, 그 폭은 $0.90$--$3.37$~\%p,
 $|\Delta|/\mathrm{SE}$는 $4.4$에서 $11.8$ 사이였다. 반면 단일 반올림과 짝수 반올림 경로는 잡음 범위를
 벗어나지 않는다($|\Delta| \leq 0.13$~\%p). 둘째, \textbf{크기는 옮겨 가지 않는다}. ResNet-20 SiLU에서
-\texttt{truncate}의 손해는 시드 3개에 걸쳐 $1.36$에서 $2.98$~\%p까지 벌어져 시드 표준편차가 효과 크기의
-$37\%$에 이르는 반면, ResNet-20 ReLU는 효과의 10분의 1 이내에 머문다. 두 편향 방식 중 어느 쪽이 더
+\texttt{truncate}의 손해는 시드 3개에 걸쳐 $1.36$에서 $2.98$~\%p까지 벌어져 시드 표준편차가 평균 손해 크기의
+약 $37\%$에 이르는 반면, ResNet-20 ReLU의 표에 표시된 비율은 약 $12\%$다. 두 편향 방식 중 어느 쪽이 더
 나쁜지도 연산의 성질이 아니라 신경망의 성질이다. ResNet-20 ReLU는 세 시드 모두에서 \texttt{floor}가,
 MobileNetV2는 세 시드 모두에서 \texttt{truncate}가 더 많이 잃는다. 반올림 방식의 비용을 시드 하나의 수치로
 인용해서는 안 된다.
@@ -487,9 +499,10 @@ MobileNetV2는 세 시드 모두에서 \texttt{truncate}가 더 많이 잃는다
 \fittable{\input{th_requant}}
 \end{table}
 
-승수 폭은 관대하다. Q31에서 Q15로 내려도 정확도가 거의 움직이지 않으며, 무너지는 것은 Q7 이하다. 누산기와
-바이어스 폭은 그렇지 않다. 이 축들은 5.5절의 반올림 축과 달리 시드 하나로만 측정했으므로, 부호는 몰라도
-크기는 신뢰구간과 함께 읽어야 한다. 6.1절에 이 한계를 적었다.
+이 표에서 Q15·Q7 승수 설정의 관측 변화는 작지만, Q3 설정은 세 모델에서 각각
+$-8.20$, $-2.00$, $-1.55$~\%p였다. Q7부터 붕괴한다고 해석할 수 없다.
+누산기 16비트와 바이어스 12비트 설정은 큰 하락을 보였다. 이 축은 모델당 체크포인트 하나와
+2,000장 표본으로 평가했으며, 표에는 신뢰구간이 없다. 크기와 일반화에는 추가 반복 측정이 필요하다.
 
 \section{외부 대조: TensorFlow Lite와 Arm Vela}
 
@@ -531,9 +544,9 @@ npuloop/Vela다. 둘 다 추정값이고 실측이 아니다.}
 
 MAC 수는 사실상 같지만 사이클은 $0.29$--$0.84$배로, npuloop 쪽이 일관되게 낙관적이다. 격차가 가장 큰
 \texttt{pointwise-heavy}는 $1\times1$ 합성곱이 대부분인 망이고, 가장 작은 \texttt{conv-stack}은 일반
-합성곱이 대부분이다. 곧 이 비용 모델은 배열 채움·비움과 가중치 교체 비용을 과소평가하며, 그 과소평가가
-계층 모양에 따라 달라진다. 6.1절에 한계로 적었고, 본문에서 사이클을 인용할 때는 언제나
-\texttt{simulated} 라벨을 붙인다.
+합성곱이 대부분이다. 격차의 원인 후보에는 융합·타일링·메모리 스케줄과 비용 항의 차이가 있으나,
+이 대조만으로 특정 항의 기여를 분리할 수 없다. 표의 사이클은 두 추정기의 값이며,
+실제 하드웨어에서 측정한 성능이 아니다.
 
 % ================================================================ 6
 \chapter{논의}
@@ -542,7 +555,7 @@ MAC 수는 사실상 같지만 사이클은 $0.29$--$0.84$배로, npuloop 쪽이
 
 \textbf{외적 타당성.} 신경망은 CIFAR-10 규모에 $128\times128$ Imagenette 모델 둘을 더한 것이다. 따라서
 결론은 격차의 \emph{구조}에 관한 것이지 ImageNet 규모 그래프에서의 정확한 크기에 관한 것이 아니다. 밀집
-출력 신경망은 3층뿐이라 그 전파 값은 더 깊은 신경망에서 나올 값의 하한으로 읽어야 한다. 비용 모델은
+출력 신경망은 3층뿐이며, 그 전파 값이 더 깊은 신경망의 하한이라는 보장은 없다. 비용 모델은
 가상 NPU 스펙 위에서 돌며, 실측 실리콘이 아니라 두 분석 도구에 대조했을 뿐이다(5.7절).
 
 \textbf{구성 타당성.} 국소 불일치는 교사 강제로 재므로 연산자의 산술만 떼어 보고 상류 오차와의 상호작용은
@@ -554,8 +567,9 @@ MAC 수는 사실상 같지만 사이클은 $0.29$--$0.84$배로, npuloop 쪽이
 \textbf{결론 타당성.} 표~\ref{tab:fidelity}의 정확도 비교 12개와 표~\ref{tab:layernorm}의 4개는 다중비교
 보정을 하지 않았다. 16개 전체에서 $|\Delta|/\mathrm{SE}$의 최댓값은 $2.2$다. 시드 3개는 반올림 축만 덮고,
 5.6절의 승수·누산기·바이어스 축과 나머지 측정은 신경망당 체크포인트 하나를 쓴다. 이 체크포인트들을 만들
-당시 학습기의 시드는 데이터 순서만 통제하고 가중치 초기화는 통제하지 못했으므로, 세 반복은 서로 독립인
-표본이지만 같은 명령으로 비트 단위까지 재현되지는 않는다. 학습기는 이후 수정했다.
+당시 학습기의 시드는 데이터 순서만 통제하고 가중치 초기화는 통제하지 못했으므로, 세 반복은 서로 다른
+학습 반복이지만 같은 명령으로 비트 단위까지 재현되지는 않는다. 학습기는 이후 수정했다.
+과거 표의 정확한 재측정에는 당시 원본 체크포인트와 평가 환경·보정 표본 정보가 필요하다.
 
 \textbf{내적 타당성.} 외부 비트 일치 검증(5.7절)은 합성곱·풀링·완전 연결 계층을 덮고, 깊이별
 합성곱·원소별 덧셈·소프트맥스는 덮지 않는다. 이 연산자들에 대해서는 내부 두 구현의 일치와 직렬화 왕복만
@@ -574,7 +588,8 @@ MAC 수는 사실상 같지만 사이클은 $0.29$--$0.84$배로, npuloop 쪽이
 시뮬레이터(PyTorch)는 float32로 나눈다. 둘 다 round-half-to-even이지만, 한쪽에서 정확히 동점인 값이 다른
 쪽에서는 동점이 아니다. 초해상의 저해상 입력은 uint8 네 개의 박스 평균이므로 $1/1020$의 배수이고, $1/255$
 스케일에 대해 \textbf{네 값 중 하나가 정확히 반올림 동점}에 놓인다. 분류기 입력은 채널별 평균과 표준편차로
-정규화되어 그런 동점이 사실상 생기지 않으므로, 이 결함은 분류기만 재는 동안에는 드러날 수 없었다.
+정규화되어 있으며, 평가한 분류 입력에서는 이 정밀도 변경으로 코드가 바뀌지 않았다.
+이를 모든 분류 입력에서 결함이 발생할 수 없다는 뜻으로 일반화하지 않는다.
 
 시뮬레이터와 같은 float32로 맞추자 입력 불일치는 $0.00\%$가 되고 출력 불일치는 $6.3\%$와 $18.2\%$로
 내려갔다. 기존 결과는 영향을 받지 않는다. 신경망 6종 × 양자화 방식 2종 × 전체 테스트셋에서 입력 코드
@@ -591,13 +606,15 @@ $693{,}043{,}200$개 중 \textbf{0개}가 바뀌므로 하류의 모든 텐서�
 
 \section{요약}
 
-모의 양자화는 INT8 품질은 잘 맞히고 INT8 텐서는 잘 못 맞힌다. 분류기에서도, 출력이 곧 결과물인
-신경망에서도 그렇고, 두 사실은 서로 독립이다. 정확도 차이는 12개 비교 전부에서 $0.20$~\%p 이내이고 신뢰구간이
-0을 포함하는 반면 출력 코드는 $28.5$--$72.7\%$가 다르다.
+평가한 분류 조건의 12개 비교에서는 관측 정확도 차이가 최대 $0.20$~\%p였고 각 신뢰구간은
+0을 포함했지만, 출력 코드의 $28.5$--$72.7\%$는 달랐다. 초해상 조건에서도 평균 PSNR의 작은
+차이와 코드 불일치가 함께 관측됐다. 이는 품질의 유사성만으로 비트 일치를 보장할 수 없음을
+보이며, 정확도 동등성을 입증한 결과는 아니다.
 
-격차를 옮기는 연산자는 하나가 아니다. LayerNorm을 빼면 모든 연산자가 자기 코드의 $1\%$ 미만에서만
-어긋나고, 관측된 모든 국소 불일치는 최하위 비트 $\pm 1$이다. 격차는 그 $\pm 1$이 전파되며 증폭된 결과이고,
-그래서 가장 나쁜 국소 원천을 통째로 없애도 전파 불일치의 10분의 1밖에 회수되지 않는다.
+연산자 종류별 노드 평균은 LayerNorm 이외에서 $1\%$ 미만이지만, 평균 풀링의 개별 노드
+최대는 $2.697\%$였다. 관측된 비영 국소 코드 차이는 모두 $\pm1$ LSB였다. LayerNorm만
+정수로 에뮬레이션한 pc 조건에서 출력 코드 불일치는 약 $9.6\%$ 상대 감소했으나 0이 되지 않았다.
+다른 연산자들의 누적 교체와 더 큰 모델에 대해서는 추가 실험이 필요하다.
 
 실무적 함의는 둘이다. 골든 벡터가 필요한 팀은 외부 기준에 대해 검증된 정수 구현에서 그것을 만들어야 한다.
 그리고 재양자화의 세부를 바꾸는 팀은 여러 시드에서 측정해야 한다. 그 효과의 크기는 --- 부호와 달리 ---
@@ -615,8 +632,8 @@ $693{,}043{,}200$개 중 \textbf{0개}가 바뀌므로 하류의 모든 텐서�
 \textbf{누산기 축의 시드.} 5.6절의 승수·누산기·바이어스 축은 체크포인트 하나로만 측정했다. 5.5절이 반올림
 축에서 보인 것처럼 크기가 시드에 따라 크게 흔들린다면, 이 축들의 수치도 시드 여러 개로 다시 재야 한다.
 
-\textbf{비용 모델.} Vela와의 $0.29$--$0.84$배 격차는 배열 채움·비움과 가중치 교체 비용을 모델이
-과소평가한다는 뜻이다. 그 항을 계층 모양의 함수로 보정하면 어디까지 좁혀지는지가 다음 과제다.
+\textbf{비용 모델.} Vela와의 $0.29$--$0.84$배 격차를 비용 항과 스케줄 차이로 분해하고,
+보정이 별도 평가 그래프에도 유지되는지 검증해야 한다. 현재 대조만으로 원인을 특정하지 않는다.
 
 % ---------------------------------------------------------------- 부록
 \appendix
@@ -626,16 +643,17 @@ $693{,}043{,}200$개 중 \textbf{0개}가 바뀌므로 하류의 모든 텐서�
 
 이 부록은 5장의 결과를 재현하는 데 필요한 정수 산술의 정의를 모은 것이다.
 
-\textbf{재양자화.} 실수 배율 $M$을 $q \in [2^{30}, 2^{31})$과 시프트 $n \geq 0$으로 분해해
-$M = q \cdot 2^{-31} \cdot 2^{-n}$으로 둔다. int32 누산값 $a$에 대해
+\textbf{재양자화.} 여기서는 $0<M<1$인 오른쪽 시프트 경로를 표시한다. 이 범위의 실수 배율 $M$을 $q \in [2^{30}, 2^{31})$과 시프트 $n \geq 0$으로 분해해
+$M \approx q \cdot 2^{-31} \cdot 2^{-n}$으로 근사한다. int32 누산값 $a$에 대해
 \[
   \mathrm{requant}(a) = \mathrm{RDBPOT}\big(\mathrm{SRDHM}(a,\ q),\ n\big),
 \]
 여기서 $\mathrm{SRDHM}$은 포화 반올림 배증 상위곱, $\mathrm{RDBPOT}$은 2의 거듭제곱 반올림 나눗셈이다.
+$M\geq1$에 필요한 왼쪽 시프트 경로와 경계 처리까지 이 단순식이 나타내지는 않는다.
 기준 구현은 두 단계 모두에서 반올림하며(\texttt{tflite}), 비교 대상인 \texttt{single}은 한 번만,
 \texttt{half\_even}은 짝수 반올림을, \texttt{truncate}와 \texttt{floor}는 반올림 없이 자른다.
 
-\textbf{활성함수.} ReLU 계열은 재양자화 뒤 $[\,q_{\min}, q_{\max}]$ clamp에 흡수된다. SiLU·GELU·HardSwish는
+\textbf{활성함수.} ReLU 계열은 재양자화 뒤 $[\,q_{\min}, q_{\max}]$ clamp에 흡수된다. SiLU, GELU 및 HardSwish는
 입력 코드 $256$개를 출력 코드로 보내는 int8 룩업 테이블이며, 표는 export 시점에 구워진다.
 
 \textbf{LayerNorm.} 입력 코드 $d$에 대해 int64로 합과 제곱합을 구하고, 분산의 제곱근을 정확한 정수
@@ -647,8 +665,11 @@ $M = q \cdot 2^{-31} \cdot 2^{-n}$으로 둔다. int32 누산값 $a$에 대해
 
 \chapter{재현 방법}
 
-본문의 모든 표와 그림은 공개된 결과 파일에서 스크립트가 생성한다. 수치를 손으로 옮겨 적은 곳은 없으며,
-지속적 통합 작업이 커밋마다 생성기를 다시 돌려 커밋된 표가 결과 파일이 함의하는 표와 다르면 실패시킨다.
+저장소는 결과 JSON에서 표와 그림을 만드는 생성기를 제공한다. 기존 지속적 통합의 표 동기화 검사는
+README와 실험 문서를 대상으로 하며, 논문용 표·PDF 검사는 별도로 추가·실행해야 한다.
+표 재생성은 저장된 JSON과 표의 일관성을 검사하는 작업이지, 학습·평가를 독립 재실행하거나
+본문의 모든 해석을 자동 검증하는 작업이 아니다. 본 수정판의 표는 해당 커밋의 생성된 TeX 파일을
+유지했으며, 그림은 업로드된 원본 PDF의 벡터 그림을 재사용했다. 새 학습·평가 결과는 추가하지 않았다.
 
 \begin{center}
 \small
@@ -682,8 +703,11 @@ $M = q \cdot 2^{-31} \cdot 2^{-n}$으로 둔다. int32 누산값 $a$에 대해
 \medskip
 \noindent 학습된 체크포인트는 저장소에 포함되지 않는다. 데이터셋 없이 돌려 볼 수 있도록 작은 체크포인트
 2개와 CIFAR-10 표본이 \texttt{examples/quickstart/}에 들어 있고, 나머지는
-\texttt{python -m npuloop.zoo.train}과 \texttt{python -m npuloop.zoo.train\_sr}로 다시 만든다. 초해상
-신경망의 경우 CPU 4코어에서 30 epoch에 8.4분이 걸렸다.
+\texttt{python -m npuloop.zoo.train}과 \texttt{python -m npuloop.zoo.train\_sr}로
+새로 학습할 수 있다. 단, 당시 초기화가 완전히 고정되지 않은 원본 체크포인트와 같은 가중치나
+논문의 같은 소수점 결과를 복원한다는 보장은 없다. 정확한 재측정에는 원본 가중치·체크섬,
+환경 버전, 데이터 분할 및 캘리브레이션 표본 정보가 필요하다. 원래 초해상 학습 기록은 CPU
+4코어, 30 epoch, 8.4분이다.
 
 % ---------------------------------------------------------------- 참고문헌
 \begin{thebibliography}{10}
@@ -710,6 +734,10 @@ avoidance,'' in \emph{Proc. IEEE/CVF Int. Conf. Comput. Vis. (ICCV)}, 2023, pp. 
 \bibitem{scalesim} A.~Samajdar \emph{et al.}, ``A systematic methodology for characterizing scalability of DNN
 accelerators using SCALE-Sim,'' in \emph{Proc. IEEE Int. Symp. Performance Analysis of Systems and Software
 (ISPASS)}, 2020, pp. 58--68.
+\bibitem{quantdebug} Google, ``Inspecting quantization errors with Quantization Debugger'' and
+``QuantizationDebugOptions,'' official LiteRT/TensorFlow Lite documentation, accessed September 16, 2026.
+[Online]. Available: \url{https://ai.google.dev/edge/litert/conversion/tensorflow/quantization/quantization_debugger};
+\url{https://ai.google.dev/edge/api/tflite/python/tf/lite/experimental/QuantizationDebugOptions}
 \end{thebibliography}
 \addcontentsline{toc}{chapter}{참고문헌}
 
@@ -720,29 +748,29 @@ accelerators using SCALE-Sim,'' in \emph{Proc. IEEE Int. Symp. Performance Analy
 \noindent\textbf{Measuring the Fake-Quantization-to-Integer Gap, Operator by Operator}
 
 \bigskip
-\noindent INT8 deployment decisions are made on a simulator: the network runs in floating point with
-quantize--dequantize (``fake-quantization'') nodes inserted, and its accuracy stands in for the accuracy of the
-integer target. This thesis measures how far that stand-in holds, separately for accuracy and for tensors,
-against an integer engine that is bit-exact with the TensorFlow Lite reference kernels --- verified by building
-the integer graph from a TensorFlow Lite full-integer model's own scales and zero-points and agreeing on all
-tensors for $1000/1000$ images.
+\noindent This manuscript compares fake-quantized floating-point execution with explicit integer
+execution using the same quantization parameters. For an external cross-check, the NumPy and C++ engines
+agree with TensorFlow Lite reference kernels on all compared tensors for 1,000 images of a test model
+covering convolution, mean pooling, and fully connected layers. This does not establish equivalence for
+all supported operators or for physical NPU hardware.
 
-On seven networks and two quantization schemes, over complete test splits, the stand-in holds for accuracy:
-every fake-versus-integer difference is within $0.20$~pp and all twelve $95\%$ confidence intervals contain
-zero. It fails for tensors: $28.5$--$72.7\%$ of the output codes differ, on $95$--$100\%$ of the images. A
-teacher-forced decomposition attributes the divergence per operator. Outside LayerNorm every operator disagrees
-locally on under $1\%$ of its own codes, and every local disagreement observed in this study --- LayerNorm's
-included --- is exactly $\pm 1$ LSB. Making the simulator integer-faithful at LayerNorm removes the largest
-local source entirely ($24.77\% \rightarrow 0.00\%$) yet moves the propagated output mismatch only from
-$72.7\%$ to $65.7\%$: a simulator cannot be repaired into a source of bit-accurate vectors one operator at a
-time. The decoupling survives the removal of the argmax --- on a dense-output super-resolution network the
-quality metric is faithful to $6\times10^{-4}$~dB while $6.3$--$18.2\%$ of the delivered pixel codes differ.
+Across six classification networks and two schemes, the twelve observed top-1 differences are at most
+0.20 percentage points in magnitude and all individual 95\% confidence intervals contain zero; this is
+not an equivalence test. Nevertheless, 28.5--72.7\% of the output codes differ. Quality and output-code
+metrics use complete test splits, while teacher-forced local comparisons use fixed sample batches.
 
-The thesis also prices a requantization choice the accuracy proxy cannot see: replacing rounding with
-truncation costs $0.90$--$3.37$~pp in all 18 (model, seed, mode) combinations, and the sign of that cost
-transfers across seeds while its magnitude does not. Finally, it documents a precision defect in the
-measurement tooling that only a new class of input could expose. Every number is emitted by a script from a
-public result file, and a continuous-integration job enforces that correspondence on every commit.
+The unweighted mean of node-local mismatch rates is below 1\% for each operator class other than
+LayerNorm, but an individual pooling node reaches 2.697\%. All observed nonzero local code differences
+are $\pm1$ LSB. Making LayerNorm alone integer-faithful removes its local mismatch (24.77\% to 0.00\%)
+yet reduces propagated output mismatch only from 72.7\% to 65.7\%. The experiment establishes the
+limitation of this intervention, not the impossibility of cumulative operator corrections.
+
+A seventh, super-resolution network shows the same separation: the largest mean PSNR difference is
+approximately $6.4\times10^{-4}$ dB while 6.3--18.2\% of pixel codes differ. Removing requantization
+rounding in the truncate and floor modes costs 0.90--3.37 percentage points in all eighteen comparisons
+(three models, three training repeats, two rounding modes). The manuscript also documents an input-quantizer
+precision defect exposed by this task. Table regeneration from stored results is distinguished from independent
+experiment reproduction; the missing original checkpoints remain a limitation.
 
 \bigskip
 \noindent\textbf{Keywords}: Quantization, integer arithmetic, embedded inference, neural processing units,

@@ -1,0 +1,8 @@
+python demo/build.py --from-configs demo/model_configs.json
+wrote /mnt/data/npuloop_workbench/npuloop/demo/index.html (1743 KB), models=['resnet20_relu', 'resnet20_silu', 'mnv2_050_relu6', 'cust_vit', 'cust_inception'], results=['e10_engine_timing', 'e11_tflite_crosscheck', 'e12_imagenette', 'e13_vela', 'e14_rounding_seeds', 'e15_fidelity', 'e16_ln_emulation', 'e17_dense_output', 'e1_baselines', 'e2_ptq_grid', 'e3_lint_vs_drop', 'e4_surgery', 'e5_calibration', 'e6_pruning', 'e7_requant_ablation', 'e8_scalesim', 'e9_customer_intake']
+make tables
+make[1]: Entering directory '/mnt/data/npuloop_workbench/npuloop'
+python tools/readme_tables.py --inject README.md docs/EXPERIMENTS.md
+injected 2 tables into README.md
+injected 16 tables into docs/EXPERIMENTS.md
+make[1]: Leaving directory '/mnt/data/npuloop_workbench/npuloop'

@@ -1,5 +1,6 @@
 .PHONY: test demo tables experiments walkthrough quickstart lint runner paper
 DATA ?= data/cifar10.npz
+THREADS ?= 2
 CKPT ?= runs/resnet20_relu/best.pt
 
 test:            ## unit tests (C++ kernels are compiled on first run)
@@ -7,7 +8,7 @@ test:            ## unit tests (C++ kernels are compiled on first run)
 
 quickstart:      ## ~1 min tour on the bundled checkpoints + CIFAR-10 sample (no dataset, no training)
 	python -m npuloop intake examples/quickstart/cust_inception.pt --data examples/quickstart/cifar10_sample.npz --spec edge-10tops
-	python -m npuloop quantize examples/quickstart/resnet20_relu.pt --data examples/quickstart/cifar10_sample.npz --verify 200 --int-eval 500
+	python -m npuloop quantize examples/quickstart/resnet20_relu.pt --data examples/quickstart/cifar10_sample.npz --verify 200 --int-eval 500 --threads $(THREADS)
 	mkdir -p build && python -m npuloop export examples/quickstart/resnet20_relu.pt --data examples/quickstart/cifar10_sample.npz --out build/quickstart.npuloop --sample 8 --sample-path build/quickstart_input.f32
 	$(MAKE) runner && build/int8_runner build/quickstart.npuloop build/quickstart_input.f32 --float --argmax
 
@@ -39,3 +40,28 @@ lint:
 
 runner:  ## standalone C++ executor for .npuloop files (no Python)
 	mkdir -p build && g++ -O3 -march=native -std=c++17 -o build/int8_runner npuloop/intengine/cpp/int8_runner.cpp
+
+.PHONY: demo-structure paper-reviewed verify
+
+demo-structure: ## refresh all stored research results; analytical graphs from architecture configs only
+	python demo/build.py --from-configs demo/model_configs.json
+	$(MAKE) tables
+
+paper-reviewed: ## build only the reviewed long-form manuscript and refresh its linked copies
+	python paper/make_tables.py --lang ko
+	python paper/make_figs.py --lang ko
+	python paper/make_thesis.py
+	cd paper && for pass in 1 2 3; do lualatex -interaction=nonstopmode -halt-on-error npuloop_thesis.tex || exit 1; done
+	mkdir -p docs/research demo/research
+	cp paper/npuloop_thesis.pdf paper/npuloop_thesis_reviewed.pdf
+	cp paper/npuloop_thesis.pdf docs/research/npuloop_thesis.pdf
+	cp paper/npuloop_thesis.pdf demo/research/npuloop_thesis.pdf
+
+verify: ## core tests + real bundled-checkpoint tour + stored-result table regeneration
+	python -m pytest -q -rs
+	$(MAKE) quickstart
+	python tools/submission_quality.py --regenerate
+
+.PHONY: browser-check
+browser-check: ## optional UI integration tests (requires Playwright + Chromium)
+	python tools/check_workbench_browser.py

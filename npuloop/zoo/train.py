@@ -69,7 +69,7 @@ def fit(model: nn.Module, ds: CIFAR10NPZ, epochs: int, lr: float = 0.1, wd: floa
     if out:
         os.makedirs(out, exist_ok=True)
     if resume and state_path and os.path.exists(state_path):
-        st = torch.load(state_path, weights_only=False)
+        st = torch.load(state_path, weights_only=True, map_location="cpu")
         model.load_state_dict(st["model"]); opt.load_state_dict(st["opt"]); sched.load_state_dict(st["sched"])
         rng = np.random.default_rng(); rng.bit_generator.state = st["rng"]; torch.set_rng_state(st["torch_rng"])
         log, best, best_epoch, start_ep = st["log"], st["best"], st.get("best_epoch", 0), st["epoch"]
@@ -107,7 +107,7 @@ def fit(model: nn.Module, ds: CIFAR10NPZ, epochs: int, lr: float = 0.1, wd: floa
     # The test split is touched only here: once for the last epoch and once for the selected checkpoint.
     log["final_test_acc"] = evaluate(model, ds, channels_last=channels_last, limit=eval_limit)
     if out and best_epoch:
-        selected = torch.load(os.path.join(out, "best.pt"), weights_only=False)["state_dict"]
+        selected = torch.load(os.path.join(out, "best.pt"), weights_only=True, map_location="cpu")["state_dict"]
         final_state = {k: v.detach().clone() for k, v in model.state_dict().items()}
         model.load_state_dict(selected)
         log["test_acc"] = evaluate(model, ds, channels_last=channels_last, limit=eval_limit)
@@ -123,7 +123,14 @@ def fit(model: nn.Module, ds: CIFAR10NPZ, epochs: int, lr: float = 0.1, wd: floa
 def load_checkpoint(path: str) -> nn.Module:
     """Load a checkpoint saved by fit() (also for pruned models, whose config carries `pruned_channels`)."""
     from .models import build_model
-    ck = torch.load(path, weights_only=False)
+    # Tensor/state-dict checkpoints only. Never fall back to unrestricted pickle.
+    ck = torch.load(path, weights_only=True, map_location="cpu")
+    if (not isinstance(ck, dict) or not isinstance(ck.get("config"), dict)
+            or not isinstance(ck["config"].get("arch"), str)
+            or not isinstance(ck.get("state_dict"), dict)
+            or not ck["state_dict"]
+            or not all(isinstance(k, str) and torch.is_tensor(v) for k, v in ck["state_dict"].items())):
+        raise ValueError("Invalid checkpoint: expected config with arch and a tensor state_dict")
     if ck["config"] and ck["config"].get("pruned_channels"):
         from ..prune.structured import rebuild_from_config
         m = rebuild_from_config(ck["config"])
