@@ -1,0 +1,49 @@
+{
+  "source_commit": "a1a78a796d187e389f3cf4ad4e029dbcaa23bfaa",
+  "tests_run": "https://github.com/sokldjs554/npuloop/actions/runs/35080691263",
+  "tests_jobs": [
+    "pytest (oneDNN ALL)",
+    "pytest (oneDNN AVX2)",
+    "tables-fresh"
+  ],
+  "tests_conclusion": "success",
+  "browser_run": "https://github.com/sokldjs554/npuloop/actions/runs/35080691341",
+  "browser_conclusion": "success",
+  "study_browser_checks": 69,
+  "legacy_browser_checks": 587,
+  "browser_version": "153.0.8010.12",
+  "viewports": [
+    1440,
+    1024,
+    768,
+    390,
+    320
+  ],
+  "actual_ci_training_steps": 2,
+  "actual_ci_sample_size": 32,
+  "actual_ci_stage_correct": [
+    29,
+    22,
+    24,
+    24,
+    23
+  ],
+  "actual_local_stage_correct": [
+    29,
+    22,
+    24,
+    24,
+    24
+  ],
+  "publication_run": "https://github.com/sokldjs554/npuloop/actions/runs/35081012709",
+  "publication_conclusion": "success",
+  "public_url": "https://sokldjs554.github.io/npuloop/",
+  "public_browser_verified": [
+    "default_model_study_view",
+    "E4_measured_recovery_curve",
+    "E6_missing_strict_costs",
+    "E6_edge_cost_and_budget"
+  ],
+  "evidence_note": "CPU/runtime-dependent local and CI study observations are separate. No identical-result guarantee across environments.",
+  "hardware_measured": false
+}

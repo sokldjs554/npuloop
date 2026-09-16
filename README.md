@@ -33,9 +33,9 @@ PTQ·QAT·보정은 개선 여부를 비교하는 실험으로 다뤘습니다. 
 - **실험 기록**: E1–E17 검색·필터·표·개별 기록 및 원본 JSON 내보내기.
 - **재현 자료**: 연구 원고, 실행 방법, 검증 범위.
 
-![npuloop 모델 실험 화면](docs/demo_overview.png)
+![npuloop 모델 실험 화면](docs/model_study_overview.jpg)
 
-[화면 사용 안내](docs/DEMO_GUIDE.md) · [검증 기록](docs/DEMO_WORKBENCH_REPORT.md) · [화면 참고 자료](docs/DEMO_REFERENCES.md)
+[화면 사용 안내](docs/DEMO_GUIDE.md) · [현재 검증 기록](docs/MODEL_STUDY_REPORT.md) · [화면 참고 자료](docs/DEMO_REFERENCES.md)
 
 공개 분석 화면: **[npuloop Workbench](https://sokldjs554.github.io/npuloop/)** · 로컬 실행: `docs/index.html`
 
