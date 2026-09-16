@@ -48,11 +48,11 @@ def headline():
         v = [r["cycle_ratio"] for r in rs]
         return f"Arm Vela 대비 **{len(v)}/{len(v)} 낙관적**(사이클 비 {min(v):.2f}~{max(v):.2f})"
     def e2_answer():
-        rs = load("e15_fidelity")["records"]
-        p = [r["int_vs_fake"] for r in rs]
-        z = max(abs(x["delta"] / x["se"]) for x in p if x["se"])
-        return (f"{len(rs)}행 전부 95% 신뢰구간이 0을 품고 \\|Δ\\|/SE ≤ {z:.1f} — fake-quant 정확도는 정수 실행을 맞힙니다"
-                f"(\\|Δ\\| ≤ {max(abs(x['delta']) for x in p) * 100:.2f}%p, test 전체)")
+        try:
+            from .submission_quality import fidelity_summary
+        except ImportError:
+            from submission_quality import fidelity_summary
+        return fidelity_summary(load("e15_fidelity")["records"])
     def e15_answer():
         rs = load("e15_fidelity")["records"]
         c = [r["output_codes"]["mismatch_frac"] for r in rs]
@@ -262,7 +262,7 @@ def e9():
             out.append(f"| {r['label']} | {a['action']} | {pct(r['float_acc'])} → {pct(a['float_acc'])} | "
                        f"{pct(r['ptq']['int_acc'])} → {pct(a['int_acc'])} | {d['cycles']:,.0f} → {a['cycles']:,.0f} | "
                        f"{ds['cycles']:,.0f} → {a['cycles_strict']:,.0f} |")
-    out.append("\n온칩 실행 = 모든 op가 NPU에서 실행됨(호스트 폴백 없음). strict = LUT·softmax·layernorm 지원이 없는 프리셋.")
+    out.append("\n온칩 실행 = 가상 프리셋에서 모든 op 지원으로 판정됨(호스트 폴백 없음, 실측 아님). strict = LUT·softmax·layernorm 지원이 없는 프리셋.")
     return "\n".join(out)
 
 

@@ -1,23 +1,28 @@
-# npuloop — NPU에 올려보고 고르는 양자화·프루닝 툴킷
+# npuloop — 가상 NPU 제약을 분석하고 정수 실행을 검증하는 양자화·프루닝 툴킷
 
 [![tests](https://github.com/sokldjs554/npuloop/actions/workflows/ci.yml/badge.svg)](https://github.com/sokldjs554/npuloop/actions/workflows/ci.yml)
 
-> **고객이 체크포인트를 보내왔을 때 NPU 회사의 모델 팀이 하는 일을, 감이 아니라 숫자로 하는 툴킷입니다.**
->
-> `npuloop intake model.pt` 한 줄이면 **① 우리 NPU에서 돌기는 하는가**(op별로 MAC 배열 / depthwise 엔진 / 벡터 유닛 / 호스트 폴백),
-> **② 얼마나 걸리는가**(해석적 systolic-array 비용 모델이 낸 사이클과 병목), **③ 무엇을 바꿔야 하는가**(활성함수 교체·프루닝 후보를
-> *변형된 그래프에 비용 모델을 다시 돌려* 가격표를 붙인 처방)가 나옵니다.
->
-> 처방을 적용한 뒤에는 int8 가중치·int32 바이어스·고정소수점 requant로 export한 정수 그래프를 NumPy와 C++ 커널로 **비트 단위로 같게**
-> 실행해, fake-quant가 아니라 진짜 정수 결과로 정확도를 확인합니다.
+> **모델 구조, 양자화 결과 및 실행 경로를 분석하는 도구입니다.**
+> 가상 NPU의 지원 연산과 추정 비용을 계산하고, 저장된 정확도와 정수 출력의 차이를 비교합니다.
+> Python CLI는 모델 변경·양자화·export 및 NumPy/C++ 정수 검증을 수행합니다.
+> 브라우저는 비용 계산과 기존 실험 결과 조회를 제공합니다. 실제 NPU 실행이나 재학습 기능은 아닙니다.
 
-## 3분 안에 보기
+## 실행 방법
 
-**1. 클릭만 (설치 없음).** 인터랙티브 데모 → **https://sokldjs554.github.io/npuloop/**
-맨 위 **고객 모델 인테이크**에서 모델과 NPU를 바꿔 보세요. 접수 → 진단 → 처방이 그 자리에서 다시 계산됩니다.
-(`docs/index.html` 한 파일짜리 정적 페이지입니다. 오프라인이면 저장소의 같은 파일을 브라우저로 열어도 됩니다.)
+**1. 브라우저 분석 화면**
 
-![고객 모델 인테이크: 모델과 NPU를 바꾸면 접수·진단·처방이 다시 계산됩니다](docs/intake.gif)
+`docs/index.html`을 엽니다. 서버, 설치, API 키, 외부 웹폰트 없이 동작합니다.
+
+- **모델 분석**: 모델·가상 NPU 조건, 지원 연산, 경로별 추정 비용, 노드 검사, 저장된 변경 전후 비교, 비용 설정.
+- **정수 검증**: 동일 조건의 E15 정확도·정수 출력, 계층별 차이, E16·E17 측정 기록.
+- **실험 기록**: E1–E17 검색·필터·표·개별 기록 및 원본 JSON 내보내기.
+- **재현 자료**: 연구 원고, 실행 방법, 검증 범위.
+
+![npuloop 모델 분석 화면](docs/demo_overview.png)
+
+[화면 사용 안내](docs/DEMO_GUIDE.md) · [검증 기록](docs/DEMO_WORKBENCH_REPORT.md) · [화면 참고 자료](docs/DEMO_REFERENCES.md)
+
+공개 분석 화면: **[npuloop Workbench](https://sokldjs554.github.io/npuloop/)** · 로컬 실행: `docs/index.html`
 
 **2. 직접 실행 (데이터셋 다운로드·학습 없음, torch CPU + numpy만).** 저장소에 작은 체크포인트 2개와 CIFAR-10 샘플 1,012장
 (`examples/quickstart/`, 6 MB)을 넣어 두었습니다. CPU 4코어 기준 **1분 안팎**(C++ 커널 컴파일 포함).
@@ -36,7 +41,14 @@ make quickstart
 **3. 전체 재현.** 데이터셋 준비·학습·실험은 [docs/USAGE.md](docs/USAGE.md), 실험 결과 전문은 [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md)에 있습니다.
 README와 실험 문서의 모든 표는 `results/*.json`에서 `make tables`로 생성됩니다.
 
-## 무엇을, 왜
+## 주요 연구 결과
+
+<!-- npuloop-submission-review-20260916 -->
+[수정한 장문 연구 원고](paper/npuloop_thesis_reviewed.pdf) · [프로젝트 설명](docs/RESEARCH_SUMMARY.md) · [검증 범위](docs/VALIDATION_SCOPE.md) · [재현 자료](docs/REPRODUCTION_REQUIREMENTS.md)
+
+E15의 분류 모델 6종·양자화 방식 2종에서 관측된 정확도 차이는 최대 0.20%p였지만 출력 코드의 28.5–72.7%는 달랐습니다. 정확도 유사성과 비트 일치는 구분합니다. 국소 불일치는 고정 배치, 정확도와 출력 코드는 전체 테스트셋의 측정입니다. 신뢰구간의 0 포함은 동등성 입증이 아닙니다.
+
+## 연구 배경
 
 이전 프로젝트들([ondevice-pcb-inspection](https://github.com/sokldjs554/ondevice-pcb-inspection), [edgesight-soc](https://github.com/sokldjs554/edgesight-soc))에서
 PTQ INT8 배포와 RTL NPU를 각각 만들고 나니 두 세계 사이에 구멍이 보였습니다. **모델 쪽**은 `torch.round`로 흉내 낸 fake-quant 정확도와 FLOPs로
@@ -60,8 +72,10 @@ flowchart LR
 
 ## 고객이 체크포인트를 보내오면 (E9)
 
-가상 고객 두 곳을 가정했습니다. **고객 A는 ViT**(attention 12개, LayerNorm 13개, GELU), **고객 B는 concat 분기 CNN**.
+가상 고객 두 곳을 가정했습니다. **고객 A는 ViT**(Transformer 블록 6개, 어텐션 행렬곱 노드 12개, LayerNorm 13개, GELU), **고객 B는 concat 분기 CNN**.
 둘 다 이 저장소가 원래 거부하던 구조라 `concat`·`matmul`·`softmax`·`layernorm`·`transpose`를 IR·양자화·정수 엔진(NumPy와 C++ 모두)·비용 모델·lint에 새로 넣었습니다.
+
+표의 사이클·온칩 실행 여부는 가상 프리셋의 추정·지원 판정입니다. 실제 칩에서 실행한 결과가 아닙니다.
 
 <!-- TABLE:E9 -->
 **(a) 인테이크 요약** — `npuloop intake`가 낸 값 (사이클은 비용 모델, INT8은 정수 엔진 실측)
@@ -80,15 +94,15 @@ flowchart LR
 |---|---|---|---|---|---|
 | 고객 A · ViT-128/6 | swap {'gelu': 'relu'} + heal 3 epochs | 80.98% → 80.95% | 80.80% → 81.00% | 52,246 → 52,054 | 2,503,878 → 1,708,230 |
 
-온칩 실행 = 모든 op가 NPU에서 실행됨(호스트 폴백 없음). strict = LUT·softmax·layernorm 지원이 없는 프리셋.
+온칩 실행 = 가상 프리셋에서 모든 op 지원으로 판정됨(호스트 폴백 없음, 실측 아님). strict = LUT·softmax·layernorm 지원이 없는 프리셋.
 <!-- /TABLE:E9 -->
 
-* **같은 처방도 칩이 다르면 값이 달라집니다.** 고객 A의 GELU 6개를 ReLU로 바꾸는 처방은 LUT가 있는 `edge-10tops`에서 절감 **0%**(52,246 → 52,054 사이클),
+* **같은 처방도 칩이 다르면 값이 달라집니다.** 고객 A의 GELU 6개를 ReLU로 바꾸는 처방은 LUT가 있는 `edge-10tops`에서 약 **0.37% 절감**(52,246 → 52,054 추정 사이클),
   LUT가 없는 `edge-10tops-strict`에서는 **−32%**(2,503,878 → 1,708,230)입니다. 비용 모델을 루프 안에 두면 "이 칩에서 이 수술은 의미가 없다"를 재학습 전에 압니다.
 * **그 처방으로도 부족하면 그렇게 말합니다.** 고객 A는 strict NPU에서 **사이클의 97%가 호스트 폴백**이고, 활성함수만 바꿔서는 layernorm 13개와 softmax 6개가 그대로 남습니다.
   리포트의 결론은 모델 수술이 아니라 **벡터 유닛이 있는 프리셋**입니다.
 * **수술의 정확도 비용은 −0.03%p였습니다.** GELU→ReLU 교체 + 3 epoch healing으로 FP32 80.98% → 80.95%(E4의 SiLU→ReLU와 같은 패턴이 transformer에서도 재현).
-* **attention은 fake-quant와 정수 엔진을 가장 크게 가릅니다.** 출력 코드 불일치가 CNN의 30~50%에서 74%로 오르고, 원인은 LayerNorm입니다(국소 불일치 24.7%).
+* **attention은 fake-quant와 정수 엔진을 가장 크게 가릅니다.** 출력 코드 불일치가 CNN의 30~50%에서 74%로 오르고, 가장 큰 국소 원천은 LayerNorm이었습니다(국소 불일치 24.7%). E16은 이 연산자만 바꿔 남는 차이를 측정합니다.
   원인을 제거해 보는 후속 실험이 [E16](docs/EXPERIMENTS.md#e16)입니다.
 
 ## 이 숫자들을 어디까지 믿어도 되는가
@@ -99,7 +113,7 @@ flowchart LR
 | **정수 엔진을 믿어도 되는가** ([E11](docs/EXPERIMENTS.md#e11)) | TFLite reference 커널과 **1,000장 × 모든 텐서 0 불일치**(conv·pool은 gemmlowp 이중 반올림, fc는 단일 반올림) | 대조 범위는 conv(stride 1·2)·MEAN·fully-connected. depthwise·add·softmax는 미대조이고, TFLite 자신도 XNNPACK 경로와 reference가 155/1,000장 다릅니다 |
 | **비용 모델이 맞는가** ([E8](docs/EXPERIMENTS.md#e8)) | SCALE-Sim v3와 12개 (모델, 배열) 조합에서 합계 오차 ≤ 0.08%, 최악 레이어 0.5% | 검증된 것은 dense conv·linear의 연산 사이클(단일 코어, 메모리 스톨 없음). depthwise·벡터 패스·멀티코어·DRAM roofline은 검증되지 않았습니다 |
 | **그럼 실리콘에 가까운가** ([E13](docs/EXPERIMENTS.md#e13)) | Arm Vela 대비 **5/5 낙관적**(사이클 비 0.29~0.84) | **아니오.** 둘 다 해석적 추정기이고 Vela는 컴파일된 스케줄(fusion·타일링)을, 이쪽은 레이어를 하나씩 셉니다. E8의 일치는 하드웨어 충실도가 아니라 같은 이상화를 공유하는 두 모델이 같은 식을 같게 구현했다는 확인입니다 |
-| **fake-quant 정확도를 믿어도 되는가** ([E2](docs/EXPERIMENTS.md#e2)·[E15](docs/EXPERIMENTS.md#e15)) | 12행 전부 95% 신뢰구간이 0을 품고 \|Δ\|/SE ≤ 1.6 — fake-quant 정확도는 정수 실행을 맞힙니다(\|Δ\| ≤ 0.20%p, test 전체) | E15·E16의 16개 비교를 다중비교 보정하지 않은 값입니다(E16까지 합치면 최대 \|Δ\|/SE 2.2). 모델 5개 + Imagenette 1개, 스킴 2개 범위 |
+| **fake-quant 정확도를 믿어도 되는가** ([E2](docs/EXPERIMENTS.md#e2)·[E15](docs/EXPERIMENTS.md#e15)) | 95% Wald 구간의 0 포함 12/12; 최대 관측 정확도 차이 0.20%p (정수 − 모의, 전체 테스트셋). 허용 오차 내 동등성 입증은 아님 | E15·E16의 16개 비교를 다중비교 보정하지 않은 값입니다(E16까지 합치면 최대 \|Δ\|/SE 2.2). 모델 5개 + Imagenette 1개, 스킴 2개 범위 |
 | **텐서도 같은가** ([E15](docs/EXPERIMENTS.md#e15)·[E16](docs/EXPERIMENTS.md#e16)) | 그러나 출력 코드는 28.5~72.7%가 다릅니다. 가장 큰 국소 원천(ViT의 LayerNorm)을 정수 산술로 바꿔 국소 불일치를 24.77% → 0.00%로 없애도 출력 코드 불일치는 72.7% → 65.7%까지만 내려갑니다 | 출력 코드 불일치는 test 전체, 국소 불일치는 125/250장 배치의 teacher-forced 값입니다 — 두 수를 같은 문장에서 섞지 마세요 |
 | **싸구려 반올림의 값** ([E14](docs/EXPERIMENTS.md#e14)) | requant에서 반올림 대신 시프트를 쓰면 18개 (모델, 시드, 모드) 조합 **18개 전부**에서 손해입니다(-3.37~-0.90%p, \|Δ\|/SE 4.4~11.8) | 강건한 것은 부호와 유의성이고 **크기는 아닙니다**: SiLU의 truncate는 시드에 따라 −1.36~−2.98%p(시드 SD가 효과의 37%). 한 시드 숫자를 그 모드의 비용으로 인용하면 안 됩니다 |
 | **그 밖의 정수 구현 세부** ([E7](docs/EXPERIMENTS.md#e7)) | 13개 구현 구성 중 7개는 무손실, 2개는 모델을 무너뜨립니다 (곱셈기 7비트·누산기 20비트까지는 공짜, 바이어스 12비트·누산기 16비트는 붕괴) | 바이어스 폭 축은 지수 조정 없는 **클리핑**을 재고(시판 NPU는 더 넓습니다 — Vela는 40비트), 누산기 포화는 부분합이 아니라 최종합에 한 번만 걸리며, 결과는 K ≤ 1,280인 이 모델들에 한정됩니다 |
@@ -113,7 +127,7 @@ CI는 `ONEDNN_MAX_CPU_ISA=AVX2`로도 전체 스위트를 돌립니다.
 
 ## 실험 17개 (E1–E17)
 
-전문과 표는 [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md), 논문 형식 정리는 [기술 보고서](docs/report/npuloop_report.md)에 있습니다.
+전문과 표는 [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md), 현재 검토된 원고는 [장문 연구 원고](paper/npuloop_thesis_reviewed.pdf)입니다. [이전 기술 보고서](docs/report/npuloop_report.md)는 변경 이력 참고용이며 이번 제출본이 아닙니다.
 
 | # | 질문 | |
 |---|---|---|
@@ -150,7 +164,7 @@ CI는 `ONEDNN_MAX_CPU_ISA=AVX2`로도 전체 스위트를 돌립니다.
 
 ## 한계
 
-* **CIFAR-10, 30 epoch, 시드 1개**(E14의 반올림 축만 3개). 정확도 차이 0.2%p 이하는 잡음이고, 결론은 "방향"이지 소수점 둘째 자리가 아닙니다.
+* **주요 분류 평가는 CIFAR-10 모델 5종과 Imagenette 모델 1종이며 E17은 초해상 모델입니다.** E14의 반올림 축만 3개 학습 반복을 사용합니다. 작은 정확도 차이의 해석은 각 대응 신뢰구간을 따라야 하며, 0.2%p 이하를 일괄적으로 잡음이라 판정하지 않습니다.
 * **체크포인트를 바꾸면 결론 일부가 흔들립니다** — E3의 레이어 수준 상관과 E7의 3비트 곱셈기 손실이 재학습 후 달라졌습니다.
 * **가상 NPU.** 실제 칩의 컴파일러(fusion·타일링·메모리 스케줄링)와 다르고, 비용 모델은 dense GEMM 사이클만 검증했습니다(E8). 벤더 추정기 대조는 E13.
 * **실측한 시간은 호스트 CPU의 검증 엔진뿐입니다**(E10). NPU 사이클·에너지는 전부 `simulated`이고, 에너지 상수는 자릿수 추정입니다.
@@ -163,8 +177,8 @@ CI는 `ONEDNN_MAX_CPU_ISA=AVX2`로도 전체 스위트를 돌립니다.
 
 ```bash
 pip install -e .[dev]           # torch(CPU), numpy, pytest
-make quickstart                 # 데이터·학습 없이 1분: intake → quantize/verify → export + C++ runner
-python -m pytest -q             # 87 tests (C++ 커널은 첫 실행 때 g++로 컴파일됩니다)
+make quickstart                 # 데이터 다운로드·학습 없이: intake → quantize/verify → export + C++ runner
+python -m pytest -q             # passed/skipped는 실행 로그에서 확인 (C++ 커널은 첫 실행 때 g++로 컴파일)
 make tables                     # results/*.json -> README·docs/EXPERIMENTS.md의 표를 다시 생성
 ```
 
@@ -185,7 +199,7 @@ npuloop/
 experiments/             E1–E17 스크립트 (재개 가능)
 results/                 실험 결과 JSON (provenance 라벨 포함)
 demo/                    build.py + 템플릿 → docs/index.html
-tests/                   pytest 87개
+tests/                   pytest 스위트 (개수는 실행 로그 기준)
 examples/                walkthrough.py · quickstart/ (번들 체크포인트 + CIFAR-10 샘플)
 tools/                   표 생성 · 데이터셋 준비 · 보고서 빌드 · oneDNN 재현 스크립트
 docs/                    EXPERIMENTS · USAGE · DESIGN · INTEGER_DATAPATH · RELATED · report/ · upstream/
@@ -196,16 +210,31 @@ docs/                    EXPERIMENTS · USAGE · DESIGN · INTEGER_DATAPATH · R
 | 문서 | 내용 |
 |---|---|
 | [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md) | 실험 E1–E17 전문과 생성된 표 |
-| [docs/report/npuloop_report.md](docs/report/npuloop_report.md) | 논문 형식 기술 보고서 ([PDF](docs/report/npuloop_report.pdf)) |
+| [수정한 장문 연구 원고](paper/npuloop_thesis.pdf) | 현재 검토·빌드한 27쪽 개인 연구 원고 |
+| [docs/report/npuloop_report.md](docs/report/npuloop_report.md) | 이전 기술 보고서 보관본 — 현재 제출 연결은 위 장문 원고를 사용 |
 | [docs/DESIGN.md](docs/DESIGN.md) | 아키텍처, 모듈, 실험 계획, 검증 원칙 |
 | [docs/INTEGER_DATAPATH.md](docs/INTEGER_DATAPATH.md) | 양자화 지점과 정수 데이터패스의 대응 |
 | [docs/RELATED.md](docs/RELATED.md) | 선행 연구와 이 저장소의 위치 |
 | [docs/USAGE.md](docs/USAGE.md) | 설치·학습·CLI·실험 재현·파이썬 API |
 | [docs/upstream/](docs/upstream/) | oneDNN 버그 보고서와 패치 |
-| [paper/](paper/) | 원고 — IEEE ESL 투고용 4쪽 영문본, 한국어판, 학위논문 형식 장문판 27쪽 (수치는 `results/*.json`에서 생성) |
-| [라이브 데모](https://sokldjs554.github.io/npuloop/) | `results/*.json`을 읽는 인터랙티브 페이지 |
+| [paper/](paper/) | 현재 검토한 장문판과 이전 단문 초안의 상태·빌드 방법 |
+| [라이브 데모](https://sokldjs554.github.io/npuloop/) | 기존 공개 페이지 — 이번 통합본은 아직 미배포. 현재 수정 화면은 `docs/index.html` |
 
 ## 데이터와 외부 도구
 
 데이터: CIFAR-10 (Krizhevsky, 2009), Imagenette (fast.ai).
 SCALE-Sim은 E8, ethos-u-vela는 E13 검증 실험에서만 사용합니다.
+
+## 2026-09-16 통합 검증본
+
+검사 결과와 제한 사항은 [통합 검증 기록](docs/INTEGRATION_REPORT.md)에 있습니다. 브라우저 비용 모델은 ViT의 행렬곱·정규화·전치와 Inception 연결 연산까지 Python과 대조하며, 알 수 없는 연산은 0사이클로 넘기지 않습니다.
+
+```bash
+make verify            # 전체 테스트, 번들 체크포인트 실행, 논문 표 재생성 검사
+make demo-structure    # 학습 가중치 없이 구조 설정으로 비용 그래프 생성 + 기존 E1–E17 결과 반영
+make paper-reviewed    # 검토된 장문 원고와 데모의 PDF 링크 대상 재빌드
+```
+
+`demo-structure`는 모델 구조에 대한 비용 추정만 다시 계산합니다. 새 정확도를 측정하거나 과거 체크포인트를 재현하지 않습니다. 생성 HTML에는 그 출처가 표시됩니다. 설치 없이 볼 때는 `docs/index.html`을 브라우저로 엽니다.
+
+체크포인트는 `config`와 텐서 `state_dict` 형식만 읽으며 `weights_only=True, map_location="cpu"`를 명시합니다. 임의 객체 역직렬화로 자동 재시도하지 않습니다. 이것은 신뢰할 수 없는 파일을 실행해도 안전하다는 보증이 아닙니다. 출처가 확인된 파일과 보안 업데이트된 PyTorch를 사용하고, 외부 입력은 별도 격리·자원 제한이 필요합니다.

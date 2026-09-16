@@ -5,11 +5,8 @@ import torch
 
 
 def _load(path):
+    # One restricted load, shared with the Python API (including pruned configs).
     from .zoo.train import load_checkpoint
-    from .prune import rebuild_from_config
-    ck = torch.load(path, weights_only=False)
-    if ck.get("config", {}) and "pruned_channels" in ck["config"]:
-        m = rebuild_from_config(ck["config"]); m.load_state_dict(ck["state_dict"]); return m.eval()
     return load_checkpoint(path)
 
 

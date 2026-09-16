@@ -1,0 +1,11 @@
+{
+  "status": "passed",
+  "source_files": 55,
+  "research_results_unchanged": 17,
+  "table_sources_unchanged": 13,
+  "manuscript_pages": 27,
+  "pdf_sha256": "f75c2e5f102eb79ebd881d8552b0470bad7156d802eaf68f25f663b6923a0baa",
+  "html_sha256": "89c426d6282842d78137d25419830faf0d6dfd599bfd67f52fa31cc364c39591",
+  "historical_experiments_rerun": false,
+  "hardware_tested": false
+}

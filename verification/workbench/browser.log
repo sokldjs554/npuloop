@@ -1,0 +1,20 @@
+{
+  "passed": true,
+  "checks": 585,
+  "errors": [],
+  "network_requests": [],
+  "browser": "144.0.7559.96",
+  "mode": "offline HTML bytes via Playwright set_content",
+  "viewports": [
+    1440,
+    1024,
+    768,
+    390,
+    320
+  ],
+  "not_tested": [
+    "Windows native file double-click",
+    "hosted GitHub Pages",
+    "NPU hardware"
+  ]
+}
