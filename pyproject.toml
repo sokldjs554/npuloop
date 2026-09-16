@@ -23,4 +23,4 @@ include = ["npuloop*"]
 npuloop = ["intengine/cpp/*.cpp", "intengine/cpp/*.h"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["tests", "submission_checks/tests"]

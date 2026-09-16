@@ -5,7 +5,7 @@ import pytest
 import torch
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-TEMPLATE = os.path.join(ROOT, "demo", "index.template.html")
+TEMPLATE = os.path.join(ROOT, "demo", "cost-model.js")
 
 
 @pytest.mark.skipif(shutil.which("node") is None, reason="node not installed")
@@ -15,7 +15,7 @@ def test_js_cost_model_matches_python(small_resnet, small_mobilenet):
     from npuloop.graph import trace
     from npuloop.npu import estimate, PRESETS
     src = open(TEMPLATE, encoding="utf-8").read()
-    js = src[src.index("function gemmCycles"):src.index("// ---------- header meta")]
+    js = src
     models = {"r": layer_descriptors(small_resnet), "m": layer_descriptors(small_mobilenet)}
     presets = {k: v.to_dict() for k, v in PRESETS.items()}
     script = js + f"""

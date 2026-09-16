@@ -1,0 +1,2362 @@
+{
+  "passed": true,
+  "checks": 585,
+  "details": [
+    {
+      "name": "application title",
+      "passed": true
+    },
+    {
+      "name": "four workspace routes",
+      "passed": true
+    },
+    {
+      "name": "default exact cost",
+      "passed": true
+    },
+    {
+      "name": "initial error banner",
+      "passed": true
+    },
+    {
+      "name": "initial UI copy",
+      "passed": true
+    },
+    {
+      "name": "initial finite display",
+      "passed": true
+    },
+    {
+      "name": "initial page width",
+      "passed": true
+    },
+    {
+      "name": "resnet20_relu|edge-10tops-strict state",
+      "passed": true
+    },
+    {
+      "name": "resnet20_relu|edge-10tops-strict positive cost",
+      "passed": true
+    },
+    {
+      "name": "resnet20_relu|edge-10tops-strict displayed cost",
+      "passed": true
+    },
+    {
+      "name": "resnet20_relu|edge-10tops-strict original preset",
+      "passed": true
+    },
+    {
+      "name": "resnet20_relu|edge-10tops-strict error banner",
+      "passed": true
+    },
+    {
+      "name": "resnet20_relu|edge-10tops-strict UI copy",
+      "passed": true
+    },
+    {
+      "name": "resnet20_relu|edge-10tops-strict finite display",
+      "passed": true
+    },
+    {
+      "name": "resnet20_relu|edge-10tops-strict page width",
+      "passed": true
+    },
+    {
+      "name": "resnet20_relu|edge-10tops state",
+      "passed": true
+    },
+    {
+      "name": "resnet20_relu|edge-10tops positive cost",
+      "passed": true
+    },
+    {
+      "name": "resnet20_relu|edge-10tops displayed cost",
+      "passed": true
+    },
+    {
+      "name": "resnet20_relu|edge-10tops original preset",
+      "passed": true
+    },
+    {
+      "name": "resnet20_relu|edge-10tops error banner",
+      "passed": true
+    },
+    {
+      "name": "resnet20_relu|edge-10tops UI copy",
+      "passed": true
+    },
+    {
+      "name": "resnet20_relu|edge-10tops finite display",
+      "passed": true
+    },
+    {
+      "name": "resnet20_relu|edge-10tops page width",
+      "passed": true
+    },
+    {
+      "name": "resnet20_relu|tiny-1tops state",
+      "passed": true
+    },
+    {
+      "name": "resnet20_relu|tiny-1tops positive cost",
+      "passed": true
+    },
+    {
+      "name": "resnet20_relu|tiny-1tops displayed cost",
+      "passed": true
+    },
+    {
+      "name": "resnet20_relu|tiny-1tops original preset",
+      "passed": true
+    },
+    {
+      "name": "resnet20_relu|tiny-1tops error banner",
+      "passed": true
+    },
+    {
+      "name": "resnet20_relu|tiny-1tops UI copy",
+      "passed": true
+    },
+    {
+      "name": "resnet20_relu|tiny-1tops finite display",
+      "passed": true
+    },
+    {
+      "name": "resnet20_relu|tiny-1tops page width",
+      "passed": true
+    },
+    {
+      "name": "resnet20_relu|pcie-80tops state",
+      "passed": true
+    },
+    {
+      "name": "resnet20_relu|pcie-80tops positive cost",
+      "passed": true
+    },
+    {
+      "name": "resnet20_relu|pcie-80tops displayed cost",
+      "passed": true
+    },
+    {
+      "name": "resnet20_relu|pcie-80tops original preset",
+      "passed": true
+    },
+    {
+      "name": "resnet20_relu|pcie-80tops error banner",
+      "passed": true
+    },
+    {
+      "name": "resnet20_relu|pcie-80tops UI copy",
+      "passed": true
+    },
+    {
+      "name": "resnet20_relu|pcie-80tops finite display",
+      "passed": true
+    },
+    {
+      "name": "resnet20_relu|pcie-80tops page width",
+      "passed": true
+    },
+    {
+      "name": "resnet20_silu|edge-10tops-strict state",
+      "passed": true
+    },
+    {
+      "name": "resnet20_silu|edge-10tops-strict positive cost",
+      "passed": true
+    },
+    {
+      "name": "resnet20_silu|edge-10tops-strict displayed cost",
+      "passed": true
+    },
+    {
+      "name": "resnet20_silu|edge-10tops-strict original preset",
+      "passed": true
+    },
+    {
+      "name": "resnet20_silu|edge-10tops-strict error banner",
+      "passed": true
+    },
+    {
+      "name": "resnet20_silu|edge-10tops-strict UI copy",
+      "passed": true
+    },
+    {
+      "name": "resnet20_silu|edge-10tops-strict finite display",
+      "passed": true
+    },
+    {
+      "name": "resnet20_silu|edge-10tops-strict page width",
+      "passed": true
+    },
+    {
+      "name": "resnet20_silu|edge-10tops state",
+      "passed": true
+    },
+    {
+      "name": "resnet20_silu|edge-10tops positive cost",
+      "passed": true
+    },
+    {
+      "name": "resnet20_silu|edge-10tops displayed cost",
+      "passed": true
+    },
+    {
+      "name": "resnet20_silu|edge-10tops original preset",
+      "passed": true
+    },
+    {
+      "name": "resnet20_silu|edge-10tops error banner",
+      "passed": true
+    },
+    {
+      "name": "resnet20_silu|edge-10tops UI copy",
+      "passed": true
+    },
+    {
+      "name": "resnet20_silu|edge-10tops finite display",
+      "passed": true
+    },
+    {
+      "name": "resnet20_silu|edge-10tops page width",
+      "passed": true
+    },
+    {
+      "name": "resnet20_silu|tiny-1tops state",
+      "passed": true
+    },
+    {
+      "name": "resnet20_silu|tiny-1tops positive cost",
+      "passed": true
+    },
+    {
+      "name": "resnet20_silu|tiny-1tops displayed cost",
+      "passed": true
+    },
+    {
+      "name": "resnet20_silu|tiny-1tops original preset",
+      "passed": true
+    },
+    {
+      "name": "resnet20_silu|tiny-1tops error banner",
+      "passed": true
+    },
+    {
+      "name": "resnet20_silu|tiny-1tops UI copy",
+      "passed": true
+    },
+    {
+      "name": "resnet20_silu|tiny-1tops finite display",
+      "passed": true
+    },
+    {
+      "name": "resnet20_silu|tiny-1tops page width",
+      "passed": true
+    },
+    {
+      "name": "resnet20_silu|pcie-80tops state",
+      "passed": true
+    },
+    {
+      "name": "resnet20_silu|pcie-80tops positive cost",
+      "passed": true
+    },
+    {
+      "name": "resnet20_silu|pcie-80tops displayed cost",
+      "passed": true
+    },
+    {
+      "name": "resnet20_silu|pcie-80tops original preset",
+      "passed": true
+    },
+    {
+      "name": "resnet20_silu|pcie-80tops error banner",
+      "passed": true
+    },
+    {
+      "name": "resnet20_silu|pcie-80tops UI copy",
+      "passed": true
+    },
+    {
+      "name": "resnet20_silu|pcie-80tops finite display",
+      "passed": true
+    },
+    {
+      "name": "resnet20_silu|pcie-80tops page width",
+      "passed": true
+    },
+    {
+      "name": "mnv2_050_relu6|edge-10tops-strict state",
+      "passed": true
+    },
+    {
+      "name": "mnv2_050_relu6|edge-10tops-strict positive cost",
+      "passed": true
+    },
+    {
+      "name": "mnv2_050_relu6|edge-10tops-strict displayed cost",
+      "passed": true
+    },
+    {
+      "name": "mnv2_050_relu6|edge-10tops-strict original preset",
+      "passed": true
+    },
+    {
+      "name": "mnv2_050_relu6|edge-10tops-strict error banner",
+      "passed": true
+    },
+    {
+      "name": "mnv2_050_relu6|edge-10tops-strict UI copy",
+      "passed": true
+    },
+    {
+      "name": "mnv2_050_relu6|edge-10tops-strict finite display",
+      "passed": true
+    },
+    {
+      "name": "mnv2_050_relu6|edge-10tops-strict page width",
+      "passed": true
+    },
+    {
+      "name": "mnv2_050_relu6|edge-10tops state",
+      "passed": true
+    },
+    {
+      "name": "mnv2_050_relu6|edge-10tops positive cost",
+      "passed": true
+    },
+    {
+      "name": "mnv2_050_relu6|edge-10tops displayed cost",
+      "passed": true
+    },
+    {
+      "name": "mnv2_050_relu6|edge-10tops original preset",
+      "passed": true
+    },
+    {
+      "name": "mnv2_050_relu6|edge-10tops error banner",
+      "passed": true
+    },
+    {
+      "name": "mnv2_050_relu6|edge-10tops UI copy",
+      "passed": true
+    },
+    {
+      "name": "mnv2_050_relu6|edge-10tops finite display",
+      "passed": true
+    },
+    {
+      "name": "mnv2_050_relu6|edge-10tops page width",
+      "passed": true
+    },
+    {
+      "name": "mnv2_050_relu6|tiny-1tops state",
+      "passed": true
+    },
+    {
+      "name": "mnv2_050_relu6|tiny-1tops positive cost",
+      "passed": true
+    },
+    {
+      "name": "mnv2_050_relu6|tiny-1tops displayed cost",
+      "passed": true
+    },
+    {
+      "name": "mnv2_050_relu6|tiny-1tops original preset",
+      "passed": true
+    },
+    {
+      "name": "mnv2_050_relu6|tiny-1tops error banner",
+      "passed": true
+    },
+    {
+      "name": "mnv2_050_relu6|tiny-1tops UI copy",
+      "passed": true
+    },
+    {
+      "name": "mnv2_050_relu6|tiny-1tops finite display",
+      "passed": true
+    },
+    {
+      "name": "mnv2_050_relu6|tiny-1tops page width",
+      "passed": true
+    },
+    {
+      "name": "mnv2_050_relu6|pcie-80tops state",
+      "passed": true
+    },
+    {
+      "name": "mnv2_050_relu6|pcie-80tops positive cost",
+      "passed": true
+    },
+    {
+      "name": "mnv2_050_relu6|pcie-80tops displayed cost",
+      "passed": true
+    },
+    {
+      "name": "mnv2_050_relu6|pcie-80tops original preset",
+      "passed": true
+    },
+    {
+      "name": "mnv2_050_relu6|pcie-80tops error banner",
+      "passed": true
+    },
+    {
+      "name": "mnv2_050_relu6|pcie-80tops UI copy",
+      "passed": true
+    },
+    {
+      "name": "mnv2_050_relu6|pcie-80tops finite display",
+      "passed": true
+    },
+    {
+      "name": "mnv2_050_relu6|pcie-80tops page width",
+      "passed": true
+    },
+    {
+      "name": "cust_vit|edge-10tops-strict state",
+      "passed": true
+    },
+    {
+      "name": "cust_vit|edge-10tops-strict positive cost",
+      "passed": true
+    },
+    {
+      "name": "cust_vit|edge-10tops-strict displayed cost",
+      "passed": true
+    },
+    {
+      "name": "cust_vit|edge-10tops-strict original preset",
+      "passed": true
+    },
+    {
+      "name": "cust_vit|edge-10tops-strict error banner",
+      "passed": true
+    },
+    {
+      "name": "cust_vit|edge-10tops-strict UI copy",
+      "passed": true
+    },
+    {
+      "name": "cust_vit|edge-10tops-strict finite display",
+      "passed": true
+    },
+    {
+      "name": "cust_vit|edge-10tops-strict page width",
+      "passed": true
+    },
+    {
+      "name": "cust_vit|edge-10tops state",
+      "passed": true
+    },
+    {
+      "name": "cust_vit|edge-10tops positive cost",
+      "passed": true
+    },
+    {
+      "name": "cust_vit|edge-10tops displayed cost",
+      "passed": true
+    },
+    {
+      "name": "cust_vit|edge-10tops original preset",
+      "passed": true
+    },
+    {
+      "name": "cust_vit|edge-10tops error banner",
+      "passed": true
+    },
+    {
+      "name": "cust_vit|edge-10tops UI copy",
+      "passed": true
+    },
+    {
+      "name": "cust_vit|edge-10tops finite display",
+      "passed": true
+    },
+    {
+      "name": "cust_vit|edge-10tops page width",
+      "passed": true
+    },
+    {
+      "name": "cust_vit|tiny-1tops state",
+      "passed": true
+    },
+    {
+      "name": "cust_vit|tiny-1tops positive cost",
+      "passed": true
+    },
+    {
+      "name": "cust_vit|tiny-1tops displayed cost",
+      "passed": true
+    },
+    {
+      "name": "cust_vit|tiny-1tops original preset",
+      "passed": true
+    },
+    {
+      "name": "cust_vit|tiny-1tops error banner",
+      "passed": true
+    },
+    {
+      "name": "cust_vit|tiny-1tops UI copy",
+      "passed": true
+    },
+    {
+      "name": "cust_vit|tiny-1tops finite display",
+      "passed": true
+    },
+    {
+      "name": "cust_vit|tiny-1tops page width",
+      "passed": true
+    },
+    {
+      "name": "cust_vit|pcie-80tops state",
+      "passed": true
+    },
+    {
+      "name": "cust_vit|pcie-80tops positive cost",
+      "passed": true
+    },
+    {
+      "name": "cust_vit|pcie-80tops displayed cost",
+      "passed": true
+    },
+    {
+      "name": "cust_vit|pcie-80tops original preset",
+      "passed": true
+    },
+    {
+      "name": "cust_vit|pcie-80tops error banner",
+      "passed": true
+    },
+    {
+      "name": "cust_vit|pcie-80tops UI copy",
+      "passed": true
+    },
+    {
+      "name": "cust_vit|pcie-80tops finite display",
+      "passed": true
+    },
+    {
+      "name": "cust_vit|pcie-80tops page width",
+      "passed": true
+    },
+    {
+      "name": "cust_inception|edge-10tops-strict state",
+      "passed": true
+    },
+    {
+      "name": "cust_inception|edge-10tops-strict positive cost",
+      "passed": true
+    },
+    {
+      "name": "cust_inception|edge-10tops-strict displayed cost",
+      "passed": true
+    },
+    {
+      "name": "cust_inception|edge-10tops-strict original preset",
+      "passed": true
+    },
+    {
+      "name": "cust_inception|edge-10tops-strict error banner",
+      "passed": true
+    },
+    {
+      "name": "cust_inception|edge-10tops-strict UI copy",
+      "passed": true
+    },
+    {
+      "name": "cust_inception|edge-10tops-strict finite display",
+      "passed": true
+    },
+    {
+      "name": "cust_inception|edge-10tops-strict page width",
+      "passed": true
+    },
+    {
+      "name": "cust_inception|edge-10tops state",
+      "passed": true
+    },
+    {
+      "name": "cust_inception|edge-10tops positive cost",
+      "passed": true
+    },
+    {
+      "name": "cust_inception|edge-10tops displayed cost",
+      "passed": true
+    },
+    {
+      "name": "cust_inception|edge-10tops original preset",
+      "passed": true
+    },
+    {
+      "name": "cust_inception|edge-10tops error banner",
+      "passed": true
+    },
+    {
+      "name": "cust_inception|edge-10tops UI copy",
+      "passed": true
+    },
+    {
+      "name": "cust_inception|edge-10tops finite display",
+      "passed": true
+    },
+    {
+      "name": "cust_inception|edge-10tops page width",
+      "passed": true
+    },
+    {
+      "name": "cust_inception|tiny-1tops state",
+      "passed": true
+    },
+    {
+      "name": "cust_inception|tiny-1tops positive cost",
+      "passed": true
+    },
+    {
+      "name": "cust_inception|tiny-1tops displayed cost",
+      "passed": true
+    },
+    {
+      "name": "cust_inception|tiny-1tops original preset",
+      "passed": true
+    },
+    {
+      "name": "cust_inception|tiny-1tops error banner",
+      "passed": true
+    },
+    {
+      "name": "cust_inception|tiny-1tops UI copy",
+      "passed": true
+    },
+    {
+      "name": "cust_inception|tiny-1tops finite display",
+      "passed": true
+    },
+    {
+      "name": "cust_inception|tiny-1tops page width",
+      "passed": true
+    },
+    {
+      "name": "cust_inception|pcie-80tops state",
+      "passed": true
+    },
+    {
+      "name": "cust_inception|pcie-80tops positive cost",
+      "passed": true
+    },
+    {
+      "name": "cust_inception|pcie-80tops displayed cost",
+      "passed": true
+    },
+    {
+      "name": "cust_inception|pcie-80tops original preset",
+      "passed": true
+    },
+    {
+      "name": "cust_inception|pcie-80tops error banner",
+      "passed": true
+    },
+    {
+      "name": "cust_inception|pcie-80tops UI copy",
+      "passed": true
+    },
+    {
+      "name": "cust_inception|pcie-80tops finite display",
+      "passed": true
+    },
+    {
+      "name": "cust_inception|pcie-80tops page width",
+      "passed": true
+    },
+    {
+      "name": "operator filter all/cycles",
+      "passed": true
+    },
+    {
+      "name": "operator filter all/graph",
+      "passed": true
+    },
+    {
+      "name": "operator filter all/name",
+      "passed": true
+    },
+    {
+      "name": "operator filter host/cycles",
+      "passed": true
+    },
+    {
+      "name": "operator filter host/graph",
+      "passed": true
+    },
+    {
+      "name": "operator filter host/name",
+      "passed": true
+    },
+    {
+      "name": "operator filter array/cycles",
+      "passed": true
+    },
+    {
+      "name": "operator filter array/graph",
+      "passed": true
+    },
+    {
+      "name": "operator filter array/name",
+      "passed": true
+    },
+    {
+      "name": "operator filter vector/cycles",
+      "passed": true
+    },
+    {
+      "name": "operator filter vector/graph",
+      "passed": true
+    },
+    {
+      "name": "operator filter vector/name",
+      "passed": true
+    },
+    {
+      "name": "strict host nodes",
+      "passed": true
+    },
+    {
+      "name": "operator search by kind",
+      "passed": true
+    },
+    {
+      "name": "whole row selection inspector",
+      "passed": true
+    },
+    {
+      "name": "empty node search",
+      "passed": true
+    },
+    {
+      "name": "node connection navigation",
+      "passed": true
+    },
+    {
+      "name": "CSV export rows and headers",
+      "passed": true
+    },
+    {
+      "name": "E9 sample size edge-10tops-strict",
+      "passed": true
+    },
+    {
+      "name": "E9 baseline edge-10tops-strict",
+      "passed": true
+    },
+    {
+      "name": "E9 sample size edge-10tops",
+      "passed": true
+    },
+    {
+      "name": "E9 baseline edge-10tops",
+      "passed": true
+    },
+    {
+      "name": "E9 raw record contents",
+      "passed": true
+    },
+    {
+      "name": "dialog escape",
+      "passed": true
+    },
+    {
+      "name": "absent after result",
+      "passed": true
+    },
+    {
+      "name": "default comparison action",
+      "passed": true
+    },
+    {
+      "name": "unchanged settings are not custom",
+      "passed": true
+    },
+    {
+      "name": "PE array 8",
+      "passed": true
+    },
+    {
+      "name": "PE array 16",
+      "passed": true
+    },
+    {
+      "name": "PE array 32",
+      "passed": true
+    },
+    {
+      "name": "PE array 64",
+      "passed": true
+    },
+    {
+      "name": "PE array 128",
+      "passed": true
+    },
+    {
+      "name": "PE array 256",
+      "passed": true
+    },
+    {
+      "name": "cores 1",
+      "passed": true
+    },
+    {
+      "name": "cores 2",
+      "passed": true
+    },
+    {
+      "name": "cores 4",
+      "passed": true
+    },
+    {
+      "name": "cores 8",
+      "passed": true
+    },
+    {
+      "name": "DRAM 0.5",
+      "passed": true
+    },
+    {
+      "name": "DRAM 12.8",
+      "passed": true
+    },
+    {
+      "name": "DRAM 80",
+      "passed": true
+    },
+    {
+      "name": "depthwise no",
+      "passed": true
+    },
+    {
+      "name": "depthwise yes",
+      "passed": true
+    },
+    {
+      "name": "LUT retains normalization restrictions",
+      "passed": true
+    },
+    {
+      "name": "no recorded comparison for custom configuration",
+      "passed": true
+    },
+    {
+      "name": "custom comparison explicit empty",
+      "passed": true
+    },
+    {
+      "name": "invalid core form boundary",
+      "passed": true
+    },
+    {
+      "name": "invalid form preserves analysis",
+      "passed": true
+    },
+    {
+      "name": "preset reset",
+      "passed": true
+    },
+    {
+      "name": "analysis export provenance",
+      "passed": true
+    },
+    {
+      "name": "research scope resnet20_relu/npu-default",
+      "passed": true
+    },
+    {
+      "name": "research sample resnet20_relu/npu-default",
+      "passed": true
+    },
+    {
+      "name": "research chart resnet20_relu/npu-default",
+      "passed": true
+    },
+    {
+      "name": "research resnet20_relu/npu-default error banner",
+      "passed": true
+    },
+    {
+      "name": "research resnet20_relu/npu-default UI copy",
+      "passed": true
+    },
+    {
+      "name": "research resnet20_relu/npu-default finite display",
+      "passed": true
+    },
+    {
+      "name": "research resnet20_relu/npu-default page width",
+      "passed": true
+    },
+    {
+      "name": "research scope resnet20_relu/per-tensor",
+      "passed": true
+    },
+    {
+      "name": "research sample resnet20_relu/per-tensor",
+      "passed": true
+    },
+    {
+      "name": "research chart resnet20_relu/per-tensor",
+      "passed": true
+    },
+    {
+      "name": "research resnet20_relu/per-tensor error banner",
+      "passed": true
+    },
+    {
+      "name": "research resnet20_relu/per-tensor UI copy",
+      "passed": true
+    },
+    {
+      "name": "research resnet20_relu/per-tensor finite display",
+      "passed": true
+    },
+    {
+      "name": "research resnet20_relu/per-tensor page width",
+      "passed": true
+    },
+    {
+      "name": "research scope resnet20_silu/npu-default",
+      "passed": true
+    },
+    {
+      "name": "research sample resnet20_silu/npu-default",
+      "passed": true
+    },
+    {
+      "name": "research chart resnet20_silu/npu-default",
+      "passed": true
+    },
+    {
+      "name": "research resnet20_silu/npu-default error banner",
+      "passed": true
+    },
+    {
+      "name": "research resnet20_silu/npu-default UI copy",
+      "passed": true
+    },
+    {
+      "name": "research resnet20_silu/npu-default finite display",
+      "passed": true
+    },
+    {
+      "name": "research resnet20_silu/npu-default page width",
+      "passed": true
+    },
+    {
+      "name": "research scope resnet20_silu/per-tensor",
+      "passed": true
+    },
+    {
+      "name": "research sample resnet20_silu/per-tensor",
+      "passed": true
+    },
+    {
+      "name": "research chart resnet20_silu/per-tensor",
+      "passed": true
+    },
+    {
+      "name": "research resnet20_silu/per-tensor error banner",
+      "passed": true
+    },
+    {
+      "name": "research resnet20_silu/per-tensor UI copy",
+      "passed": true
+    },
+    {
+      "name": "research resnet20_silu/per-tensor finite display",
+      "passed": true
+    },
+    {
+      "name": "research resnet20_silu/per-tensor page width",
+      "passed": true
+    },
+    {
+      "name": "research scope mnv2_050_relu6/npu-default",
+      "passed": true
+    },
+    {
+      "name": "research sample mnv2_050_relu6/npu-default",
+      "passed": true
+    },
+    {
+      "name": "research chart mnv2_050_relu6/npu-default",
+      "passed": true
+    },
+    {
+      "name": "research mnv2_050_relu6/npu-default error banner",
+      "passed": true
+    },
+    {
+      "name": "research mnv2_050_relu6/npu-default UI copy",
+      "passed": true
+    },
+    {
+      "name": "research mnv2_050_relu6/npu-default finite display",
+      "passed": true
+    },
+    {
+      "name": "research mnv2_050_relu6/npu-default page width",
+      "passed": true
+    },
+    {
+      "name": "research scope mnv2_050_relu6/per-tensor",
+      "passed": true
+    },
+    {
+      "name": "research sample mnv2_050_relu6/per-tensor",
+      "passed": true
+    },
+    {
+      "name": "research chart mnv2_050_relu6/per-tensor",
+      "passed": true
+    },
+    {
+      "name": "research mnv2_050_relu6/per-tensor error banner",
+      "passed": true
+    },
+    {
+      "name": "research mnv2_050_relu6/per-tensor UI copy",
+      "passed": true
+    },
+    {
+      "name": "research mnv2_050_relu6/per-tensor finite display",
+      "passed": true
+    },
+    {
+      "name": "research mnv2_050_relu6/per-tensor page width",
+      "passed": true
+    },
+    {
+      "name": "research scope cust_vit/npu-default",
+      "passed": true
+    },
+    {
+      "name": "research sample cust_vit/npu-default",
+      "passed": true
+    },
+    {
+      "name": "research chart cust_vit/npu-default",
+      "passed": true
+    },
+    {
+      "name": "research cust_vit/npu-default error banner",
+      "passed": true
+    },
+    {
+      "name": "research cust_vit/npu-default UI copy",
+      "passed": true
+    },
+    {
+      "name": "research cust_vit/npu-default finite display",
+      "passed": true
+    },
+    {
+      "name": "research cust_vit/npu-default page width",
+      "passed": true
+    },
+    {
+      "name": "research scope cust_vit/per-tensor",
+      "passed": true
+    },
+    {
+      "name": "research sample cust_vit/per-tensor",
+      "passed": true
+    },
+    {
+      "name": "research chart cust_vit/per-tensor",
+      "passed": true
+    },
+    {
+      "name": "research cust_vit/per-tensor error banner",
+      "passed": true
+    },
+    {
+      "name": "research cust_vit/per-tensor UI copy",
+      "passed": true
+    },
+    {
+      "name": "research cust_vit/per-tensor finite display",
+      "passed": true
+    },
+    {
+      "name": "research cust_vit/per-tensor page width",
+      "passed": true
+    },
+    {
+      "name": "research scope cust_inception/npu-default",
+      "passed": true
+    },
+    {
+      "name": "research sample cust_inception/npu-default",
+      "passed": true
+    },
+    {
+      "name": "research chart cust_inception/npu-default",
+      "passed": true
+    },
+    {
+      "name": "research cust_inception/npu-default error banner",
+      "passed": true
+    },
+    {
+      "name": "research cust_inception/npu-default UI copy",
+      "passed": true
+    },
+    {
+      "name": "research cust_inception/npu-default finite display",
+      "passed": true
+    },
+    {
+      "name": "research cust_inception/npu-default page width",
+      "passed": true
+    },
+    {
+      "name": "research scope cust_inception/per-tensor",
+      "passed": true
+    },
+    {
+      "name": "research sample cust_inception/per-tensor",
+      "passed": true
+    },
+    {
+      "name": "research chart cust_inception/per-tensor",
+      "passed": true
+    },
+    {
+      "name": "research cust_inception/per-tensor error banner",
+      "passed": true
+    },
+    {
+      "name": "research cust_inception/per-tensor UI copy",
+      "passed": true
+    },
+    {
+      "name": "research cust_inception/per-tensor finite display",
+      "passed": true
+    },
+    {
+      "name": "research cust_inception/per-tensor page width",
+      "passed": true
+    },
+    {
+      "name": "research scope imagenette_resnet20/npu-default",
+      "passed": true
+    },
+    {
+      "name": "research sample imagenette_resnet20/npu-default",
+      "passed": true
+    },
+    {
+      "name": "research chart imagenette_resnet20/npu-default",
+      "passed": true
+    },
+    {
+      "name": "research imagenette_resnet20/npu-default error banner",
+      "passed": true
+    },
+    {
+      "name": "research imagenette_resnet20/npu-default UI copy",
+      "passed": true
+    },
+    {
+      "name": "research imagenette_resnet20/npu-default finite display",
+      "passed": true
+    },
+    {
+      "name": "research imagenette_resnet20/npu-default page width",
+      "passed": true
+    },
+    {
+      "name": "research scope imagenette_resnet20/per-tensor",
+      "passed": true
+    },
+    {
+      "name": "research sample imagenette_resnet20/per-tensor",
+      "passed": true
+    },
+    {
+      "name": "research chart imagenette_resnet20/per-tensor",
+      "passed": true
+    },
+    {
+      "name": "research imagenette_resnet20/per-tensor error banner",
+      "passed": true
+    },
+    {
+      "name": "research imagenette_resnet20/per-tensor UI copy",
+      "passed": true
+    },
+    {
+      "name": "research imagenette_resnet20/per-tensor finite display",
+      "passed": true
+    },
+    {
+      "name": "research imagenette_resnet20/per-tensor page width",
+      "passed": true
+    },
+    {
+      "name": "E16 scopes",
+      "passed": true
+    },
+    {
+      "name": "E15 accuracy distinct from E9",
+      "passed": true
+    },
+    {
+      "name": "research layer search",
+      "passed": true
+    },
+    {
+      "name": "research source exact",
+      "passed": true
+    },
+    {
+      "name": "catalog contains 17 experiments",
+      "passed": true
+    },
+    {
+      "name": "experiment table e1_baselines",
+      "passed": true
+    },
+    {
+      "name": "raw record fidelity e1_baselines",
+      "passed": true
+    },
+    {
+      "name": "experiment e1_baselines error banner",
+      "passed": true
+    },
+    {
+      "name": "experiment e1_baselines UI copy",
+      "passed": true
+    },
+    {
+      "name": "experiment e1_baselines finite display",
+      "passed": true
+    },
+    {
+      "name": "experiment e1_baselines page width",
+      "passed": true
+    },
+    {
+      "name": "experiment table e2_ptq_grid",
+      "passed": true
+    },
+    {
+      "name": "raw record fidelity e2_ptq_grid",
+      "passed": true
+    },
+    {
+      "name": "experiment e2_ptq_grid error banner",
+      "passed": true
+    },
+    {
+      "name": "experiment e2_ptq_grid UI copy",
+      "passed": true
+    },
+    {
+      "name": "experiment e2_ptq_grid finite display",
+      "passed": true
+    },
+    {
+      "name": "experiment e2_ptq_grid page width",
+      "passed": true
+    },
+    {
+      "name": "experiment table e3_lint_vs_drop",
+      "passed": true
+    },
+    {
+      "name": "raw record fidelity e3_lint_vs_drop",
+      "passed": true
+    },
+    {
+      "name": "experiment e3_lint_vs_drop error banner",
+      "passed": true
+    },
+    {
+      "name": "experiment e3_lint_vs_drop UI copy",
+      "passed": true
+    },
+    {
+      "name": "experiment e3_lint_vs_drop finite display",
+      "passed": true
+    },
+    {
+      "name": "experiment e3_lint_vs_drop page width",
+      "passed": true
+    },
+    {
+      "name": "experiment table e4_surgery",
+      "passed": true
+    },
+    {
+      "name": "raw record fidelity e4_surgery",
+      "passed": true
+    },
+    {
+      "name": "experiment e4_surgery error banner",
+      "passed": true
+    },
+    {
+      "name": "experiment e4_surgery UI copy",
+      "passed": true
+    },
+    {
+      "name": "experiment e4_surgery finite display",
+      "passed": true
+    },
+    {
+      "name": "experiment e4_surgery page width",
+      "passed": true
+    },
+    {
+      "name": "experiment table e5_calibration",
+      "passed": true
+    },
+    {
+      "name": "raw record fidelity e5_calibration",
+      "passed": true
+    },
+    {
+      "name": "experiment e5_calibration error banner",
+      "passed": true
+    },
+    {
+      "name": "experiment e5_calibration UI copy",
+      "passed": true
+    },
+    {
+      "name": "experiment e5_calibration finite display",
+      "passed": true
+    },
+    {
+      "name": "experiment e5_calibration page width",
+      "passed": true
+    },
+    {
+      "name": "experiment table e6_pruning",
+      "passed": true
+    },
+    {
+      "name": "raw record fidelity e6_pruning",
+      "passed": true
+    },
+    {
+      "name": "experiment e6_pruning error banner",
+      "passed": true
+    },
+    {
+      "name": "experiment e6_pruning UI copy",
+      "passed": true
+    },
+    {
+      "name": "experiment e6_pruning finite display",
+      "passed": true
+    },
+    {
+      "name": "experiment e6_pruning page width",
+      "passed": true
+    },
+    {
+      "name": "experiment table e7_requant_ablation",
+      "passed": true
+    },
+    {
+      "name": "raw record fidelity e7_requant_ablation",
+      "passed": true
+    },
+    {
+      "name": "experiment e7_requant_ablation error banner",
+      "passed": true
+    },
+    {
+      "name": "experiment e7_requant_ablation UI copy",
+      "passed": true
+    },
+    {
+      "name": "experiment e7_requant_ablation finite display",
+      "passed": true
+    },
+    {
+      "name": "experiment e7_requant_ablation page width",
+      "passed": true
+    },
+    {
+      "name": "experiment table e8_scalesim",
+      "passed": true
+    },
+    {
+      "name": "raw record fidelity e8_scalesim",
+      "passed": true
+    },
+    {
+      "name": "experiment e8_scalesim error banner",
+      "passed": true
+    },
+    {
+      "name": "experiment e8_scalesim UI copy",
+      "passed": true
+    },
+    {
+      "name": "experiment e8_scalesim finite display",
+      "passed": true
+    },
+    {
+      "name": "experiment e8_scalesim page width",
+      "passed": true
+    },
+    {
+      "name": "experiment table e9_customer_intake",
+      "passed": true
+    },
+    {
+      "name": "raw record fidelity e9_customer_intake",
+      "passed": true
+    },
+    {
+      "name": "experiment e9_customer_intake error banner",
+      "passed": true
+    },
+    {
+      "name": "experiment e9_customer_intake UI copy",
+      "passed": true
+    },
+    {
+      "name": "experiment e9_customer_intake finite display",
+      "passed": true
+    },
+    {
+      "name": "experiment e9_customer_intake page width",
+      "passed": true
+    },
+    {
+      "name": "experiment table e10_engine_timing",
+      "passed": true
+    },
+    {
+      "name": "raw record fidelity e10_engine_timing",
+      "passed": true
+    },
+    {
+      "name": "experiment e10_engine_timing error banner",
+      "passed": true
+    },
+    {
+      "name": "experiment e10_engine_timing UI copy",
+      "passed": true
+    },
+    {
+      "name": "experiment e10_engine_timing finite display",
+      "passed": true
+    },
+    {
+      "name": "experiment e10_engine_timing page width",
+      "passed": true
+    },
+    {
+      "name": "experiment table e11_tflite_crosscheck",
+      "passed": true
+    },
+    {
+      "name": "raw record fidelity e11_tflite_crosscheck",
+      "passed": true
+    },
+    {
+      "name": "experiment e11_tflite_crosscheck error banner",
+      "passed": true
+    },
+    {
+      "name": "experiment e11_tflite_crosscheck UI copy",
+      "passed": true
+    },
+    {
+      "name": "experiment e11_tflite_crosscheck finite display",
+      "passed": true
+    },
+    {
+      "name": "experiment e11_tflite_crosscheck page width",
+      "passed": true
+    },
+    {
+      "name": "experiment table e12_imagenette",
+      "passed": true
+    },
+    {
+      "name": "raw record fidelity e12_imagenette",
+      "passed": true
+    },
+    {
+      "name": "experiment e12_imagenette error banner",
+      "passed": true
+    },
+    {
+      "name": "experiment e12_imagenette UI copy",
+      "passed": true
+    },
+    {
+      "name": "experiment e12_imagenette finite display",
+      "passed": true
+    },
+    {
+      "name": "experiment e12_imagenette page width",
+      "passed": true
+    },
+    {
+      "name": "experiment table e13_vela",
+      "passed": true
+    },
+    {
+      "name": "raw record fidelity e13_vela",
+      "passed": true
+    },
+    {
+      "name": "experiment e13_vela error banner",
+      "passed": true
+    },
+    {
+      "name": "experiment e13_vela UI copy",
+      "passed": true
+    },
+    {
+      "name": "experiment e13_vela finite display",
+      "passed": true
+    },
+    {
+      "name": "experiment e13_vela page width",
+      "passed": true
+    },
+    {
+      "name": "experiment table e14_rounding_seeds",
+      "passed": true
+    },
+    {
+      "name": "raw record fidelity e14_rounding_seeds",
+      "passed": true
+    },
+    {
+      "name": "experiment e14_rounding_seeds error banner",
+      "passed": true
+    },
+    {
+      "name": "experiment e14_rounding_seeds UI copy",
+      "passed": true
+    },
+    {
+      "name": "experiment e14_rounding_seeds finite display",
+      "passed": true
+    },
+    {
+      "name": "experiment e14_rounding_seeds page width",
+      "passed": true
+    },
+    {
+      "name": "experiment table e15_fidelity",
+      "passed": true
+    },
+    {
+      "name": "raw record fidelity e15_fidelity",
+      "passed": true
+    },
+    {
+      "name": "experiment e15_fidelity error banner",
+      "passed": true
+    },
+    {
+      "name": "experiment e15_fidelity UI copy",
+      "passed": true
+    },
+    {
+      "name": "experiment e15_fidelity finite display",
+      "passed": true
+    },
+    {
+      "name": "experiment e15_fidelity page width",
+      "passed": true
+    },
+    {
+      "name": "experiment table e16_ln_emulation",
+      "passed": true
+    },
+    {
+      "name": "raw record fidelity e16_ln_emulation",
+      "passed": true
+    },
+    {
+      "name": "experiment e16_ln_emulation error banner",
+      "passed": true
+    },
+    {
+      "name": "experiment e16_ln_emulation UI copy",
+      "passed": true
+    },
+    {
+      "name": "experiment e16_ln_emulation finite display",
+      "passed": true
+    },
+    {
+      "name": "experiment e16_ln_emulation page width",
+      "passed": true
+    },
+    {
+      "name": "experiment table e17_dense_output",
+      "passed": true
+    },
+    {
+      "name": "raw record fidelity e17_dense_output",
+      "passed": true
+    },
+    {
+      "name": "experiment e17_dense_output error banner",
+      "passed": true
+    },
+    {
+      "name": "experiment e17_dense_output UI copy",
+      "passed": true
+    },
+    {
+      "name": "experiment e17_dense_output finite display",
+      "passed": true
+    },
+    {
+      "name": "experiment e17_dense_output page width",
+      "passed": true
+    },
+    {
+      "name": "record pagination next",
+      "passed": true
+    },
+    {
+      "name": "record pagination previous",
+      "passed": true
+    },
+    {
+      "name": "record model filter",
+      "passed": true
+    },
+    {
+      "name": "catalog empty search",
+      "passed": true
+    },
+    {
+      "name": "catalog search",
+      "passed": true
+    },
+    {
+      "name": "catalog category filter",
+      "passed": true
+    },
+    {
+      "name": "full experiment JSON download",
+      "passed": true
+    },
+    {
+      "name": "resources error banner",
+      "passed": true
+    },
+    {
+      "name": "resources UI copy",
+      "passed": true
+    },
+    {
+      "name": "resources finite display",
+      "passed": true
+    },
+    {
+      "name": "resources page width",
+      "passed": true
+    },
+    {
+      "name": "relative link exists research/npuloop_thesis.pdf",
+      "passed": true
+    },
+    {
+      "name": "relative link exists research/npuloop_thesis.pdf",
+      "passed": true
+    },
+    {
+      "name": "relative link exists reference/USAGE.md",
+      "passed": true
+    },
+    {
+      "name": "relative link exists reference/VALIDATION_SCOPE.md",
+      "passed": true
+    },
+    {
+      "name": "browser history back",
+      "passed": true
+    },
+    {
+      "name": "browser history forward",
+      "passed": true
+    },
+    {
+      "name": "skip navigation preserves page",
+      "passed": true
+    },
+    {
+      "name": "skip navigation focuses main",
+      "passed": true
+    },
+    {
+      "name": "all surgery conditions named",
+      "passed": true
+    },
+    {
+      "name": "changed FP32 not original baseline",
+      "passed": true
+    },
+    {
+      "name": "legacy route cost",
+      "passed": true
+    },
+    {
+      "name": "legacy tab cost",
+      "passed": true
+    },
+    {
+      "name": "legacy route intake",
+      "passed": true
+    },
+    {
+      "name": "legacy tab intake",
+      "passed": true
+    },
+    {
+      "name": "legacy route prune",
+      "passed": true
+    },
+    {
+      "name": "legacy route tflite",
+      "passed": true
+    },
+    {
+      "name": "legacy route validation",
+      "passed": true
+    },
+    {
+      "name": "keyboard tab next",
+      "passed": true
+    },
+    {
+      "name": "keyboard tab end",
+      "passed": true
+    },
+    {
+      "name": "keyboard tab home",
+      "passed": true
+    },
+    {
+      "name": "1440 analysis error banner",
+      "passed": true
+    },
+    {
+      "name": "1440 analysis UI copy",
+      "passed": true
+    },
+    {
+      "name": "1440 analysis finite display",
+      "passed": true
+    },
+    {
+      "name": "1440 analysis page width",
+      "passed": true
+    },
+    {
+      "name": "1440 analysis/operators error banner",
+      "passed": true
+    },
+    {
+      "name": "1440 analysis/operators UI copy",
+      "passed": true
+    },
+    {
+      "name": "1440 analysis/operators finite display",
+      "passed": true
+    },
+    {
+      "name": "1440 analysis/operators page width",
+      "passed": true
+    },
+    {
+      "name": "1440 analysis/comparison error banner",
+      "passed": true
+    },
+    {
+      "name": "1440 analysis/comparison UI copy",
+      "passed": true
+    },
+    {
+      "name": "1440 analysis/comparison finite display",
+      "passed": true
+    },
+    {
+      "name": "1440 analysis/comparison page width",
+      "passed": true
+    },
+    {
+      "name": "1440 analysis/settings error banner",
+      "passed": true
+    },
+    {
+      "name": "1440 analysis/settings UI copy",
+      "passed": true
+    },
+    {
+      "name": "1440 analysis/settings finite display",
+      "passed": true
+    },
+    {
+      "name": "1440 analysis/settings page width",
+      "passed": true
+    },
+    {
+      "name": "1440 research error banner",
+      "passed": true
+    },
+    {
+      "name": "1440 research UI copy",
+      "passed": true
+    },
+    {
+      "name": "1440 research finite display",
+      "passed": true
+    },
+    {
+      "name": "1440 research page width",
+      "passed": true
+    },
+    {
+      "name": "1440 experiments error banner",
+      "passed": true
+    },
+    {
+      "name": "1440 experiments UI copy",
+      "passed": true
+    },
+    {
+      "name": "1440 experiments finite display",
+      "passed": true
+    },
+    {
+      "name": "1440 experiments page width",
+      "passed": true
+    },
+    {
+      "name": "1440 resources error banner",
+      "passed": true
+    },
+    {
+      "name": "1440 resources UI copy",
+      "passed": true
+    },
+    {
+      "name": "1440 resources finite display",
+      "passed": true
+    },
+    {
+      "name": "1440 resources page width",
+      "passed": true
+    },
+    {
+      "name": "1024 analysis error banner",
+      "passed": true
+    },
+    {
+      "name": "1024 analysis UI copy",
+      "passed": true
+    },
+    {
+      "name": "1024 analysis finite display",
+      "passed": true
+    },
+    {
+      "name": "1024 analysis page width",
+      "passed": true
+    },
+    {
+      "name": "1024 analysis/operators error banner",
+      "passed": true
+    },
+    {
+      "name": "1024 analysis/operators UI copy",
+      "passed": true
+    },
+    {
+      "name": "1024 analysis/operators finite display",
+      "passed": true
+    },
+    {
+      "name": "1024 analysis/operators page width",
+      "passed": true
+    },
+    {
+      "name": "1024 analysis/comparison error banner",
+      "passed": true
+    },
+    {
+      "name": "1024 analysis/comparison UI copy",
+      "passed": true
+    },
+    {
+      "name": "1024 analysis/comparison finite display",
+      "passed": true
+    },
+    {
+      "name": "1024 analysis/comparison page width",
+      "passed": true
+    },
+    {
+      "name": "1024 analysis/settings error banner",
+      "passed": true
+    },
+    {
+      "name": "1024 analysis/settings UI copy",
+      "passed": true
+    },
+    {
+      "name": "1024 analysis/settings finite display",
+      "passed": true
+    },
+    {
+      "name": "1024 analysis/settings page width",
+      "passed": true
+    },
+    {
+      "name": "1024 research error banner",
+      "passed": true
+    },
+    {
+      "name": "1024 research UI copy",
+      "passed": true
+    },
+    {
+      "name": "1024 research finite display",
+      "passed": true
+    },
+    {
+      "name": "1024 research page width",
+      "passed": true
+    },
+    {
+      "name": "1024 experiments error banner",
+      "passed": true
+    },
+    {
+      "name": "1024 experiments UI copy",
+      "passed": true
+    },
+    {
+      "name": "1024 experiments finite display",
+      "passed": true
+    },
+    {
+      "name": "1024 experiments page width",
+      "passed": true
+    },
+    {
+      "name": "1024 resources error banner",
+      "passed": true
+    },
+    {
+      "name": "1024 resources UI copy",
+      "passed": true
+    },
+    {
+      "name": "1024 resources finite display",
+      "passed": true
+    },
+    {
+      "name": "1024 resources page width",
+      "passed": true
+    },
+    {
+      "name": "768 analysis error banner",
+      "passed": true
+    },
+    {
+      "name": "768 analysis UI copy",
+      "passed": true
+    },
+    {
+      "name": "768 analysis finite display",
+      "passed": true
+    },
+    {
+      "name": "768 analysis page width",
+      "passed": true
+    },
+    {
+      "name": "768 analysis/operators error banner",
+      "passed": true
+    },
+    {
+      "name": "768 analysis/operators UI copy",
+      "passed": true
+    },
+    {
+      "name": "768 analysis/operators finite display",
+      "passed": true
+    },
+    {
+      "name": "768 analysis/operators page width",
+      "passed": true
+    },
+    {
+      "name": "768 analysis/comparison error banner",
+      "passed": true
+    },
+    {
+      "name": "768 analysis/comparison UI copy",
+      "passed": true
+    },
+    {
+      "name": "768 analysis/comparison finite display",
+      "passed": true
+    },
+    {
+      "name": "768 analysis/comparison page width",
+      "passed": true
+    },
+    {
+      "name": "768 analysis/settings error banner",
+      "passed": true
+    },
+    {
+      "name": "768 analysis/settings UI copy",
+      "passed": true
+    },
+    {
+      "name": "768 analysis/settings finite display",
+      "passed": true
+    },
+    {
+      "name": "768 analysis/settings page width",
+      "passed": true
+    },
+    {
+      "name": "768 research error banner",
+      "passed": true
+    },
+    {
+      "name": "768 research UI copy",
+      "passed": true
+    },
+    {
+      "name": "768 research finite display",
+      "passed": true
+    },
+    {
+      "name": "768 research page width",
+      "passed": true
+    },
+    {
+      "name": "768 experiments error banner",
+      "passed": true
+    },
+    {
+      "name": "768 experiments UI copy",
+      "passed": true
+    },
+    {
+      "name": "768 experiments finite display",
+      "passed": true
+    },
+    {
+      "name": "768 experiments page width",
+      "passed": true
+    },
+    {
+      "name": "768 resources error banner",
+      "passed": true
+    },
+    {
+      "name": "768 resources UI copy",
+      "passed": true
+    },
+    {
+      "name": "768 resources finite display",
+      "passed": true
+    },
+    {
+      "name": "768 resources page width",
+      "passed": true
+    },
+    {
+      "name": "390 analysis error banner",
+      "passed": true
+    },
+    {
+      "name": "390 analysis UI copy",
+      "passed": true
+    },
+    {
+      "name": "390 analysis finite display",
+      "passed": true
+    },
+    {
+      "name": "390 analysis page width",
+      "passed": true
+    },
+    {
+      "name": "390 analysis/operators error banner",
+      "passed": true
+    },
+    {
+      "name": "390 analysis/operators UI copy",
+      "passed": true
+    },
+    {
+      "name": "390 analysis/operators finite display",
+      "passed": true
+    },
+    {
+      "name": "390 analysis/operators page width",
+      "passed": true
+    },
+    {
+      "name": "390 analysis/comparison error banner",
+      "passed": true
+    },
+    {
+      "name": "390 analysis/comparison UI copy",
+      "passed": true
+    },
+    {
+      "name": "390 analysis/comparison finite display",
+      "passed": true
+    },
+    {
+      "name": "390 analysis/comparison page width",
+      "passed": true
+    },
+    {
+      "name": "390 analysis/settings error banner",
+      "passed": true
+    },
+    {
+      "name": "390 analysis/settings UI copy",
+      "passed": true
+    },
+    {
+      "name": "390 analysis/settings finite display",
+      "passed": true
+    },
+    {
+      "name": "390 analysis/settings page width",
+      "passed": true
+    },
+    {
+      "name": "390 research error banner",
+      "passed": true
+    },
+    {
+      "name": "390 research UI copy",
+      "passed": true
+    },
+    {
+      "name": "390 research finite display",
+      "passed": true
+    },
+    {
+      "name": "390 research page width",
+      "passed": true
+    },
+    {
+      "name": "390 experiments error banner",
+      "passed": true
+    },
+    {
+      "name": "390 experiments UI copy",
+      "passed": true
+    },
+    {
+      "name": "390 experiments finite display",
+      "passed": true
+    },
+    {
+      "name": "390 experiments page width",
+      "passed": true
+    },
+    {
+      "name": "390 resources error banner",
+      "passed": true
+    },
+    {
+      "name": "390 resources UI copy",
+      "passed": true
+    },
+    {
+      "name": "390 resources finite display",
+      "passed": true
+    },
+    {
+      "name": "390 resources page width",
+      "passed": true
+    },
+    {
+      "name": "320 analysis error banner",
+      "passed": true
+    },
+    {
+      "name": "320 analysis UI copy",
+      "passed": true
+    },
+    {
+      "name": "320 analysis finite display",
+      "passed": true
+    },
+    {
+      "name": "320 analysis page width",
+      "passed": true
+    },
+    {
+      "name": "320 analysis/operators error banner",
+      "passed": true
+    },
+    {
+      "name": "320 analysis/operators UI copy",
+      "passed": true
+    },
+    {
+      "name": "320 analysis/operators finite display",
+      "passed": true
+    },
+    {
+      "name": "320 analysis/operators page width",
+      "passed": true
+    },
+    {
+      "name": "320 analysis/comparison error banner",
+      "passed": true
+    },
+    {
+      "name": "320 analysis/comparison UI copy",
+      "passed": true
+    },
+    {
+      "name": "320 analysis/comparison finite display",
+      "passed": true
+    },
+    {
+      "name": "320 analysis/comparison page width",
+      "passed": true
+    },
+    {
+      "name": "320 analysis/settings error banner",
+      "passed": true
+    },
+    {
+      "name": "320 analysis/settings UI copy",
+      "passed": true
+    },
+    {
+      "name": "320 analysis/settings finite display",
+      "passed": true
+    },
+    {
+      "name": "320 analysis/settings page width",
+      "passed": true
+    },
+    {
+      "name": "320 research error banner",
+      "passed": true
+    },
+    {
+      "name": "320 research UI copy",
+      "passed": true
+    },
+    {
+      "name": "320 research finite display",
+      "passed": true
+    },
+    {
+      "name": "320 research page width",
+      "passed": true
+    },
+    {
+      "name": "320 experiments error banner",
+      "passed": true
+    },
+    {
+      "name": "320 experiments UI copy",
+      "passed": true
+    },
+    {
+      "name": "320 experiments finite display",
+      "passed": true
+    },
+    {
+      "name": "320 experiments page width",
+      "passed": true
+    },
+    {
+      "name": "320 resources error banner",
+      "passed": true
+    },
+    {
+      "name": "320 resources UI copy",
+      "passed": true
+    },
+    {
+      "name": "320 resources finite display",
+      "passed": true
+    },
+    {
+      "name": "320 resources page width",
+      "passed": true
+    },
+    {
+      "name": "dark analysis error banner",
+      "passed": true
+    },
+    {
+      "name": "dark analysis UI copy",
+      "passed": true
+    },
+    {
+      "name": "dark analysis finite display",
+      "passed": true
+    },
+    {
+      "name": "dark analysis page width",
+      "passed": true
+    },
+    {
+      "name": "mobile theme control",
+      "passed": true
+    },
+    {
+      "name": "no console or page errors",
+      "passed": true
+    },
+    {
+      "name": "no network requests",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "network_requests": [],
+  "browser": "153.0.8010.12",
+  "mode": "offline HTML bytes via Playwright set_content",
+  "viewports": [
+    1440,
+    1024,
+    768,
+    390,
+    320
+  ],
+  "not_tested": [
+    "Windows native file double-click",
+    "hosted GitHub Pages",
+    "NPU hardware"
+  ]
+}
