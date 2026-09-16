@@ -38,10 +38,10 @@ jobs:
           mkdir -p "$RUNNER_TEMP/npuloop-public-check"
           REPORT="$RUNNER_TEMP/npuloop-public-check/checks.tsv"
           printf 'path\tsha256\tstatus\n' > "$REPORT"
-          for rel in index.html research/npuloop_thesis.pdf reference/USAGE.md reference/VALIDATION_SCOPE.md reference/EXPERIMENTS.md reference/e9_customer_intake.json; do
-            expected="docs/$rel"
+          for rel in '' index.html research/npuloop_thesis.pdf reference/USAGE.md reference/VALIDATION_SCOPE.md reference/EXPERIMENTS.md reference/e9_customer_intake.json; do
+            expected="docs/${rel:-index.html}"
             test -f "$expected"
-            target="$RUNNER_TEMP/npuloop-public-check/$(basename "$rel")"
+            target="$RUNNER_TEMP/npuloop-public-check/$(basename "${rel:-root.html}")"
             matched=false
             for attempt in $(seq 1 12); do
               if curl --fail --silent --show-error --location --connect-timeout 10 --max-time 30 \
@@ -52,11 +52,11 @@ jobs:
               sleep 10
             done
             if [ "$matched" != true ]; then
-              echo "::error::Public file is unavailable or differs from this commit: $rel"
+              echo "::error::Public file is unavailable or differs from this commit: ${rel:-/}"
               exit 1
             fi
             digest=$(sha256sum "$target" | cut -d' ' -f1)
-            printf '%s\t%s\tpassed\n' "$rel" "$digest" | tee -a "$REPORT"
+            printf '%s\t%s\tpassed\n' "${rel:-/}" "$digest" | tee -a "$REPORT"
           done
           echo "Verified public assets for commit $GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
           cat "$REPORT" >> "$GITHUB_STEP_SUMMARY"
