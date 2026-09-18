@@ -37,8 +37,8 @@ of the integer target. We measure how far that stand-in holds --- for accuracy a
 networks, two quantization schemes and complete test splits, it holds for accuracy: every
 fake-versus-integer difference is within $0.20$~pp and all twelve $95\%$ confidence intervals contain
 zero. It fails for tensors: $28.5$--$72.7\%$ of the output codes differ, on $95$--$100\%$ of the images.
-Teacher forcing attributes the divergence per operator. Convolution, linear and pooling each disagree on
-under $1\%$ of their own codes, while integer LayerNorm disagrees on $24.8\%$. Making the simulator
+Teacher forcing attributes the divergence per operator. Across these networks convolution, linear and pooling
+each disagree on under $1\%$ of their own codes, while integer LayerNorm disagrees on $24.8\%$. Making the simulator
 integer-faithful at LayerNorm removes that source entirely ($24.77\% \rightarrow 0.00\%$) but moves the
 propagated output mismatch only from $72.7\%$ to $65.7\%$: a simulator cannot be repaired into a source of
 bit-accurate vectors one operator at a time. We also price a requantization choice the accuracy proxy
@@ -288,10 +288,12 @@ by up to $37\%$ of the effect across three seeds of the same architecture.
 \implication Do not quote a single-seed number as the cost of a rounding mode.
 
 \section{Threats to Validity}
-\emph{External.} The networks are CIFAR-10 scale plus three Imagenette models at $128\times128$. The conclusions
-are about the structure of the divergence, not its exact size on ImageNet-scale graphs. Depth is the one scale
-axis varied directly (Section~\ref{sec:dense}) and it moves the propagated fraction by an order of magnitude, so
-that fraction is a property of the graph measured, not a constant of INT8.
+\emph{External.} Beyond the CIFAR-10-scale and Imagenette networks we trained, the split holds on a ResNet-50
+carrying Keras's ImageNet weights (53 convolutions, $K = 4608$): accuracy within $|\Delta|/\mathrm{SE} \le 0.2$
+while $57$--$58\%$ of output codes differ on all $3925$ images --- an ImageNet-scale graph and ImageNet weights,
+not the ImageNet-1k validation set. Depth is the one scale axis varied directly (Section~\ref{sec:dense}) and
+moves the propagated fraction by an order of magnitude, so that fraction is a property of the graph measured,
+not a constant of INT8.
 
 \emph{Construct.} Local mismatch is teacher-forced: it measures an operator's arithmetic in isolation, and the
 propagated column is what captures its interaction with upstream error.
@@ -304,11 +306,9 @@ cover every requantization axis; the rest use one checkpoint per network.
 depthwise convolution, element-wise addition or softmax.
 
 \section{Artifact Availability}
-Every number is emitted by a script from a committed result file, and the scripts, the result files and the
-training commands are public (two checkpoints ship with the repository for a data-free run).
-\texttt{make\_tables.py} and \texttt{make\_figs.py} regenerate every table and figure here, and a
-continuous-integration job re-runs both on every commit and fails if a committed table differs from the one the
-results imply. The measurements are
+Every number is emitted by a script from a committed result file; the scripts, the result files and the
+training commands are public, and a continuous-integration job regenerates every table here on each commit and
+fails if a committed one differs. The measurements are
 \texttt{e15\_fidelity.py} (Table~\ref{tab:fidelity}, Fig.~\ref{fig:decomposition}),
 \texttt{e16\_ln\_emulation.py} (Table~\ref{tab:layernorm}), \texttt{e14\_rounding\_seeds.py}
 (Fig.~\ref{fig:rounding}, Table~\ref{tab:rounding}) and \texttt{e17\_dense\_output.py} (Table~\ref{tab:dense});

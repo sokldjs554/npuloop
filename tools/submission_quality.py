@@ -25,7 +25,8 @@ TABLE_ROWS = {'th_operators.tex':9, 'th_baselines.tex':5, 'th_requant.tex':9, 't
               'th_tflite.tex':12, 'th_vela.tex':5, 'tab1_rows_ko.tex':12,
               'tab2_rows_ko.tex':4, 'tab3_rows_ko.tex':4}
 DERIVED_ROWS = {'tab4_rows_ko.tex':'e17_dense_output',   # one table row per record of that experiment
-                'th_adaround.tex':'e19_adaround'}
+                'th_adaround.tex':'e19_adaround',
+                'th_imagenet.tex':'e20_imagenet_scale'}
 
 
 def expected_rows(root: Path) -> dict[str,int]:
@@ -129,7 +130,7 @@ def paper_errors(root: Path) -> list[str]:
     text=source.read_text(encoding='utf-8'); errors.extend(claim_errors(text))
     for token in ('\\begin{document}','\\end{document}','\\appendix','\\begin{thebibliography}',
                   '\\label{tab:operators}','\\label{tab:fidelity}','\\label{tab:layernorm}','\\label{tab:dense}',
-                  '\\label{tab:requantseeds}','\\label{tab:adaround}'):
+                  '\\label{tab:requantseeds}','\\label{tab:adaround}','\\label{tab:imagenet}'):
         if token not in text:errors.append(f'Missing structural token: {token}')
     if len(re.findall(r'\\chapter\{',text))<9:errors.append('Expected seven chapters and two appendices')
     for name,expected in expected_rows(root).items():
