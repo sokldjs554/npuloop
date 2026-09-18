@@ -534,9 +534,16 @@ def e19_summary(rs):
 
 
 def e20():
-    """ImageNet-scale: the same columns as E15, on a graph and weights this project did not train."""
+    """ImageNet-scale: the same columns as E15, on a graph and weights this project did not train.
+
+    Like e18(), it waits for the whole plan. A table showing one of the two quantization schemes reads as
+    though the other had been left out rather than not yet run.
+    """
     d = load("e20_imagenet_scale"); rs = d["records"]
     if not rs: return ""
+    want = set(d["meta"].get("schemes") or [r["scheme"] for r in rs])
+    if not want <= {r["scheme"] for r in rs}:
+        return "_(측정 중. 계획한 양자화 방식이 모두 들어온 뒤에 표를 냅니다.)_"
     out = ["| 스킴 | conv 층수 | 최대 K | float32 | fake-quant | 정수 엔진 | 정수 − fake (쌍 SE) | top-1 일치 | 출력 코드 불일치 | 코드가 다른 이미지 | 최대 \\|Δ코드\\| |",
            "|---|---|---|---|---|---|---|---|---|---|---|"]
     for r in rs:
