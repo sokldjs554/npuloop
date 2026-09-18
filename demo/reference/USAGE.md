@@ -1,6 +1,6 @@
 # 사용법
 
-[← README](https://github.com/sokldjs554/npuloop/blob/master/README.md) · [실험 E1–E17](EXPERIMENTS.md) · [설계 문서](https://github.com/sokldjs554/npuloop/blob/master/docs/DESIGN.md)
+[← README](https://github.com/sokldjs554/npuloop/blob/master/README.md) · [실험 E1–E20](EXPERIMENTS.md) · [설계 문서](https://github.com/sokldjs554/npuloop/blob/master/docs/DESIGN.md)
 
 번들 체크포인트 검증, 새 모델 실험, 데이터 준비와 전체 실험 재현을 구분합니다. 모델 구조 수정부터 학습·PTQ·정수 평가까지 한 번에 실행하는 방법은 [STUDY_RUNNER.md](STUDY_RUNNER.md)에 있습니다.
 
@@ -56,7 +56,7 @@ print(NumpyEngine(ig).evaluate(ds, limit=2000), CppEngine(ig).evaluate(ds, limit
 
 `docs/index.html`(= `demo/index.html`)은 모델 실험·경량화 워크벤치입니다. 서버나 외부 자산 없이 기존 실험의 모델 변경·회복 학습·양자화·프루닝 결과를 비교합니다. 실제로 기록된 학습 곡선만 표시하고, 정확도와 추정 사이클 조건을 적용해 후보를 비교합니다. Python 실행기의 새 `study.json`을 가져올 수도 있습니다.
 
-NPU 분석 화면에서는 배열 크기·코어 수·DRAM 대역폭 등의 조건을 바꾸면 추정 사이클을 다시 계산합니다. 정수 검증과 E1–E17 원본 조회는 별도 작업 영역입니다. [전체 화면 안내](https://github.com/sokldjs554/npuloop/blob/master/docs/DEMO_GUIDE.md)를 참고하세요.
+NPU 분석 화면에서는 배열 크기·코어 수·DRAM 대역폭 등의 조건을 바꾸면 추정 사이클을 다시 계산합니다. 정수 검증과 E1–E20 원본 조회는 별도 작업 영역입니다. [전체 화면 안내](https://github.com/sokldjs554/npuloop/blob/master/docs/DEMO_GUIDE.md)를 참고하세요.
 
 **공개 데모:** [npuloop Workbench](https://sokldjs554.github.io/npuloop/)
 
