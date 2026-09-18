@@ -138,7 +138,7 @@ def regeneration_errors(root: Path) -> tuple[list[str],list[dict[str,Any]]]:
         for args in commands:
             try:
                 done=subprocess.run([sys.executable,*args],cwd=work,capture_output=True,text=True,timeout=180,check=False)
-            except subprocess.TimeoutExpired as exc:
+            except subprocess.TimeoutExpired:
                 errors.append(f'Generator timed out: {args[0]}');break
             runs.append({'command':[sys.executable,*args],'exit_code':done.returncode,'stdout':done.stdout,'stderr':done.stderr})
             if done.returncode:

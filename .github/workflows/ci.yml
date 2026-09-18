@@ -44,6 +44,17 @@ jobs:
           fi
           wait $PID
 
+  lint:
+    # `make lint` was not run anywhere, so a ruff error reached master unnoticed. It is cheap; run it.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install ruff
+      - run: ruff check npuloop tests tools experiments examples paper demo/build.py --select F,E9 --ignore F401,F403,F405
+
   tables-fresh:
     # Every table in README.md and docs/EXPERIMENTS.md is generated from results/*.json. Regenerate them here and
     # fail if the committed files differ: a table whose marker lost its home would otherwise freeze unnoticed.
