@@ -97,7 +97,8 @@ const columns={
  e16_ln_emulation:[['scheme','방식'],['variant','LayerNorm'],['fake_acc','모의 정확도','pct'],['output_codes.mismatch_frac','출력 불일치','pct']],
  e17_dense_output:[['model','모델'],['conv_layers','conv 층수','num'],['scheme','방식'],['fake_psnr','모의 PSNR','decimal'],['int_psnr','정수 PSNR','decimal'],['output_codes.mismatch_frac','출력 불일치','pct']],
  e18_requant_axes_seeds:[['model','모델'],['seed','시드','num'],['config','연산 구성'],['int_acc','정수 정확도','pct'],['vs_reference.delta','기준 대비','pp']],
- e19_adaround:[['model','모델'],['scheme','방식'],['fake_rtn','모의 RTN','pct'],['fake_ada','모의 AdaRound','pct'],['int_rtn','정수 RTN','pct'],['int_ada','정수 AdaRound','pct'],['flipped_frac','방향이 바뀐 가중치','pct']]
+ e19_adaround:[['model','모델'],['scheme','방식'],['fake_rtn','모의 RTN','pct'],['fake_ada','모의 AdaRound','pct'],['int_rtn','정수 RTN','pct'],['int_ada','정수 AdaRound','pct'],['flipped_frac','방향이 바뀐 가중치','pct']],
+ e20_imagenet_scale:[['scheme','방식'],['convolutions','conv 층수','num'],['max_reduction_k','최대 K','num'],['float_acc','FP32','pct'],['fake_acc','모의','pct'],['int_acc','정수','pct'],['output_codes.mismatch_frac','출력 불일치','pct']]
 };
 function val(obj,path){return path.split('.').reduce((r,k)=>r?.[k],obj);}
 function format(v,key,fmt){if(v==null)return'—';if(fmt==='pct')return pct(v,2);if(fmt==='pp')return pp(v);if(fmt==='num')return n(v);if(fmt==='decimal')return n(v,4);if(fmt==='bool')return v?'일치':'불일치';if(key==='model')return ml(v);return String(v);}
@@ -122,7 +123,7 @@ function renderResources(){
  $('data-provenance').innerHTML=keyValue('연구 결과','results/*.json · '+Object.keys(D.results||{}).length+'개')+keyValue('구조 데이터',D.model_source==='architecture_config_only'?'모델 구성에서 추적':'체크포인트 구조에서 추적')+keyValue('브라우저 비용','해석적 systolic-array 모델')+keyValue('가중치 평가 수행',D.checkpoint_evaluation_performed?'수행':'미수행')+keyValue('HTML 빌드',D.built);
 }
 const studyUI=window.NpuStudyUI.mount(D,{showRecord,download,notify});
-const viewLabels={studies:['모델 실험·경량화','태스크와 데이터에 맞춘 구조 변경, 회복 학습, 양자화 결과','모델 실험'],analysis:['NPU 모델 분석·검증','지원 연산, 추정 비용 및 모델 변경 결과','모델 분석'],research:['정수 실행 검증','동일 양자화 조건의 모의·정수 출력 비교','정수 검증'],experiments:['실험 기록','E1–E19 · 조건별 결과 및 원본 데이터','실험 기록'],resources:['재현 자료','연구 원고, 실행 환경 및 검증 범위','재현 자료']};
+const viewLabels={studies:['모델 실험·경량화','태스크와 데이터에 맞춘 구조 변경, 회복 학습, 양자화 결과','모델 실험'],analysis:['NPU 모델 분석·검증','지원 연산, 추정 비용 및 모델 변경 결과','모델 분석'],research:['정수 실행 검증','동일 양자화 조건의 모의·정수 출력 비교','정수 검증'],experiments:['실험 기록','E1–E20 · 조건별 결과 및 원본 데이터','실험 기록'],resources:['재현 자료','연구 원고, 실행 환경 및 검증 범위','재현 자료']};
 function setTab(tab){if(!['summary','operators','comparison','settings'].includes(tab))tab='summary';state.tab=tab;for(const b of document.querySelectorAll('[data-analysis-tab]')){const yes=b.dataset.analysisTab===tab;b.setAttribute('aria-selected',String(yes));b.tabIndex=yes?0:-1;$('analysis-'+b.dataset.analysisTab).hidden=!yes;}}
 function route(){
  if(location.hash==='#main'){ $('main').focus(); return; }

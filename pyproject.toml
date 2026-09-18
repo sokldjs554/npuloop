@@ -24,3 +24,6 @@ npuloop = ["intengine/cpp/*.cpp", "intengine/cpp/*.h"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests", "submission_checks/tests"]
+markers = [
+  "slow: needs TensorFlow or the downloaded ImageNet weights; skipped where they are absent",
+]

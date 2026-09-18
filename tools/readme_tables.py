@@ -533,6 +533,25 @@ def e19_summary(rs):
     return out
 
 
+def e20():
+    """ImageNet-scale: the same columns as E15, on a graph and weights this project did not train."""
+    d = load("e20_imagenet_scale"); rs = d["records"]
+    if not rs: return ""
+    out = ["| 스킴 | conv 층수 | 최대 K | float32 | fake-quant | 정수 엔진 | 정수 − fake (쌍 SE) | top-1 일치 | 출력 코드 불일치 | 코드가 다른 이미지 | 최대 \\|Δ코드\\| |",
+           "|---|---|---|---|---|---|---|---|---|---|---|"]
+    for r in rs:
+        p_, oc = r["int_vs_fake"], r["output_codes"]
+        out.append(f"| {r['scheme']} | {r['convolutions']} | {r['max_reduction_k']:,} | {pct(r['float_acc'])} | {pct(r['fake_acc'])} | "
+                   f"{pct(r['int_acc'])} | {_pm(p_['delta'], p_['se'])} | {pct(p_['top1_agreement'])} | "
+                   f"{pct(oc['mismatch_frac'], 1)} | {oc['images_with_any_mismatch']:,} / {oc['images']:,} | {oc['max_abs_code_diff']} |")
+    m = d["meta"]
+    out.append(f"\n{m.get('model')}, {m.get('dataset')}. 이미지 {rs[0]['n_test']:,}장, 클래스 {m.get('classes'):,}개 중 "
+               f"{m.get('scored_classes')}개가 정답에 등장한다. 전처리는 {m.get('preprocessing')}, 보정은 {m.get('calib')}. "
+               f"**{m.get('note')}** — top-1 절대값은 ImageNet 검증셋 수치와 비교할 수 없고, 이 실험이 재는 것은 "
+               f"모의 실행과 정수 실행의 차이다.")
+    return "\n".join(out)
+
+
 def e14():
     d = load("e14_rounding_seeds"); rs = d["records"]
     if not rs: return ""
@@ -608,7 +627,7 @@ def e14_summary(rs, models):
     return out
 
 
-TABLES = [("HEADLINE", headline), ("E1", e1), ("E2", e2), ("E3", e3), ("E4", e4), ("E5", e5), ("E6", e6), ("E7", e7), ("E8", e8), ("E9", e9), ("E10", e10), ("E11", e11), ("E12", e12), ("E14", e14), ("E15", e15), ("E16", e16), ("E17", e17), ("E18", e18), ("E19", e19)]
+TABLES = [("HEADLINE", headline), ("E1", e1), ("E2", e2), ("E3", e3), ("E4", e4), ("E5", e5), ("E6", e6), ("E7", e7), ("E8", e8), ("E9", e9), ("E10", e10), ("E11", e11), ("E12", e12), ("E14", e14), ("E15", e15), ("E16", e16), ("E17", e17), ("E18", e18), ("E19", e19), ("E20", e20)]
 
 
 def inject(path: str) -> tuple[int, set]:

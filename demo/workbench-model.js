@@ -23,7 +23,8 @@ const EXPERIMENTS=[
  ['e16_ln_emulation','E16','LayerNorm 산술 교체','정수 출력','동일 정수 그래프에서 모의 실행 경로만 변경'],
  ['e17_dense_output','E17','초해상도 출력 비교','정수 출력','ESPCN ×2를 conv 3개·9개 두 깊이에서 측정한 PSNR 및 출력 정숫값 비교'],
  ['e18_requant_axes_seeds','E18','정수 연산 구성 반복 실험','양자화','승수·누산기·바이어스 비트폭을 3개 체크포인트로 재측정'],
- ['e19_adaround','E19','AdaRound 반올림 학습','양자화','학습된 반올림의 이득을 모의 경로와 정수 경로에서 각각 측정']
+ ['e19_adaround','E19','AdaRound 반올림 학습','양자화','학습된 반올림의 이득을 모의 경로와 정수 경로에서 각각 측정'],
+ ['e20_imagenet_scale','E20','ImageNet 규모 대조','정수 출력','ResNet-50(ImageNet 가중치)에서의 모의·정수 비교; ImageNet 검증셋 정확도는 아님']
 ];
 const PRESET_LABELS={
  'tiny-1tops':'tiny-1tops', 'edge-10tops':'edge-10tops',

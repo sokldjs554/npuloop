@@ -1,11 +1,11 @@
-# 실험 E1–E19
+# 실험 E1–E20
 
 [← README](../README.md) · [설계 문서](DESIGN.md) · [기술 보고서](report/npuloop_report.md) · [선행 연구](RELATED.md)
 
 CIFAR-10, CPU 4코어. 숫자는 전부 `results/*.json`에서 `make tables`(= `python tools/readme_tables.py --inject README.md docs/EXPERIMENTS.md`)로
 생성한 것입니다. 정확도는 따로 적지 않으면 test 10,000장 기준이고, `simulated`로 표시한 사이클·활용률은 가상 NPU 비용 모델 값입니다.
 
-[E9](#e9) · [E16](#e16) · [E17](#e17) · [E19](#e19) · [E1](#e1) · [E8](#e8) · [E10](#e10) · [E11](#e11) · [E13](#e13) · [E2](#e2) · [E15](#e15) · [E7](#e7) · [E14](#e14) · [E18](#e18) · [E3](#e3) · [E4](#e4) · [E5](#e5) · [E6](#e6) · [E12](#e12)
+[E9](#e9) · [E16](#e16) · [E17](#e17) · [E19](#e19) · [E20](#e20) · [E1](#e1) · [E8](#e8) · [E10](#e10) · [E11](#e11) · [E13](#e13) · [E2](#e2) · [E15](#e15) · [E7](#e7) · [E14](#e14) · [E18](#e18) · [E3](#e3) · [E4](#e4) · [E5](#e5) · [E6](#e6) · [E12](#e12)
 
 **데이터 분할과 체크포인트 선택.** CIFAR-10의 공식 학습 50,000장을 고정 시드로 **학습 45,000장 / 검증 5,000장**(클래스별 500장, 층화)으로
 한 번 나눴습니다(`npuloop/zoo/data.py`). 학습 중 체크포인트 선택(`best.pt` = 검증 정확도가 가장 높은 epoch)과 학습 시점의 모든 결정은
@@ -121,6 +121,29 @@ test 3,925장 전체, 이미지당 출력값 49,152개(3×128×128 픽셀). PSNR
 float32로 맞추자 입력 불일치는 0.00%가 되고 출력 불일치는 6.3% / 18.2%로 내려갔습니다. 분류기 입력은 채널별 mean/std로 정규화되어 동점이 생기지 않으므로
 (6개 모델 × 2개 스킴 × test 분할 전체, 입력 코드 **6억 9,304만 개 중 0개** 변화) E2·E9·E11·E12·E15·E16의 기존 수치는 그대로입니다.
 회귀 테스트는 `tests/test_intengine.py::test_input_quantization_matches_the_simulator_on_rounding_ties`입니다.
+
+<a id="e20"></a>
+### E20. ImageNet 규모 — 우리가 학습하지 않은 그래프, 우리가 학습하지 않은 가중치
+
+E1–E19의 모델은 전부 이 프로젝트가 직접 학습한 것입니다. CIFAR-10 규모이거나 Imagenette 128px입니다.
+그래서 "결론이 규모의 인공물 아니냐"는 질문에 계속 걸려 있었습니다. E17이 그 절반(깊이)을 통제된 조건에서 답했고, E20이 나머지를 답합니다.
+
+**모델은 ResNet-50이고 가중치는 Keras가 배포하는 ImageNet-1k 가중치 원본입니다.** torch로 옮긴 것은 `npuloop/zoo/resnet50_keras.py`이고,
+**Keras 자신과 대조해 최대 확률 차이 1.1×10⁻⁶** 로 일치하는 것을 확인했습니다(`tests/test_resnet50_keras.py`).
+torchvision의 ResNet-50은 stride를 3×3에 두는 v1.5인 반면 Keras는 첫 1×1에 두는 v1이라, 파라미터 모양이 같아서 잘못 얹어도 조용히 돌아갑니다 — 그래서 대조가 필요했습니다.
+이 모델은 **conv 53개, 리덕션 K는 최대 4,608**입니다. ResNet-20의 576보다 한 자릿수 크고, E7·E18의 누산기 폭 결과가 "이 모델들에서의 결과라 옮겨지지 않는다"고 명시적으로 배제했던 바로 그 영역입니다.
+
+<!-- TABLE:E20 -->
+_(아직 실행되지 않음)_
+<!-- /TABLE:E20 -->
+
+**이것이 무엇이고 무엇이 아닌지 정확히.** ImageNet 규모의 **그래프**이고 ImageNet **가중치**이며 1000-way 헤드를 통과시켜 채점합니다.
+하지만 **ImageNet 검증셋 정확도는 아닙니다.** ImageNet 검증셋은 재배포할 수 없으므로 이미지는 Imagenette 시험 분할(3,925장, ImageNet 10개 클래스, 짧은 변 160px)입니다.
+따라서 top-1 절대값은 ImageNet 수치와 나란히 놓을 수 없습니다. 반면 이 실험이 실제로 재는 양 — **모의 실행과 정수 실행의 차이, 그리고 출력 코드 불일치** — 는
+이미지가 1000개 클래스 중 어느 부분집합에서 왔는지와 무관합니다. 그것이 이 실험을 할 수 있는 이유입니다.
+
+`python experiments/e20_imagenet_scale.py` (`data/imagenette160.npz` 필요: `python tools/prepare_imagenette.py --src data/imagenette/imagenette2-160 --out data/imagenette160.npz --size 160`).
+Keras 가중치는 처음 실행할 때 자동으로 내려받아 `~/.keras/models/`에 캐시됩니다. 결과는 `results/e20_imagenet_scale.json`.
 
 <a id="e1"></a>
 ### E1. 베이스라인과 정적 분석
