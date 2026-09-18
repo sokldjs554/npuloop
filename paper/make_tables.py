@@ -21,7 +21,7 @@ T = {
         "head1": "Network & Sch. & float32 & fake & integer & $\\Delta$ (pp) & $95\\%$ CI & agree (\\%) & codes (\\%) & imgs (\\%)",
         "head2": "Sch. & LayerNorm & local (\\%) & codes (\\%) & agree (\\%) & $\\Delta$ (pp)",
         "head3": "Mode & ResNet-20 ReLU & ResNet-20 SiLU & MobileNetV2-0.5",
-        "head4": "Sch. & float32 & fake & integer & $\\Delta$ ($10^{-3}$\\,dB) & codes (\\%)",
+        "head4": "Convs & Sch. & float32 & fake & integer & $\\Delta$ ($10^{-3}$\\,dB) & codes (\\%) & $\\max|\\Delta c|$",
         "float_ln": "float32", "int_ln": "integer ({n})",
     },
     "ko": {
@@ -29,7 +29,7 @@ T = {
         "head1": "신경망 & 방식 & float32 & 모의 & 정수 & $\\Delta$ (\\%p) & $95\\%$ CI & 일치(\\%) & 코드(\\%) & 이미지(\\%)",
         "head2": "방식 & LayerNorm & 국소(\\%) & 코드(\\%) & 일치(\\%) & $\\Delta$ (\\%p)",
         "head3": "반올림 & ResNet-20 ReLU & ResNet-20 SiLU & MobileNetV2-0.5",
-        "head4": "방식 & float32 & 모의 & 정수 & $\\Delta$ ($10^{-3}$\\,dB) & 코드(\\%)",
+        "head4": "합성곱 & 방식 & float32 & 모의 & 정수 & $\\Delta$ ($10^{-3}$\\,dB) & 코드(\\%) & $\\max|\\Delta c|$",
         "float_ln": "float32", "int_ln": "정수 ({n}개)",
     },
 }
@@ -83,12 +83,18 @@ def tab3_rounding(t):
 
 
 def tab4_dense(t):
-    rows = []
-    for r in load("e17_dense_output")["records"]:
-        p = r["int_vs_fake"]
-        rows.append(f"{SCHEME[r['scheme']]} & {r['float_psnr']:.3f} & {r['fake_psnr']:.3f} & {r['int_psnr']:.3f} & "
-                    f"${p['delta'] * 1000:+.2f}\\pm{p['se'] * 1000:.2f}$ & {r['output_codes']['mismatch_frac'] * 100:.1f} \\\\")
-    write(f"tab4_rows{t['suffix']}.tex", "lccccc", t["head4"], rows, tabcolsep="4pt")
+    """Two depths at the same width profile, so the propagated column can be read against depth."""
+    rows, prev = [], None
+    for r in sorted(load("e17_dense_output")["records"], key=lambda r: (r["conv_layers"], r["scheme"])):
+        p, oc = r["int_vs_fake"], r["output_codes"]
+        if prev is not None and r["conv_layers"] != prev:
+            rows.append("\\midrule")
+        depth = str(r["conv_layers"]) if r["conv_layers"] != prev else ""
+        prev = r["conv_layers"]
+        rows.append(f"{depth} & {SCHEME[r['scheme']]} & {r['float_psnr']:.3f} & {r['fake_psnr']:.3f} & {r['int_psnr']:.3f} & "
+                    f"${p['delta'] * 1000:+.2f}\\pm{p['se'] * 1000:.2f}$ & {oc['mismatch_frac'] * 100:.1f} & "
+                    f"{oc['max_abs_code_diff']} \\\\")
+    write(f"tab4_rows{t['suffix']}.tex", "rlcccccc", t["head4"], rows, tabcolsep="4pt")
 
 
 if __name__ == "__main__":

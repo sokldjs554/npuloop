@@ -86,7 +86,8 @@ $24.8\%$에서 어긋난다. 시뮬레이터의 LayerNorm을 정수에 충실하
 대리지표가 값을 매기지 못하는 재양자화 선택 하나를 측정한다. 반올림을 절사로 바꾸면 18개 (모델, 시드, 방식)
 조합 전부에서 $0.90$--$3.37$~\%p를 잃으며, 그 손해의 부호는 시드를 넘어 옮겨 가지만 크기는 옮겨 가지 않는다.
 argmax를 걷어내도 이 분리는 그대로다. 출력 텐서 자체가 결과물인 신경망에서 품질 지표는 $6\times10^{-4}$~dB 안쪽으로
-충실한 반면, 내보내는 픽셀 코드의 $6.3$--$18.2\%$가 다르다.
+충실한 반면 내보내는 픽셀 코드의 $6.3\%$가 다르며, 폭을 고정한 채 연산자 수를 세 배로 늘리면 그 비율은
+$69.2\%$까지 오르는데도 품질 지표는 여전히 충실하다.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -186,8 +187,9 @@ $28.5\%$(Inception-32)에서 $72.7\%$(ViT-128/6)가 다르고, 이미지의 $95$
 
 \begin{table}[!t]
 \caption{출력 텐서가 결과물인 과제: Imagenette에서의 ESPCN $\times 2$, 이미지 $3{,}925$장, 이미지당 출력값
-$49{,}152$개. PSNR은 $[0,1]$ 범위의 dB. 양자화 자체는 float32 대비 $0.279$~dB(\textsc{pc})와
-$0.667$~dB(\textsc{pt})를 잃으며, 이는 옆 칸의 모의-정수 차이보다 세 자릿수 크다.}
+$49{,}152$개를 같은 폭 구성의 두 깊이에서 측정했다. PSNR은 $[0,1]$ 범위의 dB. 양자화 자체는 float32 대비
+합성곱 3개에서 $0.28$--$0.67$~dB, 9개에서 $0.57$--$1.15$~dB를 잃으며 이는 옆 칸의 모의-정수 차이보다 세 자릿수
+크다. 반면 코드가 다른 비율은 깊이에 따라 한 자릿수 움직인다.}
 \label{tab:dense}
 \centering
 \footnotesize
@@ -197,21 +199,26 @@ $0.667$~dB(\textsc{pt})를 잃으며, 이는 옆 칸의 모의-정수 차이보�
 \subsection{RQ1: 텐서 자체가 결과물일 때}
 \label{sec:dense}
 위의 신경망은 모두 분류기여서 출력 텐서와 답 사이에 argmax가 하나 서 있다. 그것을 걷어내기 위해 부분 픽셀 초해상
-신경망~\cite{espcn}을 쓴다. 합성곱 3개로 Imagenette를 $64 \rightarrow 128$로 올리며, 최근접 이웃 확대의
-$27.26$~dB에 대해 $30.23$~dB이고, 출력이 곧 그림 \emph{그 자체}다. 새 연산자 지원은 필요 없었다. 픽셀 셔플은
-reshape와 transpose다.
+신경망~\cite{espcn}을 쓴다. Imagenette를 $64 \rightarrow 128$로 올리며, 최근접 이웃 확대의 $27.26$~dB에 대해
+$30.23$~dB이고, 출력이 곧 그림 \emph{그 자체}다. 새 연산자 지원은 필요 없었다. 픽셀 셔플은 reshape와 transpose다.
+깊이와 과제를 분리하기 위해 폭 구성을 고정한 두 깊이에서 잰다. 원래의 합성곱 3개, 그리고 본체 폭에 잔차 블록
+3개를 넣은 합성곱 9개다. 깊은 쪽이 더 좋은 신경망인 것은 아니다($30.11$~dB 대 $30.23$). 같은 과제를 연산자 수만
+세 배로 늘려 본 것이다.
 
-표~\ref{tab:dense}는 같은 그림을 반복한다. 양자화 비용은 $0.279$~dB(\textsc{pc})와 $0.667$~dB(\textsc{pt})이고
-시뮬레이터는 그 비용을 $6\times10^{-4}$~dB 안쪽으로 맞힌다. 이 표본 크기에서는 분해되는 차이지만
-($|\Delta|/\mathrm{SE} = 17.6$) 맞히려는 비용보다 세 자릿수 작다. 그런데도 출력 픽셀 코드의 $6.3\%$와 $18.2\%$가
-$3{,}925$장 전부에서 다르고, 최대 3레벨까지 벌어진다. 연산자별 구조는 CNN과 같다. 합성곱의 국소 불일치는
-$0.06$--$0.40\%$이고 모두 최하위 비트 $\pm 1$이며, 첫 분기점도 첫 합성곱이다. 전파 값이 더 작은 것은 이 신경망이
-3층이라는 깊이 효과이지 과제의 성질이 아니다.
+표~\ref{tab:dense}는 같은 그림을 반복하면서 깊이에 숫자를 붙인다. 합성곱 3개에서 양자화 비용은
+$0.279$~dB(\textsc{pc})와 $0.667$~dB(\textsc{pt})이고 시뮬레이터는 그 비용을 $6\times10^{-4}$~dB 안쪽으로
+맞힌다. 이 표본 크기에서는 분해되는 차이지만($|\Delta|/\mathrm{SE} = 17.6$) 맞히려는 비용보다 세 자릿수 작다.
+그런데도 출력 픽셀 코드의 $6.3\%$와 $18.2\%$가 $3{,}925$장 전부에서 다르고, 최대 3레벨까지 벌어진다. 합성곱
+9개에서는 품질 지표가 여전히 $3\times10^{-3}$~dB 안쪽으로 충실한데 코드가 다른 비율은 $69.2\%$와 $73.0\%$로,
+최대 편차는 10레벨로 오른다. 연산자별 구조는 두 깊이 모두 CNN과 같다. 합성곱의 국소 불일치는 $0.06$--$0.40\%$
+이고 모두 최하위 비트 $\pm 1$이며, 첫 분기점도 첫 합성곱이다.
 
-\finding{2} 이 분리는 분류 과제의 인공물이 아니다. 출력 텐서가 결과물인 경우에도 품질 지표는
-$6\times10^{-4}$~dB 안쪽으로 충실한 반면 내보내는 픽셀의 $6.3$--$18.2\%$가 다르다.
+\finding{2} 이 분리는 분류 과제의 인공물이 아니며, 전파 비율의 크기를 정하는 것은 과제가 아니라 깊이다. 같은
+이미지에 합성곱 9개를 쓰면 $6.3\%$가 $69.2\%$로 올라 분류기들이 차지하는 $28$--$73\%$ 구간 안으로 들어오는데,
+품질 지표는 그동안 내내 충실하다.
 
-\implication 시뮬레이터는 기준 로짓 벡터를 공급할 수 없듯이 기준 이미지도 공급할 수 없다.
+\implication 시뮬레이터는 기준 로짓 벡터를 공급할 수 없듯이 기준 이미지도 공급할 수 없으며, 그래프가 깊을수록
+내보내는 텐서 중 재현하는 몫은 줄어든다.
 
 \begin{figure}[!t]
 \centering
@@ -301,9 +308,10 @@ $37\%$에 이르는 반면, ResNet-20 ReLU는 효과의 10분의 1 이내에 머
 \implication 반올림 방식의 비용을 시드 하나의 수치로 인용해서는 안 된다.
 
 \section{타당성 위협}
-\emph{외적 타당성.} 신경망은 CIFAR-10 규모에 $128\times128$ Imagenette 모델 둘을 더한 것이다. 따라서 결론은
-격차의 구조에 관한 것이지 ImageNet 규모 그래프에서의 정확한 크기에 관한 것이 아니며, 밀집 출력 신경망은 3층뿐이라
-그 전파 값은 더 깊은 신경망에서 나올 값의 하한이다.
+\emph{외적 타당성.} 신경망은 CIFAR-10 규모에 $128\times128$ Imagenette 모델 셋을 더한 것이고, 가장 깊은 것이
+연산자 $32$개다. 따라서 결론은 격차의 구조에 관한 것이지 ImageNet 규모 그래프에서의 정확한 크기에 관한 것이
+아니다. 규모 축 가운데 직접 바꿔 본 것은 깊이 하나인데(\ref{sec:dense}절) 그것만으로 전파 비율이 한 자릿수
+움직인다. 그러므로 그 비율은 측정한 그래프의 성질로 읽어야 하며 INT8의 상수로 읽어서는 안 된다.
 
 \emph{구성 타당성.} 국소 불일치는 교사 강제로 재므로 연산자의 연산만 떼어 보고 상류 오차와의 상호작용은 보지
 않는다. 그 상호작용을 담는 것은 전파 열이다.
@@ -360,26 +368,21 @@ pp. 1874--1883.
 \emph{Proc. IEEE/CVF Int. Conf. Comput. Vis. (ICCV)}, 2023, pp. 16989--16998.
 \end{thebibliography}
 
-% 국내 학술대회 관례에 따른 영문 초록. 내용은 투고본(npuloop_esl.tex)의 Abstract와 같습니다.
+% 국내 학술대회 관례에 따른 영문 초록. 분량 규정에 맞추어 국문 초록을 축약한 것입니다.
 \section*{English Abstract}
 \noindent\textbf{Per-Operator Attribution of the Fake-Quantization-to-Integer Gap in INT8 Inference}
 
 \smallskip
 \noindent INT8 deployment decisions are made on a simulator: the network runs in floating point with
-quantize--dequantize (``fake-quantization'') nodes inserted, and its accuracy stands in for the accuracy of
-the integer target. We measure how far that stand-in holds, for accuracy and for tensors separately, against
-an integer engine that is bit-exact with the TensorFlow Lite reference kernels. On six networks, two
-quantization schemes and complete test splits, it holds for accuracy: every fake-versus-integer difference is
-within $0.20$~pp and all twelve $95\%$ confidence intervals contain zero. It fails for tensors:
-$28.5$--$72.7\%$ of the output codes differ, on $95$--$100\%$ of the images. Teacher forcing attributes the
-divergence per operator: convolution, linear and pooling each disagree on under $1\%$ of their own codes,
-while integer LayerNorm disagrees on $24.8\%$. Making the simulator integer-faithful at LayerNorm removes
-that source entirely ($24.77\% \rightarrow 0.00\%$) but moves the propagated output mismatch only from
-$72.7\%$ to $65.7\%$. We also price a requantization choice the accuracy proxy cannot see: replacing
-rounding with truncation costs $0.90$--$3.37$~pp in all 18 (model, seed, mode) combinations, and the sign of
-that cost transfers across seeds while its magnitude does not. The decoupling survives the removal of the
-argmax: on a dense-output network the quality metric is faithful to $6\times10^{-4}$~dB while $6.3$--$18.2\%$ of
-the delivered pixel codes differ.
+quantize--dequantize (``fake-quantization'') nodes inserted, and its accuracy stands in for the integer target's.
+Against an integer engine bit-exact with the TensorFlow Lite reference kernels, we measure how far that stand-in
+holds, for accuracy and for tensors separately. It holds for accuracy: over six networks, two schemes and
+complete test splits, every difference is within $0.20$~pp and all twelve $95\%$ intervals contain zero. It fails
+for tensors: $28.5$--$72.7\%$ of the output codes differ, on $95$--$100\%$ of the images. Teacher forcing
+attributes the divergence per operator, and repairing the simulator at its worst operator removes that source
+entirely ($24.77\% \rightarrow 0.00\%$) while moving the propagated mismatch only to $65.7\%$. The decoupling
+survives the removal of the argmax, and depth sets the size of the propagated fraction: nine convolutions instead
+of three raise it from $6.3\%$ to $69.2\%$, the quality metric faithful throughout.
 
 \smallskip
 \noindent\textbf{Index Terms}---Quantization, integer arithmetic, embedded inference, neural processing

@@ -1,9 +1,12 @@
 \setlength{\tabcolsep}{4pt}
-\begin{tabular}{lccccc}
+\begin{tabular}{rlcccccc}
 \toprule
-Sch. & float32 & fake & integer & $\Delta$ ($10^{-3}$\,dB) & codes (\%) \\
+Convs & Sch. & float32 & fake & integer & $\Delta$ ($10^{-3}$\,dB) & codes (\%) & $\max|\Delta c|$ \\
 \midrule
-\textsc{pc} & 30.234 & 29.956 & 29.955 & $-0.64\pm0.04$ & 6.3 \\
-\textsc{pt} & 30.234 & 29.567 & 29.568 & $+0.27\pm0.06$ & 18.2 \\
+3 & \textsc{pc} & 30.234 & 29.956 & 29.955 & $-0.64\pm0.04$ & 6.3 & 3 \\
+ & \textsc{pt} & 30.234 & 29.567 & 29.568 & $+0.27\pm0.06$ & 18.2 & 3 \\
+\midrule
+9 & \textsc{pc} & 30.113 & 29.544 & 29.543 & $-0.51\pm0.18$ & 69.2 & 10 \\
+ & \textsc{pt} & 30.113 & 28.966 & 28.968 & $+2.88\pm0.19$ & 73.0 & 10 \\
 \bottomrule
 \end{tabular}

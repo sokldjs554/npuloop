@@ -400,21 +400,23 @@ def e16():
 
 
 def e17():
+    """Two depths at one width profile: the depth column is what separates depth from task."""
     rs = load("e17_dense_output")["records"]
     if not rs: return ""
-    out = ["| 스킴 | float32 | fake-quant | 정수 엔진 | 정수 − fake (쌍 SE) | 양자화 비용 (fake − float) | 출력 픽셀 코드 불일치 | 코드가 다른 이미지 | 최대 \\|Δ코드\\| | conv 국소 불일치 |",
-           "|---|---|---|---|---|---|---|---|---|---|"]
-    for r in rs:
+    out = ["| conv 층수 | 스킴 | float32 | fake-quant | 정수 엔진 | 정수 − fake (쌍 SE) | 양자화 비용 (fake − float) | 출력 픽셀 코드 불일치 | 코드가 다른 이미지 | 최대 \\|Δ코드\\| | conv 국소 불일치 |",
+           "|---|---|---|---|---|---|---|---|---|---|---|"]
+    for r in sorted(rs, key=lambda r: (r.get("conv_layers", 0), r["scheme"])):
         p_, oc = r["int_vs_fake"], r["output_codes"]
         loc = [row["local_mismatch_frac"] * 100 for row in r["per_layer_agreement"] if row["op"] == "conv"]
-        out.append(f"| {r['scheme']} | {r['float_psnr']:.3f} dB | {r['fake_psnr']:.3f} dB | {r['int_psnr']:.3f} dB | "
+        out.append(f"| {r.get('conv_layers', '—')} | {r['scheme']} | {r['float_psnr']:.3f} dB | {r['fake_psnr']:.3f} dB | {r['int_psnr']:.3f} dB | "
                    f"{p_['delta']:+.5f} ± {p_['se']:.5f} dB | {r['fake_vs_float']['delta']:+.3f} dB | "
                    f"{pct(oc['mismatch_frac'], 1)} | {oc['images_with_any_mismatch']:,} / {oc['images']:,} | "
                    f"{oc['max_abs_code_diff']} | {min(loc):.2f}–{max(loc):.2f}% |")
     r0 = rs[0]
     out.append(f"\ntest {r0['n_test']:,}장 전체, 이미지당 출력값 {r0['output_codes']['values_per_image']:,}개(3×128×128 픽셀). "
                f"PSNR은 [0,1] 범위에서 이미지별로 재고 배포와 똑같이 출력을 clip한 뒤 평균한 값이다. "
-               f"국소 불일치는 {r0['agreement_batch']['images']}장 배치의 teacher-forced 평균.")
+               f"국소 불일치는 {r0['agreement_batch']['images']}장 배치의 teacher-forced 평균. "
+               f"두 깊이는 같은 폭 구성이며, 깊은 쪽이 더 좋은 모델은 아니다(float PSNR이 0.12 dB 낮다).")
     return "\n".join(out)
 
 

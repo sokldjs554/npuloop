@@ -45,7 +45,8 @@ bit-accurate vectors one operator at a time. We also price a requantization choi
 cannot see --- replacing rounding with truncation costs $0.90$--$3.37$~pp in all 18 (model, seed, mode)
 combinations, and the sign of that cost transfers across seeds while its magnitude does not. The decoupling
 survives the removal of the argmax: on a dense-output network the quality metric is faithful to
-$6\times10^{-4}$~dB while $6.3$--$18.2\%$ of the delivered pixel codes differ.
+$6\times10^{-4}$~dB while $6.3\%$ of the delivered pixel codes differ, and tripling that network's operator
+count at a fixed width raises the differing fraction to $69.2\%$ with the metric still faithful.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -153,9 +154,10 @@ every network and both schemes.
 verification vector.
 
 \begin{table}[!t]
-\caption{Dense output: ESPCN $\times 2$ on Imagenette, $3{,}925$ images of $49{,}152$ output values each. PSNR in
-dB on $[0,1]$. Quantization itself costs $0.279$~dB (\textsc{pc}) and $0.667$~dB (\textsc{pt}) against float32,
-three orders of magnitude more than the simulator-to-integer difference beside it.}
+\caption{Dense output: ESPCN $\times 2$ on Imagenette, $3{,}925$ images of $49{,}152$ output values each, at two
+depths of one width profile. PSNR in dB on $[0,1]$. Quantization itself costs $0.28$--$0.67$~dB at 3 convolutions
+and $0.57$--$1.15$~dB at 9, three orders of magnitude more than the simulator-to-integer difference beside it,
+while the fraction of differing codes moves with depth by an order of magnitude.}
 \label{tab:dense}
 \centering
 \footnotesize
@@ -165,22 +167,26 @@ three orders of magnitude more than the simulator-to-integer difference beside i
 \subsection{RQ1 where the tensor is the deliverable}
 \label{sec:dense}
 Every network above is a classifier, so an argmax stands between the output tensor and the answer. We remove it
-with a sub-pixel super-resolution network~\cite{espcn} --- three convolutions, $64 \rightarrow 128$ on Imagenette,
-$30.23$~dB against $27.26$~dB for a nearest-neighbour upsampler --- whose output \emph{is} the picture. No new
-operator support was needed: the pixel shuffle is a reshape and a transpose.
+with a sub-pixel super-resolution network~\cite{espcn} --- $64 \rightarrow 128$ on Imagenette, $30.23$~dB against
+$27.26$~dB for a nearest-neighbour upsampler --- whose output \emph{is} the picture. The pixel shuffle needed no
+new operator: it is a reshape and a transpose. To separate depth from task we measure two depths at one width
+profile, three convolutions and nine; the deeper one is not the better one ($30.11$~dB), only the same task at
+three times the operator count.
 
-Table~\ref{tab:dense} repeats the pattern. Quantization costs $0.279$~dB (\textsc{pc}) and $0.667$~dB
-(\textsc{pt}), and the simulator predicts that cost to within $6\times10^{-4}$~dB --- resolvable at this sample
-size ($|\Delta|/\mathrm{SE} = 17.6$) and three orders of magnitude below the cost it predicts. Yet $6.3\%$ and
-$18.2\%$ of the output pixel codes differ, on all $3{,}925$ images, by up to three quantization levels. The per-operator structure
-is the CNNs': convolution disagrees locally on $0.06$--$0.40\%$ of its codes, always by $\pm 1$ LSB, and the first
-divergence is the first convolution. The smaller propagated figure is a depth effect --- this network is three
-layers deep --- not a task effect.
+Table~\ref{tab:dense} repeats the pattern and puts a number on depth. At three convolutions quantization costs
+$0.279$ and $0.667$~dB and the simulator predicts that cost to within $6\times10^{-4}$~dB --- resolvable here
+($|\Delta|/\mathrm{SE} = 17.6$), three orders of magnitude below the cost predicted --- yet $6.3\%$ and $18.2\%$
+of the output pixel codes differ, on all $3{,}925$ images, by up to three levels. At nine the metric stays faithful
+to $3\times10^{-3}$~dB while the differing fraction rises to $69.2\%$ and $73.0\%$ and the largest deviation to
+ten levels. The per-operator structure is the CNNs' at both depths: convolution disagrees locally on
+$0.06$--$0.40\%$ of its codes, always by $\pm 1$ LSB, first at the first convolution.
 
-\finding{2} The decoupling is not an artifact of classification. Where the deliverable is the output tensor, the
-quality metric is faithful to $6\times10^{-4}$~dB while $6.3$--$18.2\%$ of the delivered pixels differ.
+\finding{2} The decoupling is not an artifact of classification, and depth rather than task sets the size of the
+propagated fraction: nine convolutions on the same images move it from $6.3\%$ to $69.2\%$, into the $28$--$73\%$
+band the classifiers occupy, the quality metric faithful throughout.
 
-\implication A simulator can no more supply a reference image than a reference logit vector.
+\implication A simulator can no more supply a reference image than a reference logit vector, and the deeper the
+graph the less of the delivered tensor it reproduces.
 
 \begin{figure}[!t]
 \centering
@@ -282,10 +288,10 @@ by up to $37\%$ of the effect across three seeds of the same architecture.
 \implication Do not quote a single-seed number as the cost of a rounding mode.
 
 \section{Threats to Validity}
-\emph{External.} The networks are CIFAR-10 scale plus two Imagenette models at $128\times128$. The conclusions
-are about the structure of the divergence rather than its exact size on ImageNet-scale graphs, and the
-dense-output network is only three layers deep, so its propagated figure is a floor for what a deeper one would
-show.
+\emph{External.} The networks are CIFAR-10 scale plus three Imagenette models at $128\times128$. The conclusions
+are about the structure of the divergence, not its exact size on ImageNet-scale graphs. Depth is the one scale
+axis varied directly (Section~\ref{sec:dense}) and it moves the propagated fraction by an order of magnitude, so
+that fraction is a property of the graph measured, not a constant of INT8.
 
 \emph{Construct.} Local mismatch is teacher-forced, so it measures an operator's arithmetic in isolation and
 not its interaction with upstream error; the propagated column is what captures that interaction.
@@ -300,11 +306,10 @@ depthwise convolution, element-wise addition and softmax are not covered by it.
 
 \section{Artifact Availability}
 Every number is emitted by a script from a committed result file, and the scripts, the result files and the
-training commands that produce the checkpoints are public (two checkpoints ship with the repository for a
-data-free run). \texttt{make\_tables.py} regenerates
-Tables~\ref{tab:fidelity}--\ref{tab:rounding} and \texttt{make\_figs.py} regenerates
-Figs.~\ref{fig:decomposition}--\ref{fig:rounding}; a continuous-integration job re-runs the generators on every
-commit and fails if a committed table differs from the one the results imply. The measurements are
+training commands are public (two checkpoints ship with the repository for a data-free run).
+\texttt{make\_tables.py} and \texttt{make\_figs.py} regenerate every table and figure here, and a
+continuous-integration job re-runs both on every commit and fails if a committed table differs from the one the
+results imply. The measurements are
 \texttt{e15\_fidelity.py} (Table~\ref{tab:fidelity}, Fig.~\ref{fig:decomposition}),
 \texttt{e16\_ln\_emulation.py} (Table~\ref{tab:layernorm}), \texttt{e14\_rounding\_seeds.py}
 (Fig.~\ref{fig:rounding}, Table~\ref{tab:rounding}) and \texttt{e17\_dense\_output.py} (Table~\ref{tab:dense});
