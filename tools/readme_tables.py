@@ -421,11 +421,23 @@ def e17():
 
 
 def e18():
-    """E7's width axes, now with three seeds and the whole split: the magnitude column is what E7 could not quote."""
+    """E7's width axes, now with three seeds and the whole split: the magnitude column is what E7 could not quote.
+
+    The whole point of the experiment is the spread across seeds, so a cell renders only once every seed in the
+    plan is in. A half-swept run would otherwise publish a one-seed number -- exactly what E18 exists to retire.
+    """
     d = load("e18_requant_axes_seeds"); rs = d["records"]
     if not rs: return ""
     models = list(dict.fromkeys(r["model"] for r in rs))
     configs = d["meta"].get("configs") or list(dict.fromkeys(r["config"] for r in rs))
+    seeds = d["meta"].get("seeds") or sorted({r["seed"] for r in rs})
+    want = {(m, s, c) for m in models for s in seeds for c in configs}
+    have = {(r["model"], r["seed"], r["config"]) for r in rs}
+    if not want <= have:
+        # Deliberately count-free: the message must not change while the sweep writes, or the committed table
+        # and the committed result file drift apart between one `make tables` and the next.
+        return (f"_(측정 중. 계획한 시드 {len(seeds)}개가 모든 (모델, 설정)에 들어온 뒤에 표를 냅니다 "
+                f"— 부분 결과로 만든 시드 평균은 E18이 없애려는 바로 그 수치입니다.)_")
     ref = configs[0]
     out = ["| 재양자화 설정 | " + " | ".join(f"{LABEL.get(m, m)}: 기준 대비 Δacc, 시드 평균 ± 시드 표준편차 (시드별)" for m in models) + " |",
            "|---|" + "---|" * len(models)]
