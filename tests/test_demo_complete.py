@@ -85,7 +85,7 @@ def test_structure_only_builder_checks_declared_geometry():
 
 def test_demo_exposes_new_research_and_correct_measurement_scope():
     src = (ROOT/'demo/index.template.html').read_text(encoding='utf-8')
-    for name in ('research-fidelity', 'research-layernorm', 'research-dense', 'research-other'):
+    for name in ('research-fidelity', 'research-layernorm', 'research-dense', 'research-imagenet', 'research-other'):
         assert f'id="{name}"' in src
     assert '학습은 seed 0 한 번입니다' not in src
     assert '짝지은 비교라 잡음이 없습니다' not in src

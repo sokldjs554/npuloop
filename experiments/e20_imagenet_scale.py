@@ -12,8 +12,12 @@ explicitly did not cover.
 What this is: an ImageNet-scale graph, ImageNet-trained weights, scored through the full 1000-way head.
 What this is not: ImageNet-1k validation accuracy. The images are Imagenette's test split (3,925 images of ten
 ImageNet classes, shortest side 160), because the ImageNet validation set is not distributable. Top-1 here is
-therefore over ten of the thousand classes; the quantities this experiment is about -- the fake-to-integer
-difference and the output-code mismatch -- are unaffected by which subset of classes the images come from.
+therefore over ten of the thousand classes and cannot be set beside an ImageNet number.
+
+That does not weaken what the experiment measures. The output-code mismatch involves no labels at all: it
+compares the two executions' 1000 logits per image. The accuracy difference is a paired comparison of the two
+executions on the same images, so it is a valid comparison whatever the images are -- its value describes this
+image set, and it is the difference, not the level, that the experiment is about.
 """
 import os, sys, time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))

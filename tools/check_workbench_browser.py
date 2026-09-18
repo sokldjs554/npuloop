@@ -187,7 +187,12 @@ def main():
         page.fill('#experiment-search','not-found-987');check(page.locator('[data-experiment]').count()==0,'catalog empty search')
         page.fill('#experiment-search','LayerNorm');check(page.locator('[data-experiment]').count()>0,'catalog search')
         page.fill('#experiment-search','');page.select_option('#experiment-category','정수 출력')
-        check(page.locator('[data-experiment]').count()==4,'catalog category filter')
+        # Counted off the registry, like the catalog size above: a literal here breaks whenever an experiment
+        # joins a category, which is not a regression.
+        in_group=len(re.findall(r"\['e\d+_[a-z0-9_]+','E\d+','[^']*','정수 출력'",
+                                (ROOT/'demo/workbench-model.js').read_text(encoding='utf-8')))
+        check(in_group>0,'category is populated')
+        check(page.locator('[data-experiment]').count()==in_group,f'catalog category filter ({in_group})')
         page.select_option('#experiment-category','all');page.click('[data-experiment=e6_pruning]')
         page.screenshot(path=str(out/'experiments.png'),full_page=True)
         with page.expect_download() as dl:page.click('#experiment-detail [data-download-source]')

@@ -139,8 +139,11 @@ _(아직 실행되지 않음)_
 
 **이것이 무엇이고 무엇이 아닌지 정확히.** ImageNet 규모의 **그래프**이고 ImageNet **가중치**이며 1000-way 헤드를 통과시켜 채점합니다.
 하지만 **ImageNet 검증셋 정확도는 아닙니다.** ImageNet 검증셋은 재배포할 수 없으므로 이미지는 Imagenette 시험 분할(3,925장, ImageNet 10개 클래스, 짧은 변 160px)입니다.
-따라서 top-1 절대값은 ImageNet 수치와 나란히 놓을 수 없습니다. 반면 이 실험이 실제로 재는 양 — **모의 실행과 정수 실행의 차이, 그리고 출력 코드 불일치** — 는
-이미지가 1000개 클래스 중 어느 부분집합에서 왔는지와 무관합니다. 그것이 이 실험을 할 수 있는 이유입니다.
+따라서 top-1 절대값은 ImageNet 수치와 나란히 놓을 수 없습니다.
+
+그렇다고 재는 것이 약해지지는 않습니다. **출력 코드 불일치에는 라벨이 아예 들어가지 않습니다** — 두 실행이 내놓은 이미지당 1000개 로짓을 직접 비교할 뿐입니다.
+**정확도 차이는 같은 이미지에 대한 쌍 비교**이므로 이미지가 무엇이든 유효한 비교입니다. 그 값이 이 이미지 집합을 서술한다는 것이지, 비교 자체가 무효라는 뜻이 아닙니다.
+이 실험이 주장하는 것은 정확도의 **수준**이 아니라 두 실행의 **차이**입니다.
 
 `python experiments/e20_imagenet_scale.py` (`data/imagenette160.npz` 필요: `python tools/prepare_imagenette.py --src data/imagenette/imagenette2-160 --out data/imagenette160.npz --size 160`).
 Keras 가중치는 처음 실행할 때 자동으로 내려받아 `~/.keras/models/`에 캐시됩니다. 결과는 `results/e20_imagenet_scale.json`.

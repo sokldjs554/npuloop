@@ -81,7 +81,7 @@ python -m npuloop.study_runner \
   <div class="section-heading"><div><h2>연산자별 출력 차이</h2><p id="research-sample"></p></div><button id="research-source" class="btn subtle">E15 원본 기록</button></div>
   <div class="panel chart-panel"><div class="chart-legend"><span><i class="dot blue"></i>전파 불일치</span><span><i class="dot amber"></i>국소 불일치</span><span class="muted">출력 정숫값 기준 · %</span></div><div id="fidelity-chart"></div></div>
   <details class="panel detail-section"><summary>노드별 측정값</summary><div class="filter-bar"><input id="research-search" type="search" placeholder="노드 또는 연산자 검색" aria-label="정수 검증 노드 검색"><span class="muted" id="research-row-count"></span></div><div class="table-container limited" id="fidelity-table"></div></details>
-  <div id="research-layernorm"></div><div id="research-dense"></div><div id="research-other"></div>
+  <div id="research-layernorm"></div><div id="research-dense"></div><div id="research-imagenet"></div><div id="research-other"></div>
  </section>
  <section data-view="experiments" id="view-experiments" aria-label="실험 기록" hidden>
   <div class="filter-bar catalog-filter"><label class="search-field"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="m15 15 5 5"/></svg><input id="experiment-search" type="search" placeholder="실험명, 모델, 조건 검색" aria-label="실험 검색"></label><select id="experiment-category" aria-label="실험 분류"><option value="all">전체 분류</option><option>모델</option><option>양자화</option><option>비용·외부 검증</option><option>정수 출력</option></select><span id="catalog-count" class="muted"></span></div>
