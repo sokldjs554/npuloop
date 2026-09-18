@@ -64,6 +64,25 @@
 **E13**(Arm Vela 대조)을 추가한 이유가 이것입니다. 벤더가 실제 판매되는 칩을 위해 출하하는 추정기와 대면시키자
 이 저장소의 모델이 체계적으로 낙관적이라는 것이 드러났습니다.
 
+## 추가 조사 (2026-09-18) — 검색을 못 한 채로 적는 항목
+
+**이 세션에서는 arxiv·Semantic Scholar·OpenReview·Crossref가 모두 프록시에서 막혔습니다.** 아래 세 항목은
+따라서 **조사한 결과가 아니라 조사하지 못했다는 기록**입니다. 위 표의 항목들과 같은 근거를 갖고 있지 않습니다.
+
+* **E19 (AdaRound를 정수 경로에서 재기).** AdaRound(ICML 2020)와 그 계열(BRECQ 등)이 보고하는 이득은 전부
+  모의 양자화 그래프 위의 정확도입니다. 그 이득을 **비트 정확한 정수 프로그램에서 다시 재는** 것이 이 저장소가
+  던질 수 있는 질문이고, 실제로 8비트에서는 어느 쪽에서도 이득이 없다는 음성 결과가 나왔습니다. 다만
+  **이것이 남들이 하지 않은 일인지는 확인하지 못했습니다.** MQBench와 Torch2Chip은 실제 백엔드까지 배포하는
+  계열이므로 그 안에서 이미 다뤄졌을 가능성이 충분히 있습니다. 면접이나 원고에서 이 항목을 "최초"로 말하면
+  안 됩니다. 말할 수 있는 것은 "이 저장소에서는 두 경로를 같은 이미지에서 짝지어 쟀고 결과는 이렇다"까지입니다.
+* **E20 (ImageNet 규모).** 이건 애초에 신규성 주장이 아니라 **적용 범위** 항목입니다. 기존 한계("CIFAR-10
+  규모라 일반화를 말할 수 없다")를 없애기 위한 측정이지, 새로운 것을 했다는 주장이 아닙니다. 다만 E18의
+  누산기 폭 결과가 K ≤ 1,280에서만 측정됐다는 단서는 이제 K = 4,608 그래프가 붙었습니다 — A2Q/A2Q+가 푸는
+  문제(좁은 누산기에 맞게 **학습**)와는 여전히 다른 질문(평범하게 학습된 모델을 그냥 좁히면 무엇이 깨지는가)입니다.
+* **max pooling 지원.** 신규성과 무관한 **기본 커버리지**입니다. 없었다는 것이 오히려 이상한 쪽이고, 채운 것이
+  자랑거리는 아닙니다. 기록해 둘 값어치가 있는 부분은 검증 방식입니다 — 패딩 의미론을 논증으로 정당화하지 않고
+  TFLite의 참조 커널과 코드 단위로 대조했습니다(`tests/test_tflite_maxpool.py`).
+
 ## 참고한 논문
 
 * Nagel et al., *Data-Free Quantization through Weight Equalization and Bias Correction* (ICCV 2019) — CLE, BC
@@ -76,6 +95,8 @@
 * Gupta & Akin, *Accelerator-aware Neural Network Design using AutoML* (2020) — EdgeTPU에서 depthwise가 systolic array를 못 채우는 문제
 * Yüzügüler et al., *U-Boost NAS: Utilization-Boosted Differentiable Neural Architecture Search* (ECCV 2022) — 해석적 활용도 모델을 탐색 루프에 (코드 공개)
 * Colbert et al., *A2Q: Accumulator-Aware Quantization with Guaranteed Overflow Avoidance* (ICCV 2023), *A2Q+* (2024) — 누산기 폭
+* Nagel et al., *Up or Down? Adaptive Rounding for Post-Training Quantization* (ICML 2020) — AdaRound (E19에서 구현·측정)
+* Li et al., *BRECQ: Pushing the Limit of Post-Training Quantization by Block Reconstruction* (ICLR 2021) — 블록 단위 재구성 (미구현)
 * *Torch2Chip: An End-to-end Customizable Deep Neural Network Compression and Deployment Toolkit* (MLSys 2024)
 * *HASS: Hardware-Aware Sparsity Search for Dataflow DNN Accelerator* (FPL 2024)
 * Palacios et al., *Systolic Arrays and Structured Pruning Co-design for Efficient Transformers in Edge Systems* (GLSVLSI 2025)
