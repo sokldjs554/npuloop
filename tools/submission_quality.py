@@ -21,10 +21,11 @@ from typing import Any
 # Row counts the committed tables must have. Fixed by experiment design, except where DERIVED_ROWS says
 # otherwise: a table that tracks a growing experiment cannot have its size written here, which is what failed
 # this check the moment E17 gained a second depth.
-TABLE_ROWS = {'th_operators.tex':9, 'th_baselines.tex':5, 'th_requant.tex':9,
+TABLE_ROWS = {'th_operators.tex':9, 'th_baselines.tex':5, 'th_requant.tex':9, 'th_requant_seeds.tex':7,
               'th_tflite.tex':12, 'th_vela.tex':5, 'tab1_rows_ko.tex':12,
               'tab2_rows_ko.tex':4, 'tab3_rows_ko.tex':4}
-DERIVED_ROWS = {'tab4_rows_ko.tex':'e17_dense_output'}   # one table row per record of that experiment
+DERIVED_ROWS = {'tab4_rows_ko.tex':'e17_dense_output',   # one table row per record of that experiment
+                'th_adaround.tex':'e19_adaround'}
 
 
 def expected_rows(root: Path) -> dict[str,int]:
@@ -113,7 +114,8 @@ def paper_errors(root: Path) -> list[str]:
     if not source.is_file():return ['Missing paper/npuloop_thesis.tex']
     text=source.read_text(encoding='utf-8'); errors.extend(claim_errors(text))
     for token in ('\\begin{document}','\\end{document}','\\appendix','\\begin{thebibliography}',
-                  '\\label{tab:operators}','\\label{tab:fidelity}','\\label{tab:layernorm}','\\label{tab:dense}'):
+                  '\\label{tab:operators}','\\label{tab:fidelity}','\\label{tab:layernorm}','\\label{tab:dense}',
+                  '\\label{tab:requantseeds}','\\label{tab:adaround}'):
         if token not in text:errors.append(f'Missing structural token: {token}')
     if len(re.findall(r'\\chapter\{',text))<9:errors.append('Expected seven chapters and two appendices')
     for name,expected in expected_rows(root).items():

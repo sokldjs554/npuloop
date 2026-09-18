@@ -188,8 +188,8 @@ CI는 `ONEDNN_MAX_CPU_ISA=AVX2`로도 전체 스위트를 돌립니다.
 | E15 | fake-quant ↔ 정수 차이에 쌍 표준오차를 붙이면 | [→](docs/EXPERIMENTS.md#e15) |
 | E16 | LayerNorm을 정수로 에뮬레이션하면 transformer 격차가 닫히는가 | [→](docs/EXPERIMENTS.md#e16) |
 | E17 | 출력 텐서가 결과물인 과제(초해상)에서는 격차가 어떻게 보이는가 — conv 3개 vs 9개 | [→](docs/EXPERIMENTS.md#e17) |
-| E18 | E7의 곱셈기·누산기·바이어스 폭도 시드 3개 × 10,000장으로 | [→](docs/EXPERIMENTS.md#e18) |
-| E19 | AdaRound의 이득은 비트 정확한 정수 실행에서도 남는가 | [→](docs/EXPERIMENTS.md#e19) |
+| E18 | E7의 곱셈기·누산기·바이어스 폭도 시드 3개 × 10,000장으로 — 등급은 옮겨 가고 크기는 안 옮겨 감 | [→](docs/EXPERIMENTS.md#e18) |
+| E19 | AdaRound의 이득은 비트 정확한 정수 실행에서도 남는가 — 8비트에서는 어느 쪽에도 없음 | [→](docs/EXPERIMENTS.md#e19) |
 
 ## 설계에서 신경 쓴 것
 

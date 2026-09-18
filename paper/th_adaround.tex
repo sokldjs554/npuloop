@@ -1,0 +1,13 @@
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{llcccc}
+\toprule
+신경망 & 방식 & 재구성 오차비 & 방향 반전(\%) & 모의 이득(\%p) & 정수 이득(\%p) \\
+\midrule
+ResNet-20 ReLU & \textsc{pc} & 0.46 & 4.9 & $+0.06 \pm 0.09$ & $-0.02 \pm 0.09$ \\
+ResNet-20 ReLU & \textsc{pt} & 0.41 & 6.6 & $-0.04 \pm 0.10$ & $-0.06 \pm 0.10$ \\
+ResNet-20 SiLU & \textsc{pc} & 0.49 & 5.2 & $-0.06 \pm 0.11$ & $-0.10 \pm 0.10$ \\
+ResNet-20 SiLU & \textsc{pt} & 0.45 & 6.8 & $+0.13 \pm 0.11$ & $-0.06 \pm 0.10$ \\
+MobileNetV2-0.5 & \textsc{pc} & 0.58 & 4.0 & $-0.04 \pm 0.10$ & $+0.06 \pm 0.10$ \\
+MobileNetV2-0.5 & \textsc{pt} & 0.55 & 5.8 & $-0.08 \pm 0.10$ & $-0.02 \pm 0.10$ \\
+\bottomrule
+\end{tabular}

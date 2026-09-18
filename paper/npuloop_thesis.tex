@@ -519,8 +519,73 @@ MobileNetV2는 세 시드 모두에서 \texttt{truncate}가 더 많이 잃는다
 
 이 표에서 Q15·Q7 승수 설정의 관측 변화는 작지만, Q3 설정은 세 모델에서 각각
 $-8.20$, $-2.00$, $-1.55$~\%p였다. Q7부터 붕괴한다고 해석할 수 없다.
-누산기 16비트와 바이어스 12비트 설정은 큰 하락을 보였다. 이 축은 모델당 체크포인트 하나와
-2,000장 표본으로 평가했으며, 표에는 신뢰구간이 없다. 크기와 일반화에는 추가 반복 측정이 필요하다.
+누산기 16비트와 바이어스 12비트 설정은 큰 하락을 보였다.
+
+그런데 이 표의 숫자는 그대로 인용할 수 없다. 5.5절이 반올림 축에서 보인 것 --- 효과의 부호는 체크포인트를
+넘어 옮겨 가지만 크기는 옮겨 가지 않는다 --- 이 여기에도 똑같이 걸리기 때문이다. 표~\ref{tab:requant}는
+모델당 체크포인트 하나와 $2{,}000$장으로 잰 것이다. 표~\ref{tab:requantseeds}는 같은 축을 신경망당 독립
+학습 체크포인트 3개와 test 분할 전체($10{,}000$장)에서 다시 잰 것이다.
+
+\begin{table}[!t]
+\caption[재양자화 축, 시드 3개]{재양자화 구현 세부의 정확도 비용을 신경망당 체크포인트 3개로 다시 잰 것.
+기준 설정 대비 정수 top-1 변화의 시드 평균 $\pm$ 시드 간 표준편차(\%p), test 분할 전체 $10{,}000$장,
+\texttt{npu-default} 스킴. $\pm$ 뒤의 값은 쌍 표준오차가 아니라 \emph{시드 간} 표준편차다.}
+\label{tab:requantseeds}
+\centering
+\small
+\fittable{\input{th_requant_seeds}}
+\end{table}
+
+결론은 두 문장이다. \textbf{등급은 시드를 넘어 유지되고, 크기는 유지되지 않는다.}
+
+무손실 등급은 완전히 무손실이다. int24와 int20 누산기는 (모델, 시드) 9조합 가운데 8조합에서 기준과
+$10{,}000$장 전부에 대해 같은 예측을 냈다(top-1 일치율 $1.0000$). 붕괴 등급은 모든 시드에서 붕괴한다.
+그러나 그 크기는 인용할 수 없다. ResNet-20 ReLU의 int16 누산기는 시드에 따라 $-72.82$, $-58.68$,
+$-48.36$~\%p이고, 같은 모델의 int16 바이어스는 $-9.20$, $-6.62$, $-2.94$~\%p로 3배 넘게 벌어진다.
+평균 효과가 $0.10$~\%p 이상인 9개 조합에서 시드 간 표준편차를 평균 크기로 나눈 값의 최댓값은 $109\%$다.
+모델 사이의 순서도 뒤집힌다. int16 바이어스에서 MobileNetV2의 세 시드는 $-0.31$, $-1.40$, $-0.16$~\%p이고
+ResNet-20 SiLU는 $-0.46$, $-0.42$, $-0.43$~\%p이므로, 시드를 하나만 고르면 두 모델의 상대 순위가 바뀐다.
+
+따라서 표~\ref{tab:requant}는 등급 판정용으로만 남기고, 크기를 말할 때는
+표~\ref{tab:requantseeds}를 쓴다.
+
+\section{학습된 반올림은 정수 실행에서도 남는가}
+
+AdaRound~\cite{adaround}는 가중치를 최근접으로 반올림하는 대신 각 가중치의 반올림 방향을 그 계층의 출력
+오차로 학습한다. 학습 후 양자화에서 표준으로 인용되는 방법인데, 보고되는 수치는 예외 없이 모의 양자화
+그래프 위의 정확도다. 3장의 결론을 여기에 대면 자연스러운 질문이 하나 나온다. \emph{시뮬레이터에서 얻은
+이득이 실제로 나가는 정수 프로그램에도 남는가?}
+
+이 저장소는 그 질문을 던질 수 있게 만들어져 있다. 학습된 반올림은 양자화 계층의 \texttt{w\_round} 버퍼에
+들어가고 \texttt{int\_weight()}가 같은 버퍼를 읽으므로, export된 정수 그래프는 최적화된 바로 그 반올림을
+실행한다(계층별로 \texttt{node.w\_int}와 \texttt{module.int\_weight()}의 일치를 시험이 확인한다).
+
+\begin{table}[!t]
+\caption[AdaRound: 모의 경로와 정수 경로]{AdaRound 대 최근접 반올림. ``재구성 오차비''는 계층별 상대
+재구성 오차의 AdaRound/최근접 비의 중앙값(작을수록 좋다), ``방향 반전''은 최근접과 다른 쪽을 고른 가중치의
+비율, 이득은 같은 이미지에서 최근접 반올림과 비교한 쌍 차이 $\pm$ 쌍 표준오차다. test 분할 전체
+$10{,}000$장, AdaRound $1{,}500$ iteration.}
+\label{tab:adaround}
+\centering
+\small
+\fittable{\input{th_adaround}}
+\end{table}
+
+결과는 음성(null)이고, 음성인 방식이 정확히 흥미롭다. \textbf{AdaRound가 최적화하는 목적함수는 모든
+계층에서 좋아진다}. 계층 194개 전부에서 그 계층의 재구성 오차가 줄었고 중앙값으로 절반 아래다
+(비 $0.41$--$0.58$). 가중치의 $4.0$--$6.8\%$가 최근접과 다른 방향으로 간다. 구현은 논문대로 동작한다.
+\textbf{그런데 top-1은 어느 경로에서도 움직이지 않는다.} 6개 (신경망, 방식) 조합 전부에서
+$|\Delta|/\mathrm{SE} \le 1.2$다.
+
+이것은 AdaRound에 대한 반박이 아니다. AdaRound가 보고하는 이득은 4비트 이하 가중치에서 나오는데, 이 장의
+조건은 8비트 가중치이고 그 조건에서는 최근접 반올림 자체가 이미 사실상 무손실이다(5.2절). 회복할 여유가
+없는 곳에서는 회복할 것이 없다. 이 논문이 덧붙일 수 있는 것은 두 경로의 대조다. 시뮬레이터에서
+$+0.13$~\%p였던 조합(ResNet-20 SiLU, \textsc{pt})이 정수 프로그램에서는 $-0.06$~\%p다. 둘 다 잡음
+크기이지만, 6조합 중 3조합에서만 부호가 같다. \emph{잡음 크기의 시뮬레이터 이득은 부호조차 장치로 옮겨
+가지 않는다.} 8비트에서 $0.1$~\%p짜리 학습 후 양자화 개선을 보고하려면 정수 실행에서 다시 재야 한다.
+
+재지 않은 것도 적어 둔다. 4비트 이하 가중치, ImageNet 규모 신경망, 블록 단위 재구성(BRECQ~\cite{brecq})은
+이 실험의 범위 밖이고, AdaRound가 이득을 보이는 조건이 바로 그쪽이다.
 
 \section{외부 대조: TensorFlow Lite와 Arm Vela}
 
@@ -614,8 +679,9 @@ $1.024$, \texttt{deep-narrow} $0.895$, \texttt{dw-separable} $0.671$, \texttt{po
 보고해야 한다.
 
 \textbf{결론 타당성.} 표~\ref{tab:fidelity}의 정확도 비교 12개와 표~\ref{tab:layernorm}의 4개는 다중비교
-보정을 하지 않았다. 16개 전체에서 $|\Delta|/\mathrm{SE}$의 최댓값은 $2.2$다. 시드 3개는 반올림 축만 덮고,
-5.6절의 승수·누산기·바이어스 축과 나머지 측정은 신경망당 체크포인트 하나를 쓴다. 이 체크포인트들을 만들
+보정을 하지 않았다. 16개 전체에서 $|\Delta|/\mathrm{SE}$의 최댓값은 $2.2$다. 시드 3개는 재양자화 축
+전체(반올림, 승수 폭, 누산기 폭, 바이어스 폭)를 덮지만 나머지 측정은 신경망당 체크포인트 하나를 쓴다.
+시드 3개는 크기가 흔들린다는 것을 보이기에는 충분해도 그 분포를 특성화하기에는 적다. 이 체크포인트들을 만들
 당시 학습기의 시드는 데이터 순서만 통제하고 가중치 초기화는 통제하지 못했으므로, 세 반복은 서로 다른
 학습 반복이지만 같은 명령으로 비트 단위까지 재현되지는 않는다. 학습기는 이후 수정했다.
 과거 표의 정확한 재측정에는 당시 원본 체크포인트와 평가 환경·보정 표본 정보가 필요하다.
@@ -681,8 +747,10 @@ $69.2\%$로 올라 분류기 수준($28$--$73\%$) 안으로 들어오는 것을 
 이 상승이 어디서 포화하는지 알 수 없고, 분할·검출처럼 출력 구조가 다른 밀집 과제에서 mIoU나 mAP가 PSNR만큼
 충실한지도 답하지 않았다.
 
-\textbf{누산기 축의 시드.} 5.6절의 승수·누산기·바이어스 축은 체크포인트 하나로만 측정했다. 5.5절이 반올림
-축에서 보인 것처럼 크기가 시드에 따라 크게 흔들린다면, 이 축들의 수치도 시드 여러 개로 다시 재야 한다.
+\textbf{크기의 분포.} 5.6절이 재양자화 축 전체를 시드 3개로 다시 쟀고, 크기가 흔들린다는 것은 확인됐다
+(int16 누산기에서 $-72.8$부터 $-48.4$~\%p까지). 확인되지 않은 것은 그 분포다. 시드 3개로는 흔들림이
+체크포인트의 어떤 성질에서 오는지 --- 초기화인지, 데이터 순서인지, 수렴한 극소점의 형태인지 --- 를 가를 수
+없다.
 
 \textbf{비용 모델.} 5.7절에서 Vela와의 격차를 연산자 종류까지 좁혔다. 전역 평균 풀링의 낮춤 방식이
 격차의 $74.1\%$이고, 나머지는 $1\times1$·깊이별 합성곱의 대역폭 항이 후보다. 남은 일은 이를 Vela의 스케줄 결과와 계층별로 대조해 확정하고, 고친 비용 모델이
@@ -783,6 +851,10 @@ transformer,'' in \emph{Proc. Int. Joint Conf. Artif. Intell. (IJCAI)}, 2022, pp
 \bibitem{espcn} W.~Shi \emph{et al.}, ``Real-time single image and video super-resolution using an efficient
 sub-pixel convolutional neural network,'' in \emph{Proc. IEEE Conf. Comput. Vis. Pattern Recognit. (CVPR)},
 2016, pp. 1874--1883.
+\bibitem{adaround} M.~Nagel \emph{et al.}, ``Up or down? Adaptive rounding for post-training quantization,''
+in \emph{Proc. Int. Conf. Mach. Learn. (ICML)}, 2020, pp. 7197--7206.
+\bibitem{brecq} Y.~Li \emph{et al.}, ``BRECQ: Pushing the limit of post-training quantization by block
+reconstruction,'' in \emph{Proc. Int. Conf. Learn. Represent. (ICLR)}, 2021.
 \bibitem{a2q} I.~Colbert \emph{et al.}, ``A2Q: Accumulator-aware quantization with guaranteed overflow
 avoidance,'' in \emph{Proc. IEEE/CVF Int. Conf. Comput. Vis. (ICCV)}, 2023, pp. 16989--16998.
 \bibitem{scalesim} A.~Samajdar \emph{et al.}, ``A systematic methodology for characterizing scalability of DNN

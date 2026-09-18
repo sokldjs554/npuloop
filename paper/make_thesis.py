@@ -101,6 +101,43 @@ def t_requant():
           "축 & 설정 & " + " & ".join(LABEL[m] for m in models), rows, tabcolsep="4pt")
 
 
+def t_requant_seeds():
+    """E18: the same axes as t_requant(), with three checkpoints so the magnitudes can be quoted at all."""
+    d = load("e18_requant_axes_seeds"); rs = d["records"]
+    models = ["resnet20_relu", "resnet20_silu", "mnv2_050_relu6"]
+    configs = d["meta"]["configs"]; ref = configs[0]
+    rows = []
+    for cfg in configs:
+        if cfg == ref:
+            continue
+        cells = []
+        for m in models:
+            xs = sorted([r for r in rs if r["model"] == m and r["config"] == cfg], key=lambda r: r["seed"])
+            if not xs:
+                cells.append("---"); continue
+            v = np.array([r["vs_reference"]["delta"] for r in xs]) * 100
+            sd = f"{v.std(ddof=1):.2f}" if len(v) > 1 else "---"
+            cells.append(f"${v.mean():+.2f} \\pm {sd}$")
+        rows.append("\\texttt{" + cfg.replace("_", "\\_").replace("tflite-", "") + "} & " + " & ".join(cells) + " \\\\")
+    write("th_requant_seeds.tex", "lccc",
+          "설정 & " + " & ".join(LABEL[m] for m in models), rows, tabcolsep="5pt")
+
+
+def t_adaround():
+    """E19: AdaRound on both paths. The gain column is the point; the reconstruction column is the control."""
+    rs = load("e19_adaround")["records"]
+    rows = []
+    for r in rs:
+        fg, ig_ = r["fake_gain"], r["int_gain"]
+        rel = np.array([L["rel_after"] / max(L["rel_before"], 1e-30) for L in r["layers"]])
+        sch = "\\textsc{pc}" if r["scheme"] == "npu-default" else "\\textsc{pt}"
+        rows.append(f"{LABEL[r['model']]} & {sch} & {np.median(rel):.2f} & "
+                    f"{r['flipped_frac'] * 100:.1f} & ${fg['delta'] * 100:+.2f} \\pm {fg['se'] * 100:.2f}$ & "
+                    f"${ig_['delta'] * 100:+.2f} \\pm {ig_['se'] * 100:.2f}$ \\\\")
+    write("th_adaround.tex", "llcccc",
+          "신경망 & 방식 & 재구성 오차비 & 방향 반전(\\%) & 모의 이득(\\%p) & 정수 이득(\\%p)", rows, tabcolsep="5pt")
+
+
 def t_tflite():
     d = load("e11_tflite_crosscheck")
     rows = []
@@ -188,4 +225,4 @@ def fig_operators():
 
 
 if __name__ == "__main__":
-    t_baselines(); t_operators(); t_requant(); t_tflite(); t_vela(); t_vela_kind(); fig_operators()
+    t_baselines(); t_operators(); t_requant(); t_requant_seeds(); t_adaround(); t_tflite(); t_vela(); t_vela_kind(); fig_operators()

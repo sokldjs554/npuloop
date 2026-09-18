@@ -293,16 +293,15 @@ are about the structure of the divergence, not its exact size on ImageNet-scale 
 axis varied directly (Section~\ref{sec:dense}) and it moves the propagated fraction by an order of magnitude, so
 that fraction is a property of the graph measured, not a constant of INT8.
 
-\emph{Construct.} Local mismatch is teacher-forced, so it measures an operator's arithmetic in isolation and
-not its interaction with upstream error; the propagated column is what captures that interaction.
+\emph{Construct.} Local mismatch is teacher-forced: it measures an operator's arithmetic in isolation, and the
+propagated column is what captures its interaction with upstream error.
 
-\emph{Conclusion.} The twelve accuracy comparisons in Table~\ref{tab:fidelity} and the four in
-Table~\ref{tab:layernorm} are not corrected for multiple comparisons; over all sixteen the largest
-$|\Delta|/\mathrm{SE}$ is $2.2$. Three seeds cover the rounding axis only, and the remaining measurements use
-one checkpoint per network.
+\emph{Conclusion.} The sixteen accuracy comparisons in Tables~\ref{tab:fidelity} and~\ref{tab:layernorm} are
+not corrected for multiple comparisons; the largest $|\Delta|/\mathrm{SE}$ over them is $2.2$. Three seeds
+cover every requantization axis; the rest use one checkpoint per network.
 
-\emph{Internal.} The external bit-exactness check covers convolution, pooling and fully-connected layers;
-depthwise convolution, element-wise addition and softmax are not covered by it.
+\emph{Internal.} The external bit-exactness check covers convolution, pooling and fully-connected layers, not
+depthwise convolution, element-wise addition or softmax.
 
 \section{Artifact Availability}
 Every number is emitted by a script from a committed result file, and the scripts, the result files and the
