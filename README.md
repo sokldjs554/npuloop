@@ -164,7 +164,7 @@ E9의 FP32 정확도는 전체 테스트셋, INT8 정수 정확도는 고정된 
 세 번째 열이 이 저장소의 성격입니다. 가상 NPU 비용 모델은 벤더 추정기와 대면시키면 낙관적이고(E13), 그 사실을 지우지 않고 적었습니다.
 
 CPU 학습 중 만난 [oneDNN의 1×1 conv backward-weights 오버플로](docs/upstream/onednn_1x1_bwd_weights_rtus_overflow.md)는 benchdnn으로 단독 재현하고
-2줄 패치까지 검증해 보고서로 정리했습니다. 이 저장소의 실험 모델들은 stride > 1인 1×1 conv의 입력 채널이 모두 16 이상이라 결과와 무관하며,
+2줄 패치까지 검증해 [uxlfoundation/oneDNN#6035](https://github.com/uxlfoundation/oneDNN/issues/6035)로 보고했습니다. 이 저장소의 실험 모델들은 stride > 1인 1×1 conv의 입력 채널이 모두 16 이상이라 결과와 무관하며,
 CI는 `ONEDNN_MAX_CPU_ISA=AVX2`로도 전체 스위트를 돌립니다.
 
 ## 실험 20개 (E1–E20)

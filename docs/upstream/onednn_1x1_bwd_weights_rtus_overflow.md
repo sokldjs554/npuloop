@@ -1,6 +1,6 @@
 # oneDNN: 1x1 convolution backward_weights writes past the rtus workspace (nhwc, IC < ic_block)
 
-Bug report for https://github.com/uxlfoundation/oneDNN/issues (template sections below). Found while tracing the CI stall of this repository (runs 12-16: the trainer test hung in `loss.backward()` on AMD EPYC runners), then reproduced with benchdnn on v3.12.0 and verified again in a separate session against upstream `main` (960edf5) and PyTorch 2.14.0. Companion files: `rtus_ws_nxc.patch` (the two-line fix, validated with benchdnn on both implementations) and `tools/onednn_1x1_repro.py` (pure PyTorch reproducer).
+Filed upstream as [uxlfoundation/oneDNN#6035](https://github.com/uxlfoundation/oneDNN/issues/6035) on 2026-09-18. This file is the report as submitted. Found while tracing the CI stall of this repository (runs 12-16: the trainer test hung in `loss.backward()` on AMD EPYC runners), then reproduced with benchdnn on v3.12.0 and verified again in a separate session against upstream `main` (960edf5) and PyTorch 2.14.0. Companion files: `rtus_ws_nxc.patch` (the two-line fix, validated with benchdnn on both implementations) and `tools/onednn_1x1_repro.py` (pure PyTorch reproducer).
 
 ---
 
