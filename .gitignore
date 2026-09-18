@@ -15,6 +15,7 @@ runs
 data
 results/ALL_DONE
 results/logs/run_v2.out
+results/logs/chain.log
 
 # LaTeX build artifacts
 paper/*.aux

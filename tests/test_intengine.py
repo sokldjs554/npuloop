@@ -138,6 +138,14 @@ def test_input_quantization_matches_the_simulator_on_rounding_ties():
     assert np.array_equal(quantize_input(lr.numpy(), q), sim)
 
 
+def test_engine_predict_accepts_a_torch_batch(small_resnet, calib_batches, batch):
+    """predict_labels() hands torch batches straight to an engine; three call sites used to work around it."""
+    qm = prepare(small_resnet); calibrate(qm, calib_batches)
+    ig = export_int_graph(qm)
+    eng = NumpyEngine(ig)
+    assert np.array_equal(eng.predict(batch), eng.predict(batch.numpy()))
+
+
 def test_cpp_engine_bit_exact(small_resnet, small_silu_resnet, small_mobilenet, calib_batches, batch):
     load_library()
     for m in (small_resnet, small_silu_resnet, small_mobilenet):

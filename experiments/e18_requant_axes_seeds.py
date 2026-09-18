@@ -56,7 +56,8 @@ def main():
                 if res.has(model=name, seed=seed, config=cfg.tag) and ref_labels is not None:
                     continue
                 ig = export_int_graph(qm, cfg)
-                labels, y = predict_labels(CppEngine(ig).predict, ds, 500)
+                eng = CppEngine(ig)
+                labels, y = predict_labels(eng.predict, ds, 500)
                 if ref_labels is None:                      # CONFIGS[0] is the reference
                     ref_labels = labels
                 v = paired_stats(ref_labels, labels, y)

@@ -24,7 +24,9 @@ def quantize_input(x: np.ndarray, q: QParams) -> np.ndarray:
     simulator's before a single kernel had run. Classifier inputs, normalized by a per-channel mean and
     standard deviation, never land on ties, which is why this stayed invisible until E17.
     """
-    codes = np.rint(x.astype(np.float32) / np.float32(q.scale)) + q.zero_point
+    # np.asarray so a torch Tensor works too: predict_labels() hands batches straight through, and three
+    # call sites were already working around that with .numpy().
+    codes = np.rint(np.asarray(x, dtype=np.float32) / np.float32(q.scale)) + q.zero_point
     return np.clip(codes, q.qmin, q.qmax).astype(np.int64)
 
 
