@@ -39,7 +39,7 @@ PTQ·QAT·보정은 개선 여부를 비교하는 실험으로 다뤘습니다. 
 - **모델 실험** (기본 화면): 태스크·모델·실험 선택, 구조 수정 직후와 회복 학습 후 비교, 실제 학습 곡선, PTQ·QAT·프루닝, 정확도·추정 사이클 조건에 따른 변경안 필터, 로컬 실행 결과 가져오기.
 - **NPU 분석**: 모델·가상 NPU 조건, 지원 연산, 경로별 추정 비용, 노드 검사, 저장된 변경 전후 비교, 비용 설정.
 - **정수 검증**: 동일 조건의 E15 정확도·정수 출력, 계층별 차이, E16·E17 측정 기록.
-- **실험 기록**: E1–E17 검색·필터·표·개별 기록 및 원본 JSON 내보내기.
+- **실험 기록**: E1–E19 검색·필터·표·개별 기록 및 원본 JSON 내보내기.
 - **재현 자료**: 연구 원고, 실행 방법, 검증 범위.
 
 ![npuloop 모델 실험 화면](docs/model_study_overview.jpg)
@@ -165,7 +165,7 @@ CPU 학습 중 만난 [oneDNN의 1×1 conv backward-weights 오버플로](docs/u
 2줄 패치까지 검증해 보고서로 정리했습니다. 이 저장소의 실험 모델들은 stride > 1인 1×1 conv의 입력 채널이 모두 16 이상이라 결과와 무관하며,
 CI는 `ONEDNN_MAX_CPU_ISA=AVX2`로도 전체 스위트를 돌립니다.
 
-## 실험 17개 (E1–E17)
+## 실험 19개 (E1–E19)
 
 전문과 표는 [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md), 현재 검토된 원고는 [장문 연구 원고](paper/npuloop_thesis_reviewed.pdf)입니다. [이전 기술 보고서](docs/report/npuloop_report.md)는 변경 이력 참고용이며 이번 제출본이 아닙니다.
 
@@ -188,6 +188,8 @@ CI는 `ONEDNN_MAX_CPU_ISA=AVX2`로도 전체 스위트를 돌립니다.
 | E15 | fake-quant ↔ 정수 차이에 쌍 표준오차를 붙이면 | [→](docs/EXPERIMENTS.md#e15) |
 | E16 | LayerNorm을 정수로 에뮬레이션하면 transformer 격차가 닫히는가 | [→](docs/EXPERIMENTS.md#e16) |
 | E17 | 출력 텐서가 결과물인 과제(초해상)에서는 격차가 어떻게 보이는가 — conv 3개 vs 9개 | [→](docs/EXPERIMENTS.md#e17) |
+| E18 | E7의 곱셈기·누산기·바이어스 폭도 시드 3개 × 10,000장으로 | [→](docs/EXPERIMENTS.md#e18) |
+| E19 | AdaRound의 이득은 비트 정확한 정수 실행에서도 남는가 | [→](docs/EXPERIMENTS.md#e19) |
 
 ## 설계에서 신경 쓴 것
 
@@ -236,7 +238,7 @@ npuloop/
 ├── prune/               fx 그래프 채널 그룹에 uniform · aligned · cost-greedy(비용 모델 in-the-loop) 프루닝
 ├── zoo/                 npz 로더(CIFAR-10·Imagenette) · 모델 · 재현 가능한 트레이너
 └── cli.py
-experiments/             E1–E17 스크립트 (재개 가능)
+experiments/             E1–E19 스크립트 (재개 가능)
 results/                 실험 결과 JSON (provenance 라벨 포함)
 demo/                    build.py + 템플릿 → docs/index.html
 tests/                   pytest 스위트 (개수는 실행 로그 기준)
@@ -249,7 +251,7 @@ docs/                    EXPERIMENTS · USAGE · DESIGN · INTEGER_DATAPATH · R
 
 | 문서 | 내용 |
 |---|---|
-| [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md) | 실험 E1–E17 전문과 생성된 표 |
+| [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md) | 실험 E1–E19 전문과 생성된 표 |
 | [수정한 장문 연구 원고](paper/npuloop_thesis.pdf) | 현재 검토·빌드한 27쪽 개인 연구 원고 |
 | [docs/report/npuloop_report.md](docs/report/npuloop_report.md) | 이전 기술 보고서 보관본 — 현재 제출 연결은 위 장문 원고를 사용 |
 | [docs/DESIGN.md](docs/DESIGN.md) | 아키텍처, 모듈, 실험 계획, 검증 원칙 |
@@ -258,7 +260,7 @@ docs/                    EXPERIMENTS · USAGE · DESIGN · INTEGER_DATAPATH · R
 | [docs/USAGE.md](docs/USAGE.md) | 설치·학습·CLI·실험 재현·파이썬 API |
 | [docs/upstream/](docs/upstream/) | oneDNN 버그 보고서와 패치 |
 | [paper/](paper/) | 현재 검토한 장문판과 이전 단문 초안의 상태·빌드 방법 |
-| [공개 Workbench](https://sokldjs554.github.io/npuloop/) | 모델 분석·정수 검증·E1–E17 기록 및 현재 연구 원고. 게시 기준과 검증 기록은 [배포 안내](docs/DEPLOYMENT.md) 참조 |
+| [공개 Workbench](https://sokldjs554.github.io/npuloop/) | 모델 분석·정수 검증·E1–E19 기록 및 현재 연구 원고. 게시 기준과 검증 기록은 [배포 안내](docs/DEPLOYMENT.md) 참조 |
 
 ## 데이터와 외부 도구
 
@@ -271,7 +273,7 @@ SCALE-Sim은 E8, ethos-u-vela는 E13 검증 실험에서만 사용합니다.
 
 ```bash
 make verify            # 전체 테스트, 번들 체크포인트 실행, 논문 표 재생성 검사
-make demo-structure    # 학습 가중치 없이 구조 설정으로 비용 그래프 생성 + 기존 E1–E17 결과 반영
+make demo-structure    # 학습 가중치 없이 구조 설정으로 비용 그래프 생성 + 기존 E1–E19 결과 반영
 make paper-reviewed    # 검토된 장문 원고와 데모의 PDF 링크 대상 재빌드
 ```
 

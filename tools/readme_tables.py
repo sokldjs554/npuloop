@@ -420,6 +420,100 @@ def e17():
     return "\n".join(out)
 
 
+def e18():
+    """E7's width axes, now with three seeds and the whole split: the magnitude column is what E7 could not quote."""
+    d = load("e18_requant_axes_seeds"); rs = d["records"]
+    if not rs: return ""
+    models = list(dict.fromkeys(r["model"] for r in rs))
+    configs = d["meta"].get("configs") or list(dict.fromkeys(r["config"] for r in rs))
+    ref = configs[0]
+    out = ["| 재양자화 설정 | " + " | ".join(f"{LABEL.get(m, m)}: 기준 대비 Δacc, 시드 평균 ± 시드 표준편차 (시드별)" for m in models) + " |",
+           "|---|" + "---|" * len(models)]
+    for cfg in configs:
+        if cfg == ref: continue
+        cells = []
+        for m in models:
+            xs = sorted([r for r in rs if r["model"] == m and r["config"] == cfg], key=lambda r: r["seed"])
+            if not xs: cells.append("—"); continue
+            ds_ = np.array([r["vs_reference"]["delta"] for r in xs]) * 100
+            sd = f"{ds_.std(ddof=1):.2f}" if len(ds_) > 1 else "—"
+            cells.append(f"{ds_.mean():+.2f} ± {sd}%p ({', '.join(f'{v:+.2f}' for v in ds_)}; n={len(ds_)})")
+        out.append(f"| `{cfg}` | " + " | ".join(cells) + " |")
+    out.append(f"\ntest {d['meta'].get('n_test', 10000):,}장 전체, 스킴 npu-default, 기준 설정은 `{ref}`. "
+               f"Δacc의 쌍 SE는 같은 이미지에서 기준 설정과 비교한 값이며, 위 표의 ± 는 **시드 간 표준편차**다(쌍 SE가 아니다). "
+               f"E7은 같은 축을 체크포인트 하나·2,000장에서 쟀다.")
+    out += [""] + e18_summary(rs, configs, ref)
+    return "\n".join(out)
+
+
+def e18_summary(rs, configs, ref):
+    """Derived claims for the E18 prose, so the numbers in the text cannot drift from the records."""
+    out = []
+    by_cfg = {}
+    for cfg in configs:
+        if cfg == ref: continue
+        per_model = {}
+        for m in dict.fromkeys(r["model"] for r in rs):
+            xs = [r for r in rs if r["model"] == m and r["config"] == cfg]
+            if len(xs) > 1:
+                per_model[m] = np.array([r["vs_reference"]["delta"] for r in xs]) * 100
+        if per_model: by_cfg[cfg] = per_model
+    if not by_cfg: return out
+    cells = [(cfg, m, v) for cfg, pm in by_cfg.items() for m, v in pm.items()]
+    # A near-zero mean makes the relative spread explode, so split the claim: sign stability over every cell,
+    # magnitude stability only where there is a magnitude to speak of.
+    BIG = 0.10                                              # %p; below this the axis costs nothing to report
+    stable = sum(1 for _, _, v in cells if (v <= 0).all() or (v >= 0).all())
+    big = [(cfg, m, v) for cfg, m, v in cells if abs(v.mean()) >= BIG]
+    out.append(f"* **시드에 따라 흔들리는 것은 크기이지 부호가 아닙니다.** (설정 × 모델) {len(cells)}개 조합 가운데 "
+               f"{stable}개에서 모든 시드의 Δacc 부호가 같습니다.")
+    if big:
+        worst = max(big, key=lambda x: float(x[2].std(ddof=1) / abs(x[2].mean())))
+        v = worst[2]
+        out.append(f"  평균 효과가 {BIG:.2f}%p 이상인 {len(big)}개 조합에서 시드 간 표준편차를 평균 크기로 나눈 값의 최댓값은 "
+                   f"`{worst[0]}` × {LABEL.get(worst[1], worst[1])}의 {float(v.std(ddof=1) / abs(v.mean())) * 100:.0f}%"
+                   f"({', '.join(f'{x:+.2f}' for x in v)}%p)입니다. 단일 시드 수치를 그 설정의 비용으로 인용할 수 없다는 뜻입니다.")
+    small = [c for c in cells if abs(c[2].mean()) < BIG]
+    if small:
+        out.append(f"  나머지 {len(small)}개 조합은 평균 효과 자체가 {BIG:.2f}%p 미만이어서, 시드를 더 써도 인용할 수치가 없습니다.")
+    return out
+
+
+def e19():
+    """AdaRound measured on both paths: the learned rounding reaches int_weight(), so the device runs it too."""
+    d = load("e19_adaround"); rs = d["records"]
+    if not rs: return ""
+    out = ["| 모델 | 스킴 | fake RTN | fake AdaRound | fake 이득 (쌍 SE) | 정수 RTN | 정수 AdaRound | 정수 이득 (쌍 SE) | 방향이 바뀐 가중치 |",
+           "|---|---|---|---|---|---|---|---|---|"]
+    for r in rs:
+        fg, ig_ = r["fake_gain"], r["int_gain"]
+        out.append(f"| {LABEL.get(r['model'], r['model'])} | {r['scheme']} | {pct(r['fake_rtn'])} | {pct(r['fake_ada'])} | "
+                   f"{_pm(fg['delta'], fg['se'])} | {pct(r['int_rtn'])} | {pct(r['int_ada'])} | "
+                   f"{_pm(ig_['delta'], ig_['se'])} | {pct(r['flipped_frac'], 1)} |")
+    m = d["meta"]
+    out.append(f"\ntest {m.get('n_test', 10000):,}장 전체, AdaRound {m.get('iters')} iteration, 보정 {m.get('calib')}. "
+               f"RTN = round-to-nearest. 이득의 쌍 SE는 같은 이미지에서 RTN과 비교한 값. "
+               f"``방향이 바뀐 가중치''는 AdaRound가 최근접 반올림과 다른 쪽을 고른 비율(가중치 수로 가중평균).")
+    out += [""] + e19_summary(rs)
+    return "\n".join(out)
+
+
+def e19_summary(rs):
+    out = []
+    fz = [abs(r["fake_gain"]["delta"] / r["fake_gain"]["se"]) for r in rs if r["fake_gain"]["se"]]
+    iz = [abs(r["int_gain"]["delta"] / r["int_gain"]["se"]) for r in rs if r["int_gain"]["se"]]
+    fd = [r["fake_gain"]["delta"] * 100 for r in rs]
+    idl = [r["int_gain"]["delta"] * 100 for r in rs]
+    agree = sum(1 for a, b in zip(fd, idl) if (a >= 0) == (b >= 0))
+    out.append(f"* 시뮬레이터에서의 이득은 {min(fd):+.2f} ~ {max(fd):+.2f}%p, 정수 프로그램에서의 이득은 "
+               f"{min(idl):+.2f} ~ {max(idl):+.2f}%p이고, {len(rs)}개 (모델, 스킴) 조합 중 {agree}개에서 두 부호가 같습니다.")
+    if fz and iz:
+        out.append(f"  |Δ|/SE의 최댓값은 시뮬레이터 {max(fz):.1f}, 정수 {max(iz):.1f}입니다.")
+    gap = [abs(a - b) for a, b in zip(fd, idl)]
+    out.append(f"  같은 (모델, 스킴)에서 두 경로의 이득 차이는 최대 {max(gap):.2f}%p입니다.")
+    return out
+
+
 def e14():
     d = load("e14_rounding_seeds"); rs = d["records"]
     if not rs: return ""
@@ -495,7 +589,7 @@ def e14_summary(rs, models):
     return out
 
 
-TABLES = [("HEADLINE", headline), ("E1", e1), ("E2", e2), ("E3", e3), ("E4", e4), ("E5", e5), ("E6", e6), ("E7", e7), ("E8", e8), ("E9", e9), ("E10", e10), ("E11", e11), ("E12", e12), ("E14", e14), ("E15", e15), ("E16", e16), ("E17", e17)]
+TABLES = [("HEADLINE", headline), ("E1", e1), ("E2", e2), ("E3", e3), ("E4", e4), ("E5", e5), ("E6", e6), ("E7", e7), ("E8", e8), ("E9", e9), ("E10", e10), ("E11", e11), ("E12", e12), ("E14", e14), ("E15", e15), ("E16", e16), ("E17", e17), ("E18", e18), ("E19", e19)]
 
 
 def inject(path: str) -> tuple[int, set]:

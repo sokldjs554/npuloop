@@ -369,6 +369,122 @@
    "seconds": 75.5547742843628,
    "provenance": "measured",
    "timestamp": "2026-09-18T07:25:33"
+  },
+  {
+   "model": "resnet20_relu",
+   "seed": 1,
+   "config": "tflite-m31-acc20-b32",
+   "requant": {
+    "rounding": "tflite",
+    "mult_bits": 31,
+    "acc_bits": 20,
+    "bias_bits": 32
+   },
+   "n_test": 10000,
+   "int_acc": 0.8991,
+   "vs_reference": {
+    "n": 10000,
+    "acc_a": 0.8991,
+    "acc_b": 0.8991,
+    "delta": 0.0,
+    "se": 0.0,
+    "ci95": [
+     0.0,
+     0.0
+    ],
+    "n_correctness_disagree": 0,
+    "top1_agreement": 1.0
+   },
+   "seconds": 76.64246392250061,
+   "provenance": "measured",
+   "timestamp": "2026-09-18T07:26:50"
+  },
+  {
+   "model": "resnet20_relu",
+   "seed": 1,
+   "config": "tflite-m31-acc16-b32",
+   "requant": {
+    "rounding": "tflite",
+    "mult_bits": 31,
+    "acc_bits": 16,
+    "bias_bits": 32
+   },
+   "n_test": 10000,
+   "int_acc": 0.3123,
+   "vs_reference": {
+    "n": 10000,
+    "acc_a": 0.8991,
+    "acc_b": 0.3123,
+    "delta": -0.5868,
+    "se": 0.005265866399263609,
+    "ci95": [
+     -0.5971210981425566,
+     -0.5764789018574433
+    ],
+    "n_correctness_disagree": 6216,
+    "top1_agreement": 0.3227
+   },
+   "seconds": 76.7306215763092,
+   "provenance": "measured",
+   "timestamp": "2026-09-18T07:28:07"
+  },
+  {
+   "model": "resnet20_relu",
+   "seed": 1,
+   "config": "tflite-m31-acc32-b16",
+   "requant": {
+    "rounding": "tflite",
+    "mult_bits": 31,
+    "acc_bits": 32,
+    "bias_bits": 16
+   },
+   "n_test": 10000,
+   "int_acc": 0.8329,
+   "vs_reference": {
+    "n": 10000,
+    "acc_a": 0.8991,
+    "acc_b": 0.8329,
+    "delta": -0.0662,
+    "se": 0.0032315321876824937,
+    "ci95": [
+     -0.07253380308785769,
+     -0.05986619691214231
+    ],
+    "n_correctness_disagree": 1088,
+    "top1_agreement": 0.8697
+   },
+   "seconds": 76.8536925315857,
+   "provenance": "measured",
+   "timestamp": "2026-09-18T07:29:24"
+  },
+  {
+   "model": "resnet20_relu",
+   "seed": 1,
+   "config": "tflite-m31-acc32-b12",
+   "requant": {
+    "rounding": "tflite",
+    "mult_bits": 31,
+    "acc_bits": 32,
+    "bias_bits": 12
+   },
+   "n_test": 10000,
+   "int_acc": 0.1016,
+   "vs_reference": {
+    "n": 10000,
+    "acc_a": 0.8991,
+    "acc_b": 0.1016,
+    "delta": -0.7975,
+    "se": 0.004276821731193859,
+    "ci95": [
+     -0.80588257059314,
+     -0.78911742940686
+    ],
+    "n_correctness_disagree": 8189,
+    "top1_agreement": 0.1058
+   },
+   "seconds": 75.7719669342041,
+   "provenance": "measured",
+   "timestamp": "2026-09-18T07:30:39"
   }
  ]
 }

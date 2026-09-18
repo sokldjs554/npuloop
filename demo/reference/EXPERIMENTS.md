@@ -1,11 +1,11 @@
-# 실험 E1–E17
+# 실험 E1–E19
 
 [← README](https://github.com/sokldjs554/npuloop/blob/master/README.md) · [설계 문서](https://github.com/sokldjs554/npuloop/blob/master/docs/DESIGN.md) · [기술 보고서](https://github.com/sokldjs554/npuloop/blob/master/docs/report/npuloop_report.md) · [선행 연구](https://github.com/sokldjs554/npuloop/blob/master/docs/RELATED.md)
 
 CIFAR-10, CPU 4코어. 숫자는 전부 `results/*.json`에서 `make tables`(= `python tools/readme_tables.py --inject README.md docs/EXPERIMENTS.md`)로
 생성한 것입니다. 정확도는 따로 적지 않으면 test 10,000장 기준이고, `simulated`로 표시한 사이클·활용률은 가상 NPU 비용 모델 값입니다.
 
-[E9](#e9) · [E16](#e16) · [E17](#e17) · [E1](#e1) · [E8](#e8) · [E10](#e10) · [E11](#e11) · [E13](#e13) · [E2](#e2) · [E15](#e15) · [E7](#e7) · [E14](#e14) · [E3](#e3) · [E4](#e4) · [E5](#e5) · [E6](#e6) · [E12](#e12)
+[E9](#e9) · [E16](#e16) · [E17](#e17) · [E19](#e19) · [E1](#e1) · [E8](#e8) · [E10](#e10) · [E11](#e11) · [E13](#e13) · [E2](#e2) · [E15](#e15) · [E7](#e7) · [E14](#e14) · [E18](#e18) · [E3](#e3) · [E4](#e4) · [E5](#e5) · [E6](#e6) · [E12](#e12)
 
 **데이터 분할과 체크포인트 선택.** CIFAR-10의 공식 학습 50,000장을 고정 시드로 **학습 45,000장 / 검증 5,000장**(클래스별 500장, 층화)으로
 한 번 나눴습니다(`npuloop/zoo/data.py`). 학습 중 체크포인트 선택(`best.pt` = 검증 정확도가 가장 높은 epoch)과 학습 시점의 모든 결정은
@@ -492,6 +492,42 @@ test 10,000장 전체, 스킴 npu-default, 캘리브레이션 512장(seed 0)은 
 트레이너는 이후 고쳤으므로(초기화 전에 시드 설정) 지금 실행하는 학습은 재현 가능하고, 대신 위 체크포인트와는 다른 네트워크가 나옵니다.
 
 `python experiments/e14_rounding_seeds.py`. 결과는 `results/e14_rounding_seeds.json`.
+
+<a id="e18"></a>
+### E18. 나머지 축도 시드 셋으로 — E7의 곱셈기·누산기·바이어스 폭
+
+E14는 **반올림 축** 하나만 시드 3개로 다시 쟀습니다. 그 결과가 "효과의 부호는 체크포인트를 넘어 옮겨 가지만 크기는 옮겨 가지 않는다"였으니,
+같은 논리가 E7의 나머지 축(곱셈기 비트·누산기 폭·바이어스 폭)에도 그대로 걸립니다. E7의 그 수치들은 **체크포인트 하나·2,000장**이라 인용할 수 없는 상태였습니다.
+E18은 같은 축을 **모델 3종 × 시드 3개 × test 10,000장 전체**로 다시 재고, 기준 설정 대비 쌍 표준오차를 붙입니다.
+
+<!-- TABLE:E18 -->
+<!-- /TABLE:E18 -->
+
+이 표를 E7과 나란히 읽을 때의 규칙은 E14와 같습니다. **등급(무손실 / 손실 / 붕괴)은 E7에서 그대로 읽어도 되지만, 등급 안의 %p 수치는 E18의 시드 평균과 시드 간 표준편차를 봐야 합니다.**
+
+`python experiments/e18_requant_axes_seeds.py`. 결과는 `results/e18_requant_axes_seeds.json`.
+시드 1·2 체크포인트는 `experiments/run_seeds.sh`가 만듭니다(E14와 같은 체크포인트이며, 위의 "시드의 한계"가 똑같이 적용됩니다).
+
+<a id="e19"></a>
+### E19. AdaRound의 이득은 정수 실행에서도 남는가
+
+AdaRound(Nagel et al., ICML 2020)는 가중치를 최근접으로 반올림하는 대신 **각 가중치의 반올림 방향을 그 계층의 출력 오차로 학습**합니다.
+PTQ 논문에서 표준으로 인용되는 방법인데, 보고되는 모든 수치는 **fake-quant 그래프 위의 정확도**입니다.
+E15가 보인 것은 fake-quant와 정수 실행이 정확도에서는 일치하지만 텐서에서는 일치하지 않는다는 것이었으니, 여기서 자연스럽게 나오는 질문이 있습니다 —
+**시뮬레이터에서 얻은 이득이 실제로 나가는 정수 프로그램에도 남는가?**
+
+이 저장소는 그 질문을 던질 수 있는 구조입니다. 학습된 반올림은 `QConv2d`/`QLinear`의 `w_round` 버퍼에 들어가고, **`int_weight()`가 같은 버퍼를 읽습니다**
+(`npuloop/quant/fake.py`의 `_quant_codes`). 그래서 export된 정수 그래프는 최적화된 바로 그 반올림을 실행합니다 —
+`tests/test_adaround.py`가 계층별로 `node.w_int == module.int_weight()`를 확인합니다.
+
+<!-- TABLE:E19 -->
+<!-- /TABLE:E19 -->
+
+구현은 `npuloop/quant/adaround.py`입니다. 논문대로 정류 시그모이드 h(V) = clip(σ(V)(ζ−γ)+γ, 0, 1) (γ = −0.1, ζ = 1.1)를 쓰고,
+재구성 항 + 반올림 정칙화 항을 β를 20 → 2로 코사인 감쇠시키며 최적화합니다. 계층 입력은 양자화된 것, 목표 출력은 float입니다.
+**재구성 항은 그 계층 출력의 제곱평균으로 정규화합니다** — 정규화하지 않으면 계층마다 출력 크기가 여섯 자릿수 차이가 나서 고정 λ가 재구성 항을 압도합니다(처음 구현이 그래서 모든 계층을 악화시켰습니다).
+
+`python experiments/e19_adaround.py`. 결과는 `results/e19_adaround.json`.
 
 <a id="e3"></a>
 ### E3. 정적 lint는 실제 손실을 예측하는가

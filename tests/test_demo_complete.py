@@ -100,3 +100,42 @@ def test_preset_controls_preserve_nonactivation_restrictions():
     assert run.returncode == 0, run.stderr
     spec = json.loads(run.stdout)
     assert {'softmax', 'layernorm'} <= set(spec['unsupported_ops'])
+
+
+def test_every_registered_experiment_has_display_columns_and_survives_a_missing_result_file():
+    """An experiment registered before its results file lands used to crash the search box.
+
+    filteredCatalog() read D.results[key].records directly, so any query typed while an experiment was
+    registered but unmeasured threw. It also silently rendered an empty column list for a key that nobody had
+    added to COLUMNS.
+    """
+    model = (ROOT / 'demo/workbench-model.js').read_text(encoding='utf-8')
+    ui = (ROOT / 'demo/workbench-ui.js').read_text(encoding='utf-8')
+    keys = re.findall(r"\['(e\d+_[a-z0-9_]+)','E\d+'", model)
+    assert len(keys) >= 19, keys
+    for key in keys:
+        assert re.search(rf"\b{key}:\[\[", ui), f'{key} has no column definition in workbench-ui.js COLUMNS'
+    assert 'D.results[e.key].records' not in ui, 'filteredCatalog must go through A.rows() so a missing file is []'
+
+
+@pytest.mark.skipif(shutil.which('node') is None, reason='node not installed')
+def test_catalog_counts_an_unmeasured_experiment_as_zero_rather_than_throwing(tmp_path):
+    src = (ROOT / 'demo/workbench-model.js').read_text(encoding='utf-8')
+    script = tmp_path / 'catalog.mjs'
+    script.write_text(
+        # workbench-model.js takes its helpers off the global in a browser; give it the same globals node lacks.
+        "globalThis.NpuDemoData={rows:(d,k)=>Array.isArray(d?.results?.[k]?.records)?d.results[k].records:[]};\n"
+        "globalThis.estimate=()=>{throw new Error('not needed');};\n"
+        "const A=globalThis.NpuDemoData;\n"
+        + src
+        + "\nconst W=globalThis.NpuWorkbench, D={results:{}};\n"
+          "const cat=W.catalog(D);\n"
+          "const q='adaround';\n"
+          "const hits=cat.filter(e=>(!q||(e.id+' '+e.title+' '+e.description+' '"
+          "+JSON.stringify(A.rows(D,e.key))).toLowerCase().includes(q)));\n"
+          "process.stdout.write(JSON.stringify({n:cat.length,zero:cat.every(e=>e.count===0),hits:hits.length}));\n",
+        encoding='utf-8')
+    proc = subprocess.run(['node', str(script)], capture_output=True, text=True, timeout=60)
+    assert proc.returncode == 0, proc.stderr
+    out = json.loads(proc.stdout)
+    assert out['n'] >= 19 and out['zero'] is True
