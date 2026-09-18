@@ -108,6 +108,20 @@ def fidelity_summary(records: list[dict[str,Any]]) -> str:
     return (f'95% Wald 구간의 0 포함 {zero}/{len(pairs)}; 최대 관측 정확도 차이 '
             f'{maximum:.2f}%p (정수 − 모의, 전체 테스트셋). 허용 오차 내 동등성 입증은 아님')
 
+def column_errors(name: str, table: str) -> list[str]:
+    """A generated table whose column spec disagrees with its header is a LaTeX error at build time.
+
+    Cheap to check here and awkward to find in a 3,000-line lualatex log, so it is checked here.
+    """
+    spec=re.search(r'\\begin\{tabular\}\{([^}]*)\}',table)
+    if not spec:return [f'{name}: no tabular environment']
+    columns=sum(1 for c in spec.group(1) if c in 'lcr')
+    rows=[l for l in table.splitlines() if '&' in l]
+    if not rows:return [f'{name}: no rows']
+    widths={l.count('&')+1 for l in rows}
+    return [f'{name}: {columns} columns declared, rows have {sorted(widths)}'] if widths!={columns} else []
+
+
 def paper_errors(root: Path) -> list[str]:
     errors=[]
     source=root/'paper/npuloop_thesis.tex'
@@ -127,6 +141,7 @@ def paper_errors(root: Path) -> list[str]:
         body=table.split('\\midrule',1)[1].split('\\bottomrule',1)[0]
         count=sum('&' in line and line.rstrip().endswith('\\\\') for line in body.splitlines())
         if count!=expected:errors.append(f'{name}: {count} data rows, expected {expected}')
+        errors.extend(column_errors(name,table))
     for name in FIGURES:
         path=root/'paper'/name
         if not path.is_file():errors.append(f'Missing figure: {name}')

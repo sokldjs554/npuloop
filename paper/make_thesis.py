@@ -138,6 +138,21 @@ def t_adaround():
           "신경망 & 방식 & 재구성 오차비 & 방향 반전(\\%) & 모의 이득(\\%p) & 정수 이득(\\%p)", rows, tabcolsep="5pt")
 
 
+def t_imagenet():
+    """E20: the same columns as the fidelity table, on a graph and weights this project did not train."""
+    rs = load("e20_imagenet_scale")["records"]
+    rows = []
+    for r in rs:
+        p_, oc = r["int_vs_fake"], r["output_codes"]
+        sch = "\\textsc{pc}" if r["scheme"] == "npu-default" else "\\textsc{pt}"
+        rows.append(f"{sch} & {r['float_acc'] * 100:.2f} & {r['fake_acc'] * 100:.2f} & {r['int_acc'] * 100:.2f} & "
+                    f"${p_['delta'] * 100:+.2f} \\pm {p_['se'] * 100:.2f}$ & {p_['top1_agreement'] * 100:.2f} & "
+                    f"{oc['mismatch_frac'] * 100:.1f} & {oc['max_abs_code_diff']} \\\\")
+    write("th_imagenet.tex", "lccccccc",
+          "방식 & float32 & 모의 & 정수 & $\\Delta$ (\\%p) & 일치(\\%) & 코드(\\%) & $\\max|\\Delta c|$", rows,
+          tabcolsep="5pt")
+
+
 def t_tflite():
     d = load("e11_tflite_crosscheck")
     rows = []
@@ -225,4 +240,4 @@ def fig_operators():
 
 
 if __name__ == "__main__":
-    t_baselines(); t_operators(); t_requant(); t_requant_seeds(); t_adaround(); t_tflite(); t_vela(); t_vela_kind(); fig_operators()
+    t_baselines(); t_operators(); t_requant(); t_requant_seeds(); t_adaround(); t_imagenet(); t_tflite(); t_vela(); t_vela_kind(); fig_operators()
