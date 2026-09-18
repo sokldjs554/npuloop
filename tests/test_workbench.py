@@ -73,12 +73,22 @@ def test_missing_after_record_remains_null(payload,model):
     assert r['recordedComparison'] is None
 
 
+def registered_experiment_keys():
+    """The experiment registry in workbench-model.js. Derived, not a literal: a hard-coded count here (and
+    the twin in tools/check_workbench_browser.py) is what broke CI when E18 and E19 were registered."""
+    src=(ROOT/'demo/workbench-model.js').read_text(encoding='utf-8')
+    keys=re.findall(r"\['(e\d+_[a-z0-9_]+)','E\d+'",src)
+    assert keys, 'no experiment registry found in workbench-model.js'
+    return keys
+
+
 def test_experiments_preserve_all_records(payload):
     result=call(payload,'catalog')
-    assert len(result['value'])==17
+    assert [e['key'] for e in result['value']]==registered_experiment_keys()
     assert result['unchanged']
     for e in result['value']:
-        assert e['count']==len(payload['results'][e['key']]['records'])
+        # An experiment registered before its results file lands must report 0, not throw.
+        assert e['count']==len(payload['results'].get(e['key'],{}).get('records',[]))
         assert '?' not in e['title']
 
 

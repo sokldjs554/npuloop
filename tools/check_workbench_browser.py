@@ -8,6 +8,7 @@ import argparse
 import csv
 import io
 import json
+import re
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 
@@ -158,9 +159,18 @@ def main():
         # Catalog: every experiment's original JSON and every record remain accessible.
         page.click('[data-nav=experiments]');page.wait_for_timeout(25)
         exps=page.locator('[data-experiment]').evaluate_all('(xs)=>xs.map(x=>x.dataset.experiment)')
-        check(len(exps)==17,'catalog contains 17 experiments')
+        # Count read off the registry, not written here: the literal that used to live in this line is what
+        # failed the moment E18 and E19 were registered.
+        registered=re.findall(r"\['(e\d+_[a-z0-9_]+)','E\d+'",(ROOT/'demo/workbench-model.js').read_text(encoding='utf-8'))
+        check(len(registered)>0,'experiment registry found')
+        check(exps==registered,f'catalog lists every registered experiment ({len(registered)})')
         for key in exps:
             page.click('[data-experiment="'+key+'"]')
+            if not (ROOT/'results'/(key+'.json')).is_file():
+                # Registered before its sweep finished: it must render an empty table, not throw or fabricate.
+                check(page.locator('#experiment-detail tbody tr').count()==0,'unmeasured experiment is empty '+key)
+                bodyclean('experiment '+key)
+                continue
             check(page.locator('#experiment-detail tbody tr').count()>0,'experiment table '+key)
             page.locator('#experiment-detail [data-record-index]').first.click()
             record=json.loads(page.locator('#record-json').inner_text())
