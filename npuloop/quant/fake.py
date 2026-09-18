@@ -98,6 +98,15 @@ class QConv2d(nn.Conv2d):
         self.w_scale = nn.Parameter(torch.ones(n), requires_grad=learnable)
         self.w_enabled = False
         self.learnable = learnable
+        # AdaRound writes the learned 0/1 rounding offset here. Empty means round-to-nearest, and both the
+        # fake-quant path and int_weight() read it, so a learned rounding reaches the integer program too.
+        self.register_buffer("w_round", torch.empty(0))
+
+    def _quant_codes(self, w: torch.Tensor, s: torch.Tensor, dims: int) -> torch.Tensor:
+        shape = (-1,) + (1,) * (dims - 1)
+        sr = (s if self.per_channel else s.expand(w.shape[0])).reshape(shape)
+        base = torch.floor(w / sr) + self.w_round if self.w_round.numel() else torch.round(w / sr)
+        return torch.clamp(base, self.qmin, self.qmax)
 
     @classmethod
     def from_conv(cls, conv: nn.Conv2d, **q):
@@ -114,15 +123,16 @@ class QConv2d(nn.Conv2d):
     def quantized_weight(self) -> torch.Tensor:
         if not self.w_enabled:
             return self.weight
+        if self.w_round.numel():
+            s = (self.w_scale if self.per_channel else self.w_scale.expand(self.out_channels)).reshape(-1, 1, 1, 1)
+            return self._quant_codes(self.weight, self.w_scale, 4) * s
         ch = 0 if self.per_channel else None
         z = torch.zeros_like(self.w_scale)
         return fake_quant(self.weight, self.w_scale, z, self.qmin, self.qmax, ch_axis=ch)
 
     def int_weight(self) -> torch.Tensor:
         """int8 weights (as int32 tensor) and matching scale."""
-        s = self.w_scale if self.per_channel else self.w_scale.expand(self.out_channels)
-        q = torch.clamp(torch.round(self.weight.detach() / s.reshape(-1, 1, 1, 1)), self.qmin, self.qmax)
-        return q.to(torch.int32)
+        return self._quant_codes(self.weight.detach(), self.w_scale, 4).to(torch.int32)
 
     def forward(self, x):
         return F.conv2d(x, self.quantized_weight(), self.bias, self.stride, self.padding, self.dilation, self.groups)
@@ -138,6 +148,13 @@ class QLinear(nn.Linear):
         self.w_scale = nn.Parameter(torch.ones(n), requires_grad=learnable)
         self.w_enabled = False
         self.learnable = learnable
+        self.register_buffer("w_round", torch.empty(0))      # see QConv2d.w_round
+
+    def _quant_codes(self, w: torch.Tensor, s: torch.Tensor, dims: int) -> torch.Tensor:
+        shape = (-1,) + (1,) * (dims - 1)
+        sr = (s if self.per_channel else s.expand(w.shape[0])).reshape(shape)
+        base = torch.floor(w / sr) + self.w_round if self.w_round.numel() else torch.round(w / sr)
+        return torch.clamp(base, self.qmin, self.qmax)
 
     @classmethod
     def from_linear(cls, lin: nn.Linear, **q):
@@ -153,12 +170,14 @@ class QLinear(nn.Linear):
     def quantized_weight(self):
         if not self.w_enabled:
             return self.weight
+        if self.w_round.numel():
+            s = (self.w_scale if self.per_channel else self.w_scale.expand(self.out_features)).reshape(-1, 1)
+            return self._quant_codes(self.weight, self.w_scale, 2) * s
         ch = 0 if self.per_channel else None
         return fake_quant(self.weight, self.w_scale, torch.zeros_like(self.w_scale), self.qmin, self.qmax, ch_axis=ch)
 
     def int_weight(self):
-        s = self.w_scale if self.per_channel else self.w_scale.expand(self.out_features)
-        return torch.clamp(torch.round(self.weight.detach() / s.reshape(-1, 1)), self.qmin, self.qmax).to(torch.int32)
+        return self._quant_codes(self.weight.detach(), self.w_scale, 2).to(torch.int32)
 
     def forward(self, x):
         return F.linear(x, self.quantized_weight(), self.bias)
