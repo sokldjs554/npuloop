@@ -42,7 +42,9 @@ PTQ·QAT·보정은 개선 여부를 비교하는 실험으로 다뤘습니다. 
 - **실험 기록**: E1–E20 검색·필터·표·개별 기록 및 원본 JSON 내보내기.
 - **재현 자료**: 연구 원고, 실행 방법, 검증 범위.
 
-![npuloop 모델 실험 화면](docs/model_study_overview.jpg)
+![npuloop 워크벤치 둘러보기](docs/model_study_walkthrough.gif)
+
+52초 · 컷 12장. 저장된 실험 기록을 실제로 조작해 캡처했고(`python tools/record_walkthrough.py` 로 다시 만듭니다), 활성함수 교체 직후와 회복 학습 후 → 변경안 여섯 개 비교 → 프리셋별 비용과 호스트 폴백 97.4% → 모의·정수 정확도 80.87%/80.97%와 출력 코드 불일치 72.7% → LayerNorm 정수 교체와 ImageNet 규모 대조 → 그 화면 숫자의 원본 JSON 순서입니다.
 
 [화면 사용 안내](docs/DEMO_GUIDE.md) · [현재 검증 기록](docs/MODEL_STUDY_REPORT.md) · [화면 참고 자료](docs/DEMO_REFERENCES.md)
 

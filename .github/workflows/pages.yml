@@ -38,7 +38,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/npuloop-public-check"
           REPORT="$RUNNER_TEMP/npuloop-public-check/checks.tsv"
           printf 'path\tsha256\tstatus\n' > "$REPORT"
-          for rel in '' index.html model_study_overview.jpg research/npuloop_thesis.pdf reference/USAGE.md reference/VALIDATION_SCOPE.md reference/EXPERIMENTS.md reference/STUDY_RUNNER.md reference/RESEARCH_SUMMARY.md reference/REPRODUCTION_REQUIREMENTS.md reference/e9_customer_intake.json; do
+          for rel in '' index.html model_study_overview.jpg model_study_walkthrough.gif research/npuloop_thesis.pdf reference/USAGE.md reference/VALIDATION_SCOPE.md reference/EXPERIMENTS.md reference/STUDY_RUNNER.md reference/RESEARCH_SUMMARY.md reference/REPRODUCTION_REQUIREMENTS.md reference/e9_customer_intake.json; do
             expected="docs/${rel:-index.html}"
             test -f "$expected"
             target="$RUNNER_TEMP/npuloop-public-check/$(basename "${rel:-root.html}")"

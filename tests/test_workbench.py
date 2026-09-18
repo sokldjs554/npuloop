@@ -105,6 +105,17 @@ def test_missing_research_is_an_error(payload):
     assert 'error' in call(payload,'research','missing','npu-default')
 
 
+def test_sidebar_experiment_count_is_not_hand_written():
+    """The badge said 17 while twenty experiments were registered: E18, E19 and E20 landed and the
+    literal in the template stayed behind. Nothing checked it, so it drifted silently for three
+    experiments. The count now comes from the same registry the catalog counts."""
+    src=(ROOT/'demo/index.template.html').read_text(encoding='utf-8')
+    assert 'id="nav-experiment-count"' in src
+    assert not re.search(r'class="nav-count"[^>]*>\s*\d', src), 'sidebar count is hand-written again'
+    ui=(ROOT/'demo/workbench-ui.js').read_text(encoding='utf-8')
+    assert "$('nav-experiment-count').textContent=W.catalog(D).length" in ui
+
+
 def test_html_is_an_application_not_a_question_landing():
     src=(ROOT/'demo/index.template.html').read_text(encoding='utf-8')
     assert '<h1 id="page-title">모델 실험·경량화</h1>' in src

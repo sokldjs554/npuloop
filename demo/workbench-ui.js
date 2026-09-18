@@ -174,6 +174,7 @@ window.addEventListener('hashchange',()=>run(route));
 run(()=>{
  fill($('model-select'),Object.keys(D.models).map(m=>[m,ml(m)]),state.model);fill($('preset-select'),['edge-10tops-strict','edge-10tops','tiny-1tops','pcie-80tops'].filter(k=>D.presets[k]).map(k=>[k,k]),state.preset);
  fill($('research-model'),[...new Set(A.rows(D,'e15_fidelity').map(r=>r.model))].map(m=>[m,ml(m)]),state.researchModel);
+ $('nav-experiment-count').textContent=W.catalog(D).length;// 손으로 적지 않는다: 실험을 추가하면 레지스트리에서 따라온다
  refreshAnalysis();route();document.documentElement.dataset.appReady='true';
 });
 // Explicitly read-only test/export surface. No application state is hidden in a backend.

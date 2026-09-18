@@ -1,5 +1,9 @@
 # npuloop 화면 사용 안내
 
+![npuloop 모델 실험 화면](model_study_overview.jpg)
+
+다섯 화면을 차례로 지나는 둘러보기 GIF 는 저장소 README 에 있습니다.
+
 ## 모델 실험·경량화 (기본 화면)
 
 공고의 모델 개발 업무에 맞춰 **태스크·데이터 → 모델 변경 → 회복 학습 → 양자화 → 평가**를 첫 화면으로 구성했습니다. 기본 실험은 E4 SiLU→ReLU 3 epoch 회복 학습, 기본 비용 조건은 `edge-10tops-strict`입니다.
