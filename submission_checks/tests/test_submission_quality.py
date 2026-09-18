@@ -20,6 +20,17 @@ def quality():
 def test_known_old_claims_are_rejected(bad):
     assert quality().claim_errors(bad)
 
+def test_unfilled_manuscript_placeholders_are_rejected(tmp_path):
+    q=quality();(tmp_path/'paper').mkdir()
+    draft=tmp_path/'paper/npuloop_esl.tex'
+    draft.write_text('\\author{\\textsc{[Author~Name]}}',encoding='utf-8')
+    assert q.placeholder_errors(tmp_path)
+    draft.write_text('\\author{%\n\\thanks{no name here}}',encoding='utf-8')
+    assert q.placeholder_errors(tmp_path)==[]
+
+def test_shipped_manuscripts_carry_no_placeholder():
+    assert quality().placeholder_errors(ROOT)==[]
+
 def test_qualified_claims_are_not_rejected():
     text='노드별 비율의 단순평균은 1% 미만. 풀링 개별 노드 최대 2.697%. 동등성 입증이 아니다. LayerNorm 단독 교체.'
     assert quality().claim_errors(text)==[]

@@ -46,6 +46,26 @@ BAD_CLAIMS = (
     (r'정확도 이외의 축에서 측정된 바가 없다', 'Unqualified novelty claim'),
 )
 
+MANUSCRIPTS = ('paper/npuloop_thesis.tex','paper/npuloop_esl.tex','paper/npuloop_ko.tex')
+PLACEHOLDERS = ('[Author~Name]','[AUTHOR NAME]','[City]','[저자 성명]','[도시]')
+
+
+def placeholder_errors(root: Path) -> list[str]:
+    """No manuscript may ship an unfilled bracketed field.
+
+    claim_errors() reads the long-form manuscript only, so the two short-form drafts were never
+    covered. The short drafts intentionally carry no author line; what is forbidden is a leftover
+    placeholder, not an absent name.
+    """
+    errors=[]
+    for relative in MANUSCRIPTS:
+        path=root/relative
+        if not path.is_file():continue  # a missing thesis is already reported by paper_errors()
+        text=path.read_text(encoding='utf-8')
+        errors.extend(f'{relative}: unfilled placeholder {token}' for token in PLACEHOLDERS if token in text)
+    return errors
+
+
 def _safe_path(root: Path, relative: str) -> Path:
     """Keep inventories within the specified repository; never inspect .git or outside symlinks."""
     root = root.resolve()
@@ -128,6 +148,7 @@ def paper_errors(root: Path) -> list[str]:
     source=root/'paper/npuloop_thesis.tex'
     if not source.is_file():return ['Missing paper/npuloop_thesis.tex']
     text=source.read_text(encoding='utf-8'); errors.extend(claim_errors(text))
+    errors.extend(placeholder_errors(root))
     for token in ('\\begin{document}','\\end{document}','\\appendix','\\begin{thebibliography}',
                   '\\label{tab:operators}','\\label{tab:fidelity}','\\label{tab:layernorm}','\\label{tab:dense}',
                   '\\label{tab:requantseeds}','\\label{tab:adaround}','\\label{tab:imagenet}'):
