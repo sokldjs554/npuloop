@@ -7,6 +7,19 @@ from playwright.sync_api import sync_playwright
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def sr_studies(page):
+    """Every super-resolution study the page offers.
+
+    E17 carries one per depth, so hard-coding a single id here is what broke this check the first time a second
+    depth landed. Read the ids off the page instead: a new depth is then covered automatically.
+    """
+    ids = page.eval_on_selector_all('#study-select option', 'os => os.map(o => o.value)')
+    found = [i for i in ids if i.startswith('e17-')]
+    if not found:
+        raise SystemExit('no super-resolution study in #study-select: ' + ', '.join(ids))
+    return found
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--output', type=Path, default=ROOT / 'verification/model-study/browser')
@@ -28,6 +41,7 @@ def main():
         check(page.locator('h1').inner_text() == '모델 실험·경량화', 'model research is the default workspace')
         check(page.locator('#view-studies').is_visible(), 'study workspace visible on root URL')
         check(page.locator('#study-select').input_value() == 'e4-activation', 'default surgery experiment')
+        sr = sr_studies(page)
         check('89.74%' in page.locator('#study-metrics').inner_text(), 'measured recovered FP32 accuracy')
         check(page.locator('#study-training svg').count() == 1, 'actual recovery learning curve')
         check('40.36%' in page.locator('#study-context').inner_text(), 'immediate-change control shown')
@@ -57,12 +71,14 @@ def main():
         download.value.save_as(str(target))
         exported = json.loads(target.read_text())
         check(exported['hardware_measured'] is False, 'export preserves simulated hardware provenance')
-        page.select_option('#study-select', 'e17-super-resolution')
+        page.select_option('#study-select', sr[0])
         check('PSNR' in page.locator('#view-studies').inner_text(), 'task-specific super-resolution metric')
         page.select_option('#study-task', 'classification')
-        check(page.locator('#study-select').input_value() != 'e17-super-resolution', 'task filter changes available studies')
+        check(page.locator('#study-select').input_value() not in sr, 'task filter changes available studies')
+        # Outside the --report branch: inner_text() returns '' for a hidden element, so the invalid-report check
+        # below silently passed on anything whenever the panel stayed collapsed.
+        page.locator('.study-run summary').click()
         if args.report:
-            page.locator('.study-run summary').click()
             page.set_input_files('#study-import', str(args.report))
             page.wait_for_function("document.querySelector('#study-import-result').textContent.includes('실행 결과')")
             check('FP32' in page.locator('#study-import-result').inner_text(), 'real local run import')
@@ -72,7 +88,7 @@ def main():
         for width in [1440, 1024, 768, 390, 320]:
             page.set_viewport_size({'width': width, 'height': 1000})
             page.select_option('#study-task', 'all')
-            for study in ['e4-activation', 'e6-resnet20_relu', 'e9-vit', 'e12-imagenette', 'e17-super-resolution']:
+            for study in ['e4-activation', 'e6-resnet20_relu', 'e9-vit', 'e12-imagenette', *sr]:
                 page.select_option('#study-select', study)
                 check(page.evaluate('document.documentElement.scrollWidth <= innerWidth + 1'), f'no viewport overflow {width}/{study}')
                 body = page.locator('body').inner_text()
