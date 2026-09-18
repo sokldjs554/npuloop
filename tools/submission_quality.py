@@ -18,9 +18,22 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
+# Row counts the committed tables must have. Fixed by experiment design, except where DERIVED_ROWS says
+# otherwise: a table that tracks a growing experiment cannot have its size written here, which is what failed
+# this check the moment E17 gained a second depth.
 TABLE_ROWS = {'th_operators.tex':9, 'th_baselines.tex':5, 'th_requant.tex':9,
               'th_tflite.tex':12, 'th_vela.tex':5, 'tab1_rows_ko.tex':12,
-              'tab2_rows_ko.tex':4, 'tab3_rows_ko.tex':4, 'tab4_rows_ko.tex':2}
+              'tab2_rows_ko.tex':4, 'tab3_rows_ko.tex':4}
+DERIVED_ROWS = {'tab4_rows_ko.tex':'e17_dense_output'}   # one table row per record of that experiment
+
+
+def expected_rows(root: Path) -> dict[str,int]:
+    rows=dict(TABLE_ROWS)
+    for name,experiment in DERIVED_ROWS.items():
+        path=root/'results'/(experiment+'.json')
+        if path.is_file():
+            rows[name]=len(json.loads(path.read_text(encoding='utf-8'))['records'])
+    return rows
 FIGURES = ('fig1_decomposition_ko.pdf','fig2_rounding_ko.pdf','fig3_operators_ko.pdf')
 BAD_CLAIMS = (
     (r'어텐션 블록\s*12개', 'ViT block count is not the attention matmul count'),
@@ -103,7 +116,7 @@ def paper_errors(root: Path) -> list[str]:
                   '\\label{tab:operators}','\\label{tab:fidelity}','\\label{tab:layernorm}','\\label{tab:dense}'):
         if token not in text:errors.append(f'Missing structural token: {token}')
     if len(re.findall(r'\\chapter\{',text))<9:errors.append('Expected seven chapters and two appendices')
-    for name,expected in TABLE_ROWS.items():
+    for name,expected in expected_rows(root).items():
         path=root/'paper'/name
         if not path.is_file():errors.append(f'Missing table: {name}');continue
         table=path.read_text(encoding='utf-8')
