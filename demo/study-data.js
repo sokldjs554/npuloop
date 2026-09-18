@@ -7,7 +7,7 @@
 const LABELS = {
   resnet20_relu: 'ResNet-20 · ReLU', resnet20_silu: 'ResNet-20 · SiLU',
   mnv2_050_relu6: 'MobileNetV2 · 0.5', cust_vit: 'ViT-128/6',
-  cust_inception: 'Inception-32', espcn_x2: 'ESPCN ×2'
+  cust_inception: 'Inception-32', espcn_x2: 'ESPCN ×2 · conv 3', espcn_x2_deep: 'ESPCN ×2 · conv 9'
 };
 const CLASSIFICATION = 'classification';
 const own = (object, key) => !!object && Object.prototype.hasOwnProperty.call(object, key);
@@ -49,9 +49,11 @@ function catalog(data) {
   if (rows(data, 'e12_imagenette').length)
     add('e12-imagenette', 'Imagenette · 입력 크기·PTQ', 'dataset', CLASSIFICATION,
       meta(data, 'e12_imagenette').dataset || 'Imagenette', 'resnet20_relu_128', 'e12_imagenette');
-  if (rows(data, 'e17_dense_output').length)
-    add('e17-super-resolution', 'ESPCN ×2 · 초해상도 양자화', 'quantization', 'super-resolution',
-      meta(data, 'e17_dense_output').dataset || 'Imagenette', 'espcn_x2', 'e17_dense_output');
+  // One entry per depth: E17 measures the same width profile at 3 and 9 convolutions, and the point of
+  // the experiment is the contrast between them, so they must not collapse into one card.
+  for (const model of new Set(rows(data, 'e17_dense_output').map(r => r.model).filter(Boolean)))
+    add('e17-' + model, (LABELS[model] || model) + ' · 초해상도 양자화', 'quantization', 'super-resolution',
+      meta(data, 'e17_dense_output').dataset || 'Imagenette', model, 'e17_dense_output');
   return found;
 }
 
@@ -216,15 +218,17 @@ function study(data, id, preset) {
     result.baselineId = 'baseline';
     result.notes.push('Imagenette-128의 독립된 학습·시험 결과입니다. CIFAR-10과는 데이터셋과 입력 해상도가 함께 달라져 정확도 변화의 원인을 분리할 수 없습니다.',
       '학습 epoch 수는 기록되었지만 epoch별 곡선은 없습니다. PTQ 방식별 비용은 기록되지 않았습니다.');
-  } else if (id === 'e17-super-resolution') {
-    const first = references(data, key)[0], r0 = first.record;
+  } else if (id.startsWith('e17-')) {
+    const mine = references(data, key, r => r.model === model);
+    const first = mine[0], r0 = first.record;
+    const convs = number(r0.conv_layers);
     const metric = (baseline, value) => ({key: 'psnr', label: 'PSNR', unit: 'dB', baseline: number(baseline), value: number(value)});
-    append(variant('baseline', 'ESPCN ×2 · FP32 기준', '초해상도 기준 모델', {
+    append(variant('baseline', 'FP32 기준' + (convs === null ? '' : ' · conv ' + convs + '개'), '초해상도 기준 모델', {
       metric: metric(r0.float_psnr, r0.float_psnr), fp32Metric: number(r0.float_psnr),
       fakeMetric: null, intMetric: null, metricImages: number(r0.n_test),
       inputShape: copy(r0.input_shape), sourceRecords: [pointer(key, first.index)]
     }));
-    for (const {record: r, index} of references(data, key)) {
+    for (const {record: r, index} of mine) {
       append(variant(r.scheme, r.scheme, 'PTQ · ' + r.scheme, {
         metric: metric(r.float_psnr, r.int_psnr), fp32Metric: number(r.float_psnr),
         fakeMetric: number(r.fake_psnr), intMetric: number(r.int_psnr), metricImages: number(r.n_test),
@@ -234,6 +238,12 @@ function study(data, id, preset) {
     result.baselineId = 'baseline';
     result.metricNotes.push(metadata.metric || '이미지별 PSNR (dB)', '초해상도의 출력은 픽셀입니다. 분류 정확도와 정확도 손실 %p 기준을 적용하지 않습니다.');
     result.notes.push('E17에는 비용·학습 곡선이 기록되지 않았습니다. PSNR만 해당 실험의 FP32·fake-quant·정수 경로끼리 비교합니다.');
+    const depths = new Set(rows(data, key).map(r => number(r.conv_layers)).filter(v => v !== null));
+    if (depths.size > 1) {
+      const list = [...depths].sort((a, b) => a - b).join('개와 conv ');
+      result.notes.push('같은 폭 구성을 conv ' + list + '개 두 깊이에서 측정했습니다. 깊은 쪽이 더 좋은 모델은 아니며(FP32 PSNR이 더 낮습니다), '
+        + '출력 코드 불일치가 깊이에 따라 어떻게 움직이는지를 보기 위한 대조군입니다. 정수 경로의 출력 코드 불일치율은 이 카드의 PSNR과 별개 지표이며 E17 문서에 있습니다.');
+    }
   }
   const base = result.variants.find(row => row.id === result.baselineId);
   if (result.task === CLASSIFICATION) {

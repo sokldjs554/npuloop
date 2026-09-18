@@ -57,7 +57,7 @@ def test_catalog_exposes_available_studies_and_preserves_data(payload):
     assert result["unchanged"]
     ids = {row["id"] for row in result["value"]}
     assert {"e4-activation", "e1-training", "e6-resnet20_relu", "e6-cust_vit",
-            "e9-vit", "e2-mnv2_050_relu6", "e12-imagenette", "e17-super-resolution"} <= ids
+            "e9-vit", "e2-mnv2_050_relu6", "e12-imagenette", "e17-espcn_x2", "e17-espcn_x2_deep"} <= ids
     assert call("catalog", {"results": {}})["value"] == []
 
 
@@ -141,13 +141,17 @@ def test_imagenette_and_super_resolution_use_their_own_metrics(payload):
     assert base["fp32Accuracy"] == .8397452229299363
     assert base["fp32Images"] == 3925 and base["macs"] == 163250816
     assert base["epochs"] == 30 and base["training"] == []
-    sr = study(payload, "e17-super-resolution")
+    sr = study(payload, "e17-espcn_x2")
     row = variant(sr, "npu-default")
     assert row["fp32Accuracy"] is None and row["intAccuracy"] is None
     assert row["metric"]["unit"] == "dB"
     assert row["metric"]["baseline"] == 30.234268209553726
     assert row["metric"]["value"] == 29.954936272901545
     assert row["cycles"] is None and row["training"] == []
+    # The two depths are separate cards: the deep card must read the deep records, not the shallow ones.
+    deep = variant(study(payload, "e17-espcn_x2_deep"), "npu-default")
+    assert deep["metric"]["baseline"] == 30.11345206880338
+    assert deep["metric"]["value"] != row["metric"]["value"]
 
 
 def test_missing_numerical_evidence_remains_null(payload):
@@ -180,7 +184,7 @@ def test_assessment_uses_only_same_scope_fp32_and_recorded_cycles(payload):
 
 
 def test_assessment_has_no_compression_claim_for_missing_cost_or_psnr(payload):
-    for key in ["e6-resnet20_relu", "e17-super-resolution"]:
+    for key in ["e6-resnet20_relu", "e17-espcn_x2", "e17-espcn_x2_deep"]:
         result = study(payload, key)
         rows = call("assess", result, {"maxDropPp": 1, "minSavingPercent": 10})["value"]
         assert all(r["eligible"] is None for r in rows)
