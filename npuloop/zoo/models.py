@@ -282,6 +282,18 @@ class InceptionCIFAR(nn.Module):
         return self.fc(self.flatten(self.pool(x)))
 
 
+class SRResBlock(nn.Module):
+    """conv-act-conv with an identity skip, at constant width. No BatchNorm, as SR networks do not use it."""
+
+    def __init__(self, ch: int, act: str = "relu"):
+        super().__init__()
+        self.conv1 = nn.Conv2d(ch, ch, 3, 1, 1); self.act = make_act(act)
+        self.conv2 = nn.Conv2d(ch, ch, 3, 1, 1)
+
+    def forward(self, x):
+        return x + self.conv2(self.act(self.conv1(x)))
+
+
 class ESPCN(nn.Module):
     """Sub-pixel super-resolution head (Shi et al., CVPR 2016).
 
@@ -295,13 +307,18 @@ class ESPCN(nn.Module):
     rejects, while the explicit form maps onto the reshape and transpose ops the IR already has.
     """
 
-    def __init__(self, lr_size: int = 64, scale: int = 2, feat: int = 32, channels: int = 3, act: str = "relu"):
+    def __init__(self, lr_size: int = 64, scale: int = 2, feat: int = 32, channels: int = 3, act: str = "relu",
+                 blocks: int = 0):
         super().__init__()
         self.lr_size = lr_size; self.scale = scale; self.channels = channels
         self.conv1 = nn.Conv2d(channels, feat, 5, 1, 2); self.act1 = make_act(act)
         self.conv2 = nn.Conv2d(feat, feat // 2, 3, 1, 1); self.act2 = make_act(act)
+        # `blocks` residual blocks at the trunk width, so depth can be varied without touching the width
+        # profile: blocks=0 is the 3-convolution net, blocks=3 is a 9-convolution one with the same channels.
+        self.blocks = nn.ModuleList([SRResBlock(feat // 2, act) for _ in range(blocks)])
         self.conv3 = nn.Conv2d(feat // 2, channels * scale * scale, 3, 1, 1)
-        self.config = dict(arch="espcn", lr_size=lr_size, scale=scale, feat=feat, channels=channels, act=act)
+        self.config = dict(arch="espcn", lr_size=lr_size, scale=scale, feat=feat, channels=channels, act=act,
+                           blocks=blocks)
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
@@ -310,6 +327,8 @@ class ESPCN(nn.Module):
     def forward(self, x):
         x = self.act1(self.conv1(x))
         x = self.act2(self.conv2(x))
+        for b in self.blocks:
+            x = b(x)
         x = self.conv3(x)
         c, r, h = self.channels, self.scale, self.lr_size
         x = x.view(-1, c, r, r, h, h)

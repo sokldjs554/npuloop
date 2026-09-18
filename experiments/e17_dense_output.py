@@ -22,7 +22,7 @@ from npuloop.intengine.verify import compare
 
 SCHEMES = os.environ.get("NPULOOP_E17_SCHEMES", "npu-default,per-tensor").split(",")
 DATA = os.environ.get("NPULOOP_IMAGENETTE", os.path.join(ROOT, "data", "imagenette128.npz"))
-RUN = os.path.join(RUNS, "espcn_x2")
+RUNS_SR = [r.strip() for r in os.environ.get("NPULOOP_E17_RUNS", "espcn_x2,espcn_x2_deep").split(",") if r.strip()]
 AGREE_IMAGES = int(os.environ.get("NPULOOP_E17_AGREE_IMAGES", "64"))
 BS = int(os.environ.get("NPULOOP_E17_BS", "50"))
 
@@ -31,25 +31,19 @@ def out_codes(y: np.ndarray, q) -> np.ndarray:
     return np.clip(np.rint(y.astype(np.float64) / q.scale) + q.zero_point, q.qmin, q.qmax).astype(np.int64)
 
 
-def main():
-    torch.set_num_threads(int(os.environ.get("NPULOOP_THREADS", "2")))
-    ckpt = os.path.join(RUN, "best.pt")
+def measure(res, run_name):
+    ckpt = os.path.join(RUNS, run_name, "best.pt")
     if not os.path.exists(ckpt):
-        raise SystemExit(f"no checkpoint at {ckpt} -- run python -m npuloop.zoo.train_sr --out {RUN} first")
+        log(f"{run_name}: no checkpoint, skipping"); return
     m = load_checkpoint(ckpt).eval()
+    depth = sum(1 for mod in m.modules() if isinstance(mod, torch.nn.Conv2d))
     ds = SRPairs(DATA, scale=m.config["scale"])
     shape = (3, ds.lr_size, ds.lr_size)
     calib = [ds.calib_batch(512, seed=0)[i:i + 64] for i in range(0, 512, 64)]
-    res = Results("e17_dense_output", meta=dict(
-        model="espcn_x2", dataset="Imagenette-128", task="x2 super-resolution",
-        metric="per-image PSNR (dB) on [0,1], prediction clipped as a deployment would",
-        calib="512 random LR training images (seed 0)", int_engine="cpp", schemes=SCHEMES,
-        agree_images=AGREE_IMAGES,
-        note="output codes here are pixels, not logits: 3x128x128 per image instead of 10"))
 
     float_psnr = None
     for sname in SCHEMES:
-        if res.has(scheme=sname):
+        if res.has(model=run_name, scheme=sname):
             continue
         t = time.time()
         qm = prepare(m, PRESET_SCHEMES[sname]); calibrate(qm, calib)
@@ -74,7 +68,8 @@ def main():
         fake_psnr, int_psnr = np.concatenate(fk_list), np.concatenate(it_list)
         lr_agree, _ = next(ds.test_batches(AGREE_IMAGES))
         rows, summ = compare(qm, ig, lr_agree)
-        rec = dict(model="espcn_x2", scheme=sname, n_test=int(len(int_psnr)), input_shape=list(shape),
+        rec = dict(model=run_name, scheme=sname, conv_layers=depth,
+                   blocks=int(m.config.get("blocks", 0)), n_test=int(len(int_psnr)), input_shape=list(shape),
                    float_psnr=float(float_psnr.mean()), fake_psnr=float(fake_psnr.mean()),
                    int_psnr=float(int_psnr.mean()),
                    int_vs_fake=paired_delta(fake_psnr, int_psnr), int_vs_float=paired_delta(float_psnr, int_psnr),
@@ -86,9 +81,22 @@ def main():
                    per_layer_agreement=[r.to_dict() for r in rows], seconds=time.time() - t)
         res.add(rec)
         p = rec["int_vs_fake"]
-        log(f"espcn_x2 {sname:12s} float={rec['float_psnr']:.3f}dB fake={rec['fake_psnr']:.3f} int={rec['int_psnr']:.3f} "
+        log(f"{run_name:15s} {sname:12s} conv={depth} float={rec['float_psnr']:.3f}dB fake={rec['fake_psnr']:.3f} int={rec['int_psnr']:.3f} "
             f"int-fake={p['delta']:+.4f}dB ± {p['se']:.4f} codes≠={mism/total*100:.1f}% max|Δcode|={max_level} "
             f"({time.time()-t:.0f}s)")
+
+
+def main():
+    torch.set_num_threads(int(os.environ.get("NPULOOP_THREADS", "2")))
+    res = Results("e17_dense_output", meta=dict(
+        dataset="Imagenette-128", task="x2 super-resolution",
+        metric="per-image PSNR (dB) on [0,1], prediction clipped as a deployment would",
+        calib="512 random LR training images (seed 0)", int_engine="cpp", schemes=SCHEMES,
+        agree_images=AGREE_IMAGES, runs=RUNS_SR,
+        note="output codes here are pixels, not logits: 3x128x128 per image instead of 10. Two depths at the "
+             "same width profile (3 and 9 convolutions) so the propagated figure can be read against depth."))
+    for run_name in RUNS_SR:
+        measure(res, run_name)
 
 
 if __name__ == "__main__":

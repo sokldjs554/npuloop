@@ -124,6 +124,27 @@ def t_vela():
           "합성 망 & Vela MACs & npuloop MACs & Vela 사이클 & npuloop 사이클 & 비율", rows, tabcolsep="5pt")
 
 
+def t_vela_kind():
+    """Vela와의 사이클 격차를 연산자 종류로 분해한다. 합계 비율 하나만 보면 원인을 알 수 없다."""
+    tot = defaultdict(lambda: [0.0, 0.0, 0])
+    for r in load("e13_vela")["records"]:
+        for L in r["per_layer"]:
+            if "vela_cycles" not in L:          # 계층 수가 안 맞는 행(각 망의 pool 1개)은 건너뛴다
+                continue
+            t = tot[L["kind"]]
+            t[0] += L["vela_cycles"]; t[1] += L["npuloop_cycles"]; t[2] += 1
+    gv = sum(v[0] for v in tot.values()); gn = sum(v[1] for v in tot.values()); gap = gv - gn
+    rows = []
+    for k, v in sorted(tot.items(), key=lambda x: -(x[1][0] - x[1][1])):
+        g = v[0] - v[1]
+        rows.append(f"\\texttt{{{k}}} & {v[2]} & {v[0]:,.0f} & {v[1]:,.0f} & {v[1] / v[0]:.3f} & "
+                    f"{g / gap * 100:.1f} \\\\")
+    rows.append("\\midrule")
+    rows.append(f"합계 & {sum(v[2] for v in tot.values())} & {gv:,.0f} & {gn:,.0f} & {gn / gv:.3f} & 100.0 \\\\")
+    write("th_vela_kind.tex", "lrrrrr",
+          "연산자 & 계층 & Vela 사이클 & npuloop 사이클 & npuloop/Vela & 격차 비중(\\%)", rows, tabcolsep="5pt")
+
+
 def hangul_font():
     have = {f.name for f in font_manager.fontManager.ttflist}
     for n in HANGUL_FONTS:
@@ -167,4 +188,4 @@ def fig_operators():
 
 
 if __name__ == "__main__":
-    t_baselines(); t_operators(); t_requant(); t_tflite(); t_vela(); fig_operators()
+    t_baselines(); t_operators(); t_requant(); t_tflite(); t_vela(); t_vela_kind(); fig_operators()

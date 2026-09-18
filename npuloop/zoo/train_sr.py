@@ -116,6 +116,7 @@ def main():
     p.add_argument("--data", default=os.environ.get("NPULOOP_DATA", "data/imagenette128.npz"))
     p.add_argument("--scale", type=int, default=2)
     p.add_argument("--feat", type=int, default=32)
+    p.add_argument("--blocks", type=int, default=0)   # residual blocks: 0 -> 3 convs, 3 -> 9 convs
     p.add_argument("--act", default="relu")
     p.add_argument("--epochs", type=int, default=25)
     p.add_argument("--bs", type=int, default=32)
@@ -130,8 +131,10 @@ def main():
     torch.set_num_threads(a.threads)
     ds = SRPairs(a.data, scale=a.scale)
     torch.manual_seed(a.seed)                    # weight init follows --seed, as in train.py
-    model = build_model(dict(arch="espcn", lr_size=ds.lr_size, scale=a.scale, feat=a.feat, act=a.act))
-    print(f"espcn x{a.scale} {ds.lr_size}->{ds.hr_size} params={count_params(model)}", flush=True)
+    model = build_model(dict(arch="espcn", lr_size=ds.lr_size, scale=a.scale, feat=a.feat, act=a.act,
+                             blocks=a.blocks))
+    print(f"espcn x{a.scale} {ds.lr_size}->{ds.hr_size} blocks={a.blocks} params={count_params(model)}",
+          flush=True)
     log = fit_sr(model, ds, epochs=1 if a.smoke else a.epochs, lr=a.lr, wd=a.wd, bs=a.bs, seed=a.seed,
                  out=a.out, resume=a.resume, steps_per_epoch=4 if a.smoke else None)
     print(json.dumps({k: v for k, v in log.items() if not isinstance(v, (list, dict))}, indent=1), flush=True)
