@@ -44,17 +44,34 @@ def _apply(layer, x: torch.Tensor, w: torch.Tensor) -> torch.Tensor:
     return F.linear(x, w, layer.bias)
 
 
+SAMPLES = 256          # feature maps kept per layer; a wide layer's activations are tens of MB per 100
+
+
 @torch.no_grad()
-def _capture(qm: nn.Module, target: nn.Module, batches) -> list[torch.Tensor]:
-    """Inputs seen by `target` when the (partly AdaRounded) quantized model runs the calibration batches."""
+def _capture(qm: nn.Module, target: nn.Module, batches, limit: int = SAMPLES) -> torch.Tensor:
+    """Inputs seen by `target` when the (partly AdaRounded) quantized model runs the calibration batches.
+
+    Stops once `limit` samples are in: a wide layer's activations over the whole calibration set are hundreds
+    of megabytes, and the optimizer only ever draws `batch_size` of them at a time.
+    """
     seen: list[torch.Tensor] = []
-    h = target.register_forward_pre_hook(lambda _m, inp: seen.append(inp[0].detach().clone()))
+    got = 0
+
+    def grab(_m, inp):
+        nonlocal got
+        x = inp[0].detach()
+        if got < limit:
+            seen.append(x[: limit - got].clone()); got += len(seen[-1])
+
+    h = target.register_forward_pre_hook(grab)
     try:
         for b in batches:
             qm(b)
+            if got >= limit:
+                break
     finally:
         h.remove()
-    return seen
+    return torch.cat(seen)
 
 
 def adaround(qm: nn.Module, batches, iters: int = 1500, lr: float = 1e-2, lam: float = 0.01,
@@ -69,8 +86,7 @@ def adaround(qm: nn.Module, batches, iters: int = 1500, lr: float = 1e-2, lam: f
     report = {"layers": [], "iters": iters, "lam": lam, "lr": lr, "beta_range": list(beta_range)}
     for name, layer in layers:
         t0 = time.time()
-        xs = _capture(qm, layer, batches)
-        x_all = torch.cat(xs)[: 256 * max(1, 1)]                 # a few hundred samples is plenty per layer
+        x_all = _capture(qm, layer, batches)
         dims = layer.weight.dim()
         s = _scale_for(layer, dims)
         with torch.no_grad():
