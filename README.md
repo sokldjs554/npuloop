@@ -194,7 +194,7 @@ CI는 `ONEDNN_MAX_CPU_ISA=AVX2`로도 전체 스위트를 돌립니다.
 ## 설계에서 신경 쓴 것
 
 * **양자화 지점이 NPU 데이터패스와 1:1.** ReLU 계열은 requant clamp에 융합되므로 활성함수 뒤에만 양자화기가 있고, SiLU/GELU/HardSwish는 int8 LUT라
-  **앞에 양자화기가 하나 더** 들어갑니다. avgpool은 입력 스케일을 유지합니다([docs/INTEGER_DATAPATH.md](docs/INTEGER_DATAPATH.md)).
+  **앞에 양자화기가 하나 더** 들어갑니다. avgpool과 maxpool은 입력 스케일을 유지합니다 — maxpool은 출력이 입력 코드 **그 자체**라 재양자화가 아예 없습니다([docs/INTEGER_DATAPATH.md](docs/INTEGER_DATAPATH.md)).
 * **정수 산술은 참조 구현과 비트 동일.** `SaturatingRoundingDoublingHighMul`, `RoundingDivideByPOT`, TFLite add의 20비트 left-shift, avgpool의 half-away 반올림을
   그대로 구현했고, NumPy 엔진과 C++ 커널은 **모든 중간 텐서**가 같아야 테스트가 통과합니다.
 * **불일치를 두 관점으로 분리.** fake-quant와 정수 엔진의 차이를 "국소(각 op에 fake-quant 코드를 teacher-forcing)"와 "전파(끝까지 정수로 실행)"로 나눠 재서,

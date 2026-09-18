@@ -213,6 +213,13 @@ static Tensor run_node(const Model& model, const Node& n, std::map<std::string, 
             int N = x.shape[0], T = x.shape[1], C = x.shape[2];
             out.shape = n.ai("keepdim", 0) ? std::vector<int>{N, 1, C} : std::vector<int>{N, C}; out.data.resize((size_t)N * C);
             token_mean(x.data.data(), N, T, C, n.q.qmin, n.q.qmax, out.data.data());
+        } else if (n.as("kind") == "max") {
+            int N = x.shape[0], C = x.shape[1], H = x.shape[2], W = x.shape[3];
+            std::vector<int> k = n.ail("kernel"), st = n.ail("stride"), pd = n.ail("padding");
+            int OH = (H + 2 * pd[0] - k[0]) / st[0] + 1;
+            int OW = (W + 2 * pd[1] - k[1]) / st[1] + 1;
+            out.shape = {N, C, OH, OW}; out.data.resize((size_t)N * C * OH * OW);
+            maxpool2d(x.data.data(), N, C, H, W, k[0], k[1], st[0], st[1], pd[0], pd[1], OH, OW, out.data.data());
         } else if (n.as("kind") == "global_avg_requant") {
             int N = x.shape[0], C = x.shape[1], HW = x.shape[2] * x.shape[3];
             out.shape = {N, C, 1, 1}; out.data.resize((size_t)N * C);

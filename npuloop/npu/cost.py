@@ -312,7 +312,15 @@ def estimate(graph: StaticGraph, spec="edge-10tops") -> CostReport:
             layers.append(lc); continue
         if node.op in ("add", "pool", "concat"):
             lc.kind = node.op
-            elems = sum(out_bytes[s] for s in node.inputs) if node.op in ("add", "concat") else out_bytes[node.inputs[0]]
+            if node.op in ("add", "concat"):
+                elems = sum(out_bytes[s] for s in node.inputs)
+            elif node.attrs.get("kind") == "max":
+                # A windowed pool reads k*k cells per output, not the input once: with a 3x3 window at stride 2
+                # that is 2.25 passes over the input, and the whole point of counting it is that overlap.
+                kh, kw = node.attrs["kernel"]
+                elems = kh * kw * out_bytes[node.name]
+            else:
+                elems = out_bytes[node.inputs[0]]
             lc.vector_cycles = math.ceil(elems / (spec.vector_lanes * spec.cores))
             lc.dram_bytes = in_traffic(node) + place_output(node)
             lc.dram_cycles = lc.dram_bytes / spec.dram_bytes_per_cycle

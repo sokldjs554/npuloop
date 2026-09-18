@@ -126,6 +126,32 @@ def _transpose_node(name: str, inp: str, out_shape, d0: int, d1: int) -> Node:
     return Node(name, "transpose", [inp], out_shape, dict(perm=perm))
 
 
+def _pair(v) -> tuple[int, int]:
+    return (int(v), int(v)) if isinstance(v, int) else (int(v[0]), int(v[1]))
+
+
+def _pool2d_attrs(m) -> dict:
+    st = m.stride if m.stride is not None else m.kernel_size
+    return dict(kernel=_pair(m.kernel_size), stride=_pair(st), padding=_pair(m.padding))
+
+
+def max_pool2d(x: np.ndarray, kernel, stride, padding, fill) -> np.ndarray:
+    """NCHW max pooling over `x`, padding with `fill`.
+
+    `fill` is the caller's "nothing here" value: -inf in float, the quantizer's qmin in integer. Either way it
+    can never win a max against a real cell, which is what makes padded and valid-only pooling agree -- the
+    same reason TFLite can ignore padded cells and still match.
+    """
+    (kh, kw), (sh, sw), (ph, pw) = _pair(kernel), _pair(stride), _pair(padding)
+    if ph or pw:
+        x = np.pad(x, ((0, 0), (0, 0), (ph, ph), (pw, pw)), constant_values=fill)
+    n, c, h, w = x.shape
+    oh, ow = (h - kh) // sh + 1, (w - kw) // sw + 1
+    sn, sc, shh, sww = x.strides
+    win = np.lib.stride_tricks.as_strided(x, (n, c, oh, ow, kh, kw), (sn, sc, shh * sh, sww * sw, shh, sww))
+    return win.max(axis=(4, 5))
+
+
 def trace(model: nn.Module, input_shape=(3, 32, 32)) -> StaticGraph:
     """Trace an eval-mode model into a StaticGraph (BN folded, shapes propagated)."""
     model = model.eval()
@@ -184,6 +210,13 @@ def trace(model: nn.Module, input_shape=(3, 32, 32)) -> StaticGraph:
                 if tuple(np.atleast_1d(m.output_size)) not in ((1,), (1, 1)):
                     raise UnsupportedOpError("only global average pooling is supported")
                 nodes.append(Node(n.name, "pool", [src(n.args[0])], shape_of(n), dict(kind="global_avg", module=n.target))); fxname_to_node[n.name] = n.name
+            elif isinstance(m, nn.MaxPool2d):
+                if m.dilation not in (1, (1, 1)):
+                    raise UnsupportedOpError("dilated max pooling")
+                if m.ceil_mode:
+                    raise UnsupportedOpError("ceil_mode max pooling")
+                nodes.append(Node(n.name, "pool", [src(n.args[0])], shape_of(n),
+                                  dict(kind="max", module=n.target, **_pool2d_attrs(m)))); fxname_to_node[n.name] = n.name
             elif isinstance(m, nn.Flatten):
                 nodes.append(Node(n.name, "flatten", [src(n.args[0])], shape_of(n), dict(module=n.target))); fxname_to_node[n.name] = n.name
             elif isinstance(m, nn.Linear):
@@ -335,8 +368,14 @@ def run_reference(graph: StaticGraph, x: np.ndarray) -> dict[str, np.ndarray]:
         elif n.op == "act":
             vals[n.name] = apply_act(vals[n.inputs[0]], n.attrs["kind"], n.attrs)
         elif n.op == "pool":
-            vals[n.name] = (vals[n.inputs[0]].mean(axis=1, keepdims=n.attrs.get("keepdim", False))
-                            if n.attrs.get("kind") == "token_mean" else vals[n.inputs[0]].mean(axis=(2, 3), keepdims=True))
+            kind = n.attrs.get("kind")
+            if kind == "token_mean":
+                vals[n.name] = vals[n.inputs[0]].mean(axis=1, keepdims=n.attrs.get("keepdim", False))
+            elif kind == "max":
+                vals[n.name] = max_pool2d(vals[n.inputs[0]], n.attrs["kernel"], n.attrs["stride"],
+                                          n.attrs["padding"], fill=-np.inf)
+            else:
+                vals[n.name] = vals[n.inputs[0]].mean(axis=(2, 3), keepdims=True)
         elif n.op == "flatten":
             vals[n.name] = vals[n.inputs[0]].reshape(vals[n.inputs[0]].shape[0], -1)
         elif n.op == "output":

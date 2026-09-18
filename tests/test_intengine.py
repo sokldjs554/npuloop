@@ -1,5 +1,7 @@
 import numpy as np
 import torch
+import torch.nn as nn
+import torch.nn.functional as F
 import pytest
 from npuloop.quant import prepare, calibrate, QScheme
 from npuloop.intengine import export_int_graph, NumpyEngine, RequantConfig, quantize_multiplier, multiply_by_quantized_multiplier
@@ -221,3 +223,39 @@ def test_symmetric_activations_keep_fused_relu(small_resnet, small_mobilenet, ca
             # proof that those mismatches are ties: with half-to-even second-stage rounding they vanish completely
             rows_he, _ = compare(qm, export_int_graph(qm, RequantConfig(rounding="half_even")), batch)
             assert all(r.local_mismatch_frac == 0.0 for r in rows_he if r.op == "add")
+
+
+def test_max_pooling_is_scale_preserving_and_bit_exact_in_both_engines(calib_batches, batch):
+    """MaxPool2d used to raise UnsupportedOpError, which locked out every classic CNN stem.
+
+    In INT8 it is the one op that needs no requantization: the output *is* one of the input codes, so its
+    quantizer is tied to the input's. The test pins that tie, both engines agreeing bit for bit, and equality
+    with torch's own float max pooling on the same window geometry.
+    """
+    load_library()
+    net = nn.Sequential(nn.Conv2d(3, 8, 3, padding=1), nn.ReLU(), nn.MaxPool2d(3, 2, padding=1),
+                        nn.Conv2d(8, 8, 3, padding=1), nn.ReLU(), nn.MaxPool2d(2, 2),
+                        nn.Conv2d(8, 8, 3, padding=1), nn.ReLU(), nn.AdaptiveAvgPool2d(1),
+                        nn.Flatten(), nn.Linear(8, 10)).eval()
+    qm = prepare(net); calibrate(qm, calib_batches)
+    ig = export_int_graph(qm)
+    pools = [n for n in ig.nodes if n.op == "pool" and n.attrs.get("kind") == "max"]
+    assert len(pools) == 2, [n.attrs.get("kind") for n in ig.nodes if n.op == "pool"]
+    for p in pools:                                   # no requantization: same scale and zero-point as the input
+        in_q = ig[p.inputs[0]].out_q
+        assert (p.out_q.scale, p.out_q.zero_point) == (in_q.scale, in_q.zero_point), p.name
+        assert p.mult is None and p.shift is None, p.name
+
+    codes = quantize_input(batch.numpy(), ig.input_q)
+    a, b = NumpyEngine(ig).run(codes, return_all=True), CppEngine(ig).run(codes, return_all=True)
+    for name in a:
+        assert np.array_equal(a[name], b[name]), name
+
+    # The integer kernel must agree with torch's float max pooling on the codes themselves, not merely be
+    # self-consistent: pad with qmin, and TFLite's "skip the padded cells" gives the same answer.
+
+    for p in pools:
+        x = a[p.inputs[0]]
+        want = F.max_pool2d(torch.from_numpy(x.astype(np.float32)), p.attrs["kernel"],
+                            p.attrs["stride"], p.attrs["padding"]).numpy().astype(np.int64)
+        assert np.array_equal(a[p.name], want), p.name

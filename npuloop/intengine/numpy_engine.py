@@ -11,6 +11,7 @@ import torch
 import torch.nn.functional as F
 from .graph import IntGraph, IntNode, QParams
 from .requant import multiply_by_quantized_multiplier, saturate, isqrt64, round_div, INT32_MIN, INT32_MAX
+from ..graph.ir import max_pool2d
 
 
 def quantize_input(x: np.ndarray, q: QParams) -> np.ndarray:
@@ -204,6 +205,11 @@ class NumpyEngine:
                 s = x.sum(axis=1, keepdims=n.attrs.get("keepdim", False))
                 y = np.where(s >= 0, (s + cnt // 2) // cnt, -((-s + cnt // 2) // cnt))
                 return np.clip(y, n.out_q.qmin, n.out_q.qmax)
+            elif n.op == "pool" and n.attrs.get("kind") == "max":
+                # Scale-preserving: the result is one of the input codes. Padding with qmin is exactly TFLite's
+                # "ignore the padded cells" -- qmin can never beat a real code.
+                return max_pool2d(vals[n.inputs[0]], n.attrs["kernel"], n.attrs["stride"], n.attrs["padding"],
+                                  fill=n.out_q.qmin)
             elif n.op == "pool" and n.attrs.get("kind") == "global_avg_requant":
                 # TFLite MEAN over H,W: sum of zero-point-centred codes, one requantization by s_in/(s_out*HW)
                 in_q = self.g[n.inputs[0]].out_q

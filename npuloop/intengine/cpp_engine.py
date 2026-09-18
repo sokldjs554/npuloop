@@ -61,6 +61,7 @@ def load_library():
         _lib.linear_requant.argtypes = [i32p, c, c, i8p, c, c, i32p, i32p, i32p, c, c, c, c, c, i32p]
         _lib.add_requant.argtypes = [i32p, i32p, ctypes.c_int64, c, c, c, ctypes.c_int32, c, ctypes.c_int32, c, ctypes.c_int32, c, c, c, c, c, i32p]
         _lib.global_avgpool.argtypes = [i32p, c, c, c, c, c, i32p]
+        _lib.maxpool2d.argtypes = [i32p, c, c, c, c, c, c, c, c, c, c, c, c, i32p]
         _lib.global_avgpool_requant.argtypes = [i32p, c, c, c, c, ctypes.c_int32, c, c, c, c, c, i32p]
         _lib.lut_apply.argtypes = [i32p, ctypes.c_int64, i32p, c, i32p]
         _lib.token_mean.argtypes = [i32p, c, c, c, c, c, i32p]
@@ -200,6 +201,13 @@ class CppEngine(NumpyEngine):
             lib.add_requant(_ptr(a), _ptr(b), a.size, q1.zero_point, q2.zero_point, p["left_shift"],
                             int(p["m1"][0]), int(p["m1"][1]), int(p["m2"][0]), int(p["m2"][1]), int(p["mo"][0]), int(p["mo"][1]),
                             n.out_q.zero_point, lo, hi, self.rounding, _ptr(out))
+            return out.astype(np.int64)
+        if n.op == "pool" and n.attrs.get("kind") == "max":
+            x = _i32(vals[n.inputs[0]]); N, C, H, W = x.shape
+            (kh, kw), (sh, sw), (ph, pw) = n.attrs["kernel"], n.attrs["stride"], n.attrs["padding"]
+            oh, ow = (H + 2 * ph - kh) // sh + 1, (W + 2 * pw - kw) // sw + 1
+            out = np.empty((N, C, oh, ow), dtype=np.int32)
+            lib.maxpool2d(_ptr(x), N, C, H, W, kh, kw, sh, sw, ph, pw, oh, ow, _ptr(out))
             return out.astype(np.int64)
         if n.op == "pool" and n.attrs.get("kind") == "global_avg_requant":
             x = _i32(vals[n.inputs[0]]); N, C, H, W = x.shape

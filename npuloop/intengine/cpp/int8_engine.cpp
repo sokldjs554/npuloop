@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <algorithm>
 #include <cmath>
+#include <limits>
 
 extern "C" {
 
@@ -215,6 +216,34 @@ void global_avgpool(const int32_t* x, int N, int C, int HW, int qmin, int qmax, 
             for (int i = 0; i < HW; ++i) s += p[i];
             int64_t y = s >= 0 ? (s + HW / 2) / HW : -((-s + HW / 2) / HW);
             out[n * C + c] = (int32_t)std::min<int64_t>(std::max<int64_t>(y, qmin), qmax);
+        }
+}
+
+// Max pool, TFLite semantics. No requantization: the result is one of the input codes, so the output keeps
+// the input's scale and zero-point. Padded cells are skipped rather than filled; a fill of qmin would give the
+// same answer, since qmin can never beat a real code.
+void maxpool2d(const int32_t* x, int N, int C, int H, int W, int kh, int kw, int sh, int sw, int ph, int pw,
+               int OH, int OW, int32_t* out) {
+    for (int n = 0; n < N; ++n)
+        for (int c = 0; c < C; ++c) {
+            const int32_t* p = x + ((int64_t)n * C + c) * H * W;
+            int32_t* q = out + ((int64_t)n * C + c) * OH * OW;
+            for (int oy = 0; oy < OH; ++oy)
+                for (int ox = 0; ox < OW; ++ox) {
+                    int y0 = oy * sh - ph, x0 = ox * sw - pw;
+                    int32_t best = std::numeric_limits<int32_t>::min();
+                    for (int dy = 0; dy < kh; ++dy) {
+                        int yy = y0 + dy;
+                        if (yy < 0 || yy >= H) continue;
+                        for (int dx = 0; dx < kw; ++dx) {
+                            int xx = x0 + dx;
+                            if (xx < 0 || xx >= W) continue;
+                            int32_t v = p[yy * W + xx];
+                            if (v > best) best = v;
+                        }
+                    }
+                    q[oy * OW + ox] = best;
+                }
         }
 }
 

@@ -91,7 +91,7 @@ def load_int_graph(path: str) -> IntGraph:
     nodes = []
     for rec in header["nodes"]:
         attrs = dict(rec["attrs"])
-        for k in ("stride", "padding", "clamp", "perm", "out_shape"):
+        for k in ("stride", "padding", "kernel", "clamp", "perm", "out_shape"):
             if k in attrs and isinstance(attrs[k], list):
                 attrs[k] = tuple(attrs[k])
         n = IntNode(rec["name"], rec["op"], list(rec["inputs"]), out_q=_unq(rec["out_q"]), attrs=attrs)

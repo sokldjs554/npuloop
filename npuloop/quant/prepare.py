@@ -7,7 +7,9 @@ Quantization points mirror an INT8 NPU datapath exactly:
         (ReLU is fused into the requantization clamp; no separate tensor exists)
       - otherwise: quantize the op output itself (pre-activation / residual-branch tensor)
   * every non-ReLU activation output (the int8 LUT result)
-  * global average pool output, tied to its input's scale/zero-point (TFLite AveragePool semantics)
+  * pooling output (global average and max), tied to its input's scale/zero-point --- TFLite
+    AveragePool and MaxPool both keep the input quantization, and for max it is exact: the output is one of
+    the input codes, unchanged
   * concat output (each input is requantized into this one scale on the NPU)
   * activation x activation matmul output, softmax output, layernorm output
       - a scalar multiply right after a matmul (the 1/sqrt(d) in attention) is folded into that
@@ -98,7 +100,7 @@ def prepare(model: nn.Module, scheme: QScheme = QScheme()) -> fx.GraphModule:
             insert_after(node, new_fq(node.name))       # learned constant added to activations
         elif act_kind(node) is not None:
             insert_after(node, new_fq(node.name))
-        elif (node.op == "call_module" and isinstance(modules[node.target], nn.AdaptiveAvgPool2d)) or is_token_mean(node):
+        elif (node.op == "call_module" and isinstance(modules[node.target], (nn.AdaptiveAvgPool2d, nn.MaxPool2d))) or is_token_mean(node):
             src = node.args[0]
             while src.op == "call_module" and isinstance(gm.get_submodule(src.target), (nn.Identity, nn.Dropout)):
                 src = src.args[0]                       # look through pass-through modules

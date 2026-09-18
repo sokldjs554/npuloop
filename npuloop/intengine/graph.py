@@ -82,6 +82,10 @@ def _qp(fq: FakeQuantAct) -> QParams:
     return QParams(float(s), int(z), fq.qmin, fq.qmax)
 
 
+def _pair(v) -> tuple[int, int]:
+    return (int(v), int(v)) if isinstance(v, int) else (int(v[0]), int(v[1]))
+
+
 def export_int_graph(gm: fx.GraphModule, requant: RequantConfig = RequantConfig(), input_shape=(3, 32, 32)) -> IntGraph:
     """Turn a calibrated fake-quant GraphModule into an IntGraph (the NPU compiler's job)."""
     from torch.fx.passes.shape_prop import ShapeProp
@@ -144,6 +148,15 @@ def export_int_graph(gm: fx.GraphModule, requant: RequantConfig = RequantConfig(
                     alias[node.name] = n.name
             elif isinstance(m, nn.AdaptiveAvgPool2d):
                 n = add_node(IntNode(node.name, "pool", [alias[src.name]], attrs=dict(out_shape=shape_of(node))))
+                alias[node.name] = n.name
+            elif isinstance(m, nn.MaxPool2d):
+                # No requantization: the output is one of the input codes, so it keeps the input's scale and
+                # zero-point exactly. The pool branch below asserts that tie.
+                n = add_node(IntNode(node.name, "pool", [alias[src.name]],
+                                     attrs=dict(out_shape=shape_of(node), kind="max",
+                                                kernel=_pair(m.kernel_size),
+                                                stride=_pair(m.stride if m.stride is not None else m.kernel_size),
+                                                padding=_pair(m.padding))))
                 alias[node.name] = n.name
             elif isinstance(m, nn.LayerNorm):
                 n = add_node(IntNode(node.name, "layernorm", [alias[src.name]],
@@ -278,7 +291,7 @@ def export_int_graph(gm: fx.GraphModule, requant: RequantConfig = RequantConfig(
             if n.out_q is None:
                 n.out_q = in_q
             if (n.out_q.scale, n.out_q.zero_point) != (in_q.scale, in_q.zero_point):
-                raise ValueError("pool output quantizer must be tied to its input (NPU avgpool keeps the scale)")
+                raise ValueError("pool output quantizer must be tied to its input (NPU avg/max pool keeps the scale)")
         elif n.op == "const":
             q = n.out_q
             v = n.attrs["value"] / q.scale

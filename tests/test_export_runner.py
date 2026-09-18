@@ -37,6 +37,41 @@ def runner(tmp_path_factory):
     return exe
 
 
+def test_max_pooling_survives_the_file_and_the_standalone_runner(runner, tmp_path):
+    """The window geometry has to reach the binary, not just the Python engines.
+
+    kernel/stride/padding go through the header as JSON, so a lost or mistyped attribute would silently change
+    the output shape. None of the CONFIGS architectures uses max pooling, so this builds one that does.
+    """
+    from npuloop.quant import prepare, calibrate, PRESET_SCHEMES
+    from npuloop.intengine import save_int_graph, load_int_graph, NumpyEngine, quantize_input, export_int_graph
+    import torch.nn as nn
+    torch.manual_seed(0)
+    net = nn.Sequential(nn.Conv2d(3, 8, 3, padding=1), nn.ReLU(), nn.MaxPool2d(3, 2, padding=1),
+                        nn.Conv2d(8, 8, 3, padding=1), nn.ReLU(), nn.MaxPool2d(2, 2),
+                        nn.AdaptiveAvgPool2d(1), nn.Flatten(), nn.Linear(8, 10)).eval()
+    qm = prepare(net, PRESET_SCHEMES["npu-default"]); calibrate(qm, [torch.randn(16, 3, 32, 32)])
+    ig = export_int_graph(qm)
+    path = str(tmp_path / "maxpool.npuloop")
+    save_int_graph(ig, path)
+    ig2 = load_int_graph(path)
+    pools = [n for n in ig2.nodes if n.attrs.get("kind") == "max"]
+    assert [(tuple(n.attrs["kernel"]), tuple(n.attrs["stride"]), tuple(n.attrs["padding"])) for n in pools] == \
+           [((3, 3), (2, 2), (1, 1)), ((2, 2), (2, 2), (0, 0))]
+    x = np.random.default_rng(0).standard_normal((4, 3, 32, 32)).astype(np.float32)
+    codes = quantize_input(x, ig.input_q)
+    ref = NumpyEngine(ig).run(codes, return_all=True)
+    x.astype("<f4").tofile(tmp_path / "in.f32"); (tmp_path / "dump").mkdir()
+    r = subprocess.run([runner, path, str(tmp_path / "in.f32"), "--float", "--out", str(tmp_path / "out.i32"),
+                        "--dump", str(tmp_path / "dump")], capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr
+    for n in pools:
+        got = np.fromfile(tmp_path / "dump" / f"{n.name}.i32", dtype="<i4").astype(np.int64)
+        assert np.array_equal(got, ref[n.name].reshape(-1)), n.name
+    assert np.array_equal(np.fromfile(tmp_path / "out.i32", dtype="<i4").astype(np.int64).reshape(ref["output"].shape),
+                          ref["output"])
+
+
 @pytest.mark.parametrize("arch", list(CONFIGS))
 def test_file_roundtrip_and_standalone_runner(arch, runner, tmp_path):
     from npuloop.intengine import save_int_graph, load_int_graph, NumpyEngine, quantize_input

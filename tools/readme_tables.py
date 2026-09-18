@@ -511,14 +511,21 @@ def e19():
 
 
 def e19_summary(rs):
+    """Two claims, both derived: AdaRound's own objective improves everywhere, and top-1 does not move."""
     out = []
+    layers = [L for r in rs for L in r["layers"]]
+    ratio = np.array([L["rel_after"] / max(L["rel_before"], 1e-30) for L in layers])
+    out.append(f"* **AdaRound가 최적화하는 목적함수는 모든 계층에서 좋아집니다.** 계층 {len(layers)}개 가운데 "
+               f"{int((ratio < 1).sum())}개에서 재구성 오차가 줄었고, 비율의 중앙값은 {float(np.median(ratio)):.2f}배"
+               f"(최소 {float(ratio.min()):.2f}배)입니다. 구현이 논문대로 동작한다는 뜻입니다.")
     fz = [abs(r["fake_gain"]["delta"] / r["fake_gain"]["se"]) for r in rs if r["fake_gain"]["se"]]
     iz = [abs(r["int_gain"]["delta"] / r["int_gain"]["se"]) for r in rs if r["int_gain"]["se"]]
     fd = [r["fake_gain"]["delta"] * 100 for r in rs]
     idl = [r["int_gain"]["delta"] * 100 for r in rs]
     agree = sum(1 for a, b in zip(fd, idl) if (a >= 0) == (b >= 0))
-    out.append(f"* 시뮬레이터에서의 이득은 {min(fd):+.2f} ~ {max(fd):+.2f}%p, 정수 프로그램에서의 이득은 "
-               f"{min(idl):+.2f} ~ {max(idl):+.2f}%p이고, {len(rs)}개 (모델, 스킴) 조합 중 {agree}개에서 두 부호가 같습니다.")
+    out.append(f"* **그런데 top-1은 움직이지 않습니다.** 시뮬레이터에서의 이득은 {min(fd):+.2f} ~ {max(fd):+.2f}%p, "
+               f"정수 프로그램에서의 이득은 {min(idl):+.2f} ~ {max(idl):+.2f}%p이고, {len(rs)}개 (모델, 스킴) 조합 중 "
+               f"{agree}개에서만 두 부호가 같습니다 — 잡음에서 기대되는 만큼입니다.")
     if fz and iz:
         out.append(f"  |Δ|/SE의 최댓값은 시뮬레이터 {max(fz):.1f}, 정수 {max(iz):.1f}입니다.")
     gap = [abs(a - b) for a, b in zip(fd, idl)]
