@@ -78,3 +78,27 @@ model ─►│ graph.trace (fx IR)  │─────────────�
 * NumPy 엔진과 C++ 커널은 **모든 중간 텐서**가 비트 단위로 같아야 한다(테스트로 강제).
 * fake-quant ↔ 정수 엔진 불일치는 "국소(teacher-forced)"와 "전파" 두 관점으로 나눠 보고한다.
 * 실험 JSON에는 `provenance: measured | simulated` 라벨을 붙인다.
+* 테스트는 통과 여부를 적는 자리가 아니라 버그를 잡는 자리다. 실제로 잡은 것들: 프루닝으로 새로 만든
+  BatchNorm이 eval 모드를 물려받지 않던 버그, half-even 반올림의 shift=0 예외, 서브셋 평가가 클래스
+  순서로 편향되던 문제.
+
+## 저장소 구조
+
+```
+npuloop/
+├── graph/ir.py          torch.fx → StaticGraph (BN folding, shape 전파)
+├── npu/                 가상 NPU 프리셋 4종 + weight-stationary systolic 비용 모델
+├── lint/                정적·동적 준비도 점검 → efficiency / quant-robustness 점수
+├── quant/               관측기 · fake-quant · NPU식 양자화기 삽입 · CLE · 바이어스 보정 · QAT · 정수 LayerNorm 에뮬레이션
+├── intengine/           IntGraph export · gemmlowp/TFLite 동일 requant · NumPy 엔진 · C++ 커널 · 검증 · `.npuloop` 직렬화
+├── prune/               fx 그래프 채널 그룹에 uniform · aligned · cost-greedy(비용 모델 in-the-loop) 프루닝
+├── zoo/                 npz 로더(CIFAR-10·Imagenette) · 모델 · 재현 가능한 트레이너
+└── cli.py
+experiments/             E1–E20 스크립트 (재개 가능)
+results/                 실험 결과 JSON (provenance 라벨 포함)
+demo/                    build.py + 템플릿 → docs/index.html
+tests/                   pytest 스위트 (개수는 실행 로그 기준)
+examples/                walkthrough.py · quickstart/ (번들 체크포인트 + CIFAR-10 샘플)
+tools/                   표 생성 · 데이터셋 준비 · 보고서 빌드 · oneDNN 재현 스크립트
+docs/                    EXPERIMENTS · USAGE · DESIGN · INTEGER_DATAPATH · RELATED · report/ · upstream/
+```
