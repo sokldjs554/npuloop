@@ -22,10 +22,10 @@ scalesim:        ## E8 cost-model validation (pip install scalesim)
 	NPULOOP_DATA=$(DATA) python experiments/e8_scalesim.py
 
 demo:            ## results/*.json -> demo/index.html + docs/index.html, then the generated tables
-	python demo/build.py && python tools/readme_tables.py --inject README.md docs/EXPERIMENTS.md
+	python demo/build.py && python tools/readme_tables.py --inject README.md docs/EXPERIMENTS.md docs/VALIDATION_SCOPE.md
 
 tables:          ## regenerate only the generated tables (no checkpoints, no dataset)
-	python tools/readme_tables.py --inject README.md docs/EXPERIMENTS.md
+	python tools/readme_tables.py --inject README.md docs/EXPERIMENTS.md docs/VALIDATION_SCOPE.md
 
 paper:           ## regenerate every table/figure and build all three PDFs (needs TeX Live)
 	python paper/make_tables.py && python paper/make_figs.py

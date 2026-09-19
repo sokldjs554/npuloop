@@ -65,5 +65,5 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install numpy
-      - run: python tools/readme_tables.py --inject README.md docs/EXPERIMENTS.md
-      - run: git diff --exit-code README.md docs/EXPERIMENTS.md
+      - run: python tools/readme_tables.py --inject README.md docs/EXPERIMENTS.md docs/VALIDATION_SCOPE.md
+      - run: git diff --exit-code README.md docs/EXPERIMENTS.md docs/VALIDATION_SCOPE.md
