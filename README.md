@@ -15,11 +15,34 @@
 52초 · 컷 12장. 저장된 실험 기록을 헤드리스로 실제 조작해 캡처했습니다(`python tools/record_walkthrough.py`).
 화면의 모든 숫자에는 **원본 JSON 보기** 버튼이 붙어 있습니다.
 
-## 파이프라인
+## 하는 일
 
-`PyTorch 모델 → fx IR(BN 접기) → NPU 비용 모델·lint → 프루닝·활성함수 교체 → PTQ/QAT/AdaRound → 정수 export → NumPy ⇄ C++ 비트 대조`
+- PyTorch 모델을 `torch.fx`로 추적해 BN을 접고 정적 그래프로 만듭니다
+- 가상 NPU 프리셋 4종에 대고 사이클·활용률·에너지를 추정하고, 온칩 실행 가능 여부를 lint로 판정합니다
+- 지원하지 않는 활성함수를 교체하고 채널을 프루닝한 뒤 **회복 학습**으로 정확도를 되찾습니다
+- 프루닝 채널 선택에 **비용 모델을 루프 안에서** 호출합니다 — MACs가 아니라 추정 사이클을 줄입니다
+- PTQ 7종·QAT·CLE·바이어스 보정·AdaRound로 INT8 양자화합니다
+- 정수 그래프를 내보내 **NumPy와 C++ 두 엔진으로 비트 동일하게** 실행하고, fake-quant와 연산자 단위로 대조합니다
+- 고객 체크포인트를 받아 진단 → 처방 → 적용까지 하는 인테이크 리포트를 냅니다
+- 모든 숫자를 결과 JSON에서 생성해 문서·표·브라우저 데모에 주입합니다
 
-비용 모델이 압축 **루프 안에** 있고, 그 결정을 정수 실행 정확도까지 되돌려 확인하는 것이 이 저장소의 구성입니다.
+## 구조
+
+```mermaid
+flowchart LR
+    A[PyTorch 모델<br>ResNet-20 · MobileNetV2 · ViT] --> B[graph.trace<br>fx IR · BN folding]
+    B --> C[npu.estimate<br>cycles · util · roofline]
+    B --> D[lint<br>준비도 점수 · findings]
+    C --> E[prune / surgery<br>array-aligned · act swap]
+    D --> E
+    E --> F[quant.prepare<br>PTQ · QAT · CLE · AdaRound]
+    F --> G[intengine.export<br>int8 W · int32 b · M0,shift]
+    G --> H[NumPy ⇄ C++ 정수 엔진<br>bit-exact]
+    H --> I[verify<br>fake-quant vs integer<br>국소 vs 전파]
+    I -. 결과가 다시 결정으로 .-> E
+```
+
+점선이 이 저장소의 성격입니다. 압축 결정을 FLOPs와 fake-quant가 아니라 **비용 모델과 비트 정확한 정수 실행에 대고** 내립니다.
 
 ## 찾은 것
 
