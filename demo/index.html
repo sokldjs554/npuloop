@@ -64,6 +64,18 @@
    </div>
    <p style="font-size:10px;color:var(--muted);margin-top:12px">NPU 비용은 가상 프리셋의 분석 추정치이며 실제 NPU latency·power 실측값이 아닙니다.</p>
   </div>
+  <div id="review-path" class="panel" style="padding:18px 20px;margin-bottom:20px">
+   <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:13px">
+    <div><span class="overline">3-MINUTE REVIEW PATH</span><h2 style="font-size:16px;margin-top:4px">처음 보는 분은 이 순서로 보세요</h2></div>
+    <span style="font-size:11px;color:var(--muted)">각 항목을 누르면 해당 화면으로 이동합니다.</span>
+   </div>
+   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:9px">
+    <a href="#studies" style="display:block;border:1px solid var(--line);border-radius:6px;padding:12px 13px;color:var(--text);background:var(--subtle);text-decoration:none"><strong style="display:block;font-size:12px;color:var(--blue)">1 · 모델 실험</strong><span style="display:block;font-size:11px;color:var(--muted);margin-top:4px">구조 변경 후 정확도 하락과 회복 학습 결과 확인</span></a>
+    <a href="#analysis" style="display:block;border:1px solid var(--line);border-radius:6px;padding:12px 13px;color:var(--text);background:var(--subtle);text-decoration:none"><strong style="display:block;font-size:12px;color:var(--blue)">2 · NPU 분석</strong><span style="display:block;font-size:11px;color:var(--muted);margin-top:4px">미지원 연산과 가상 NPU 비용이 어디에 생기는지 확인</span></a>
+    <a href="#research" style="display:block;border:1px solid var(--line);border-radius:6px;padding:12px 13px;color:var(--text);background:var(--subtle);text-decoration:none"><strong style="display:block;font-size:12px;color:var(--blue)">3 · 정수 검증</strong><span style="display:block;font-size:11px;color:var(--muted);margin-top:4px">fake-quant와 integer 실행의 내부 출력 차이 확인</span></a>
+    <a href="#experiments" style="display:block;border:1px solid var(--line);border-radius:6px;padding:12px 13px;color:var(--text);background:var(--subtle);text-decoration:none"><strong style="display:block;font-size:12px;color:var(--blue)">4 · 실험 기록</strong><span style="display:block;font-size:11px;color:var(--muted);margin-top:4px">E1–E20 원본 결과와 세부 조건까지 확인</span></a>
+   </div>
+  </div>
   <div class="context-bar study-controls"><label>태스크<select id="study-task"><option value="all">전체 태스크</option><option value="classification">이미지 분류</option><option value="super-resolution">초해상도</option></select></label><label class="study-select-label">모델·실험<select id="study-select"></select></label><label>가상 NPU 프리셋<select id="study-preset"></select></label></div>
   <div class="study-intro"><div><span class="overline" id="study-kind"></span><h2 id="study-title"></h2><p id="study-subtitle"></p></div><div class="study-actions"><button id="study-source" class="btn subtle">원본 기록</button><button id="study-export" class="btn secondary">실험 JSON 저장</button></div></div>
   <div id="study-context"></div>
