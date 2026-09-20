@@ -53,6 +53,17 @@
  <div class="page-heading"><div><h1 id="page-title">모델 실험·경량화</h1><p id="page-description">태스크와 데이터에 맞춘 구조 변경, 회복 학습, 양자화 결과</p></div><button id="export-report" class="btn secondary" type="button" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M5 16v5h14v-5"/></svg>분석 JSON 내보내기</button></div>
  <div id="error-banner" role="alert" hidden></div>
  <section data-view="studies" id="view-studies" aria-label="모델 실험·경량화">
+  <div id="project-at-a-glance" class="panel" style="padding:22px 24px;margin-bottom:20px;border-left:4px solid var(--blue)">
+   <span class="overline">PROJECT IN 10 SECONDS</span>
+   <h2 style="font-size:20px;line-height:1.45;margin:7px 0 8px">NPU 제약에 맞춰 모델을 수정·재학습·양자화하고,<br>NumPy/C++ 정수 실행까지 검증하는 모델 최적화 Workbench입니다.</h2>
+   <p style="color:var(--muted);font-size:13px;max-width:980px">구조 변경 → 회복 학습 → 프루닝·PTQ/QAT/AdaRound → integer export → TFLite·NumPy·C++ cross-check를 한 흐름으로 연결했습니다.</p>
+   <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:17px">
+    <div style="flex:1 1 190px;background:var(--subtle);border:1px solid var(--line);border-radius:6px;padding:13px 15px"><span style="display:block;font-size:10px;color:var(--muted)">실험 범위</span><strong style="display:block;font:600 21px var(--mono);margin:4px 0">E1–E20</strong><span style="font-size:11px;color:var(--muted)">모델 변경·경량화·정수 실행 20개 실험</span></div>
+    <div style="flex:1 1 190px;background:var(--subtle);border:1px solid var(--line);border-radius:6px;padding:13px 15px"><span style="display:block;font-size:10px;color:var(--muted)">TFLite reference 대조</span><strong style="display:block;font:600 21px var(--mono);margin:4px 0">1,000장 · 0 mismatch</strong><span style="font-size:11px;color:var(--muted)">지원 비교 연산의 모든 중간 tensor</span></div>
+    <div style="flex:1 1 190px;background:var(--subtle);border:1px solid var(--line);border-radius:6px;padding:13px 15px"><span style="display:block;font-size:10px;color:var(--muted)">fake-quant ↔ integer</span><strong style="display:block;font:600 21px var(--mono);margin:4px 0">28.5–72.7%</strong><span style="font-size:11px;color:var(--muted)">분류 모델 출력 정수 코드 불일치</span></div>
+   </div>
+   <p style="font-size:10px;color:var(--muted);margin-top:12px">NPU 비용은 가상 프리셋의 분석 추정치이며 실제 NPU latency·power 실측값이 아닙니다.</p>
+  </div>
   <div class="context-bar study-controls"><label>태스크<select id="study-task"><option value="all">전체 태스크</option><option value="classification">이미지 분류</option><option value="super-resolution">초해상도</option></select></label><label class="study-select-label">모델·실험<select id="study-select"></select></label><label>가상 NPU 프리셋<select id="study-preset"></select></label></div>
   <div class="study-intro"><div><span class="overline" id="study-kind"></span><h2 id="study-title"></h2><p id="study-subtitle"></p></div><div class="study-actions"><button id="study-source" class="btn subtle">원본 기록</button><button id="study-export" class="btn secondary">실험 JSON 저장</button></div></div>
   <div id="study-context"></div>
