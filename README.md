@@ -24,6 +24,21 @@
 
 > 빠르게 볼 때는 **모델 실험 → NPU 분석 → 정수 검증 → 실험 기록** 순서만 따라가면 됩니다. 브라우저는 저장된 실험 결과를 탐색하며, 새 학습과 실제 NPU 실행은 수행하지 않습니다.
 
+## 왜 이렇게 설계했나
+
+- fake-quant 정확도만으로는 실제 정수 rounding·requantization 차이를 볼 수 없어 **NumPy/C++ explicit integer execution**을 따로 만들었습니다.
+- FLOPs/MACs 감소가 NPU 비용 감소와 같지 않아 pruning 판단에 **가상 NPU cost model**을 함께 넣었습니다.
+- 모델별 이름을 하드코딩하지 않기 위해 pruning은 `torch.fx` graph에서 **channel dependency**를 추적합니다.
+- SCALE-Sim은 수식 구현 검증, Arm Vela는 compiler-aware 외부 비교에 사용했으며 둘을 **실리콘 실측으로 해석하지 않습니다.**
+
+설계 선택의 이유, 실패한 가설, 실제 NPU가 있을 때의 다음 검증 순서는 [설계 판단 기록](docs/DECISIONS.md)에 정리했습니다.
+
+### 5분 코드 검토 경로
+
+`requant.py` → `prune/structured.py` → `npu/cost.py` → `study_runner.py` → `VALIDATION_SCOPE.md`
+
+각 파일에서 무엇을 확인해야 하는지는 [docs/DECISIONS.md](docs/DECISIONS.md#8-5분-코드-검토-경로)에 적었습니다.
+
 ## 하는 일
 
 - PyTorch 모델을 `torch.fx`로 추적해 BN을 접고 정적 그래프로 만듭니다
@@ -97,6 +112,7 @@ CLI는 여섯 동사입니다: `npuloop cost | lint | intake | quantize | export
 - [실험 E1–E20 전문과 표](docs/EXPERIMENTS.md)
 - [검증 범위 — 무엇을 검증하지 **않았는가**](docs/VALIDATION_SCOPE.md)
 - [장문 연구 원고 32쪽](paper/npuloop_thesis.pdf) (게재된 논문이 아닙니다)
+- [설계 판단 기록 — 왜 이렇게 구현했는가](docs/DECISIONS.md)
 - [설계 · 모듈 · 정수 데이터패스 · 저장소 구조](docs/DESIGN.md)
 - [선행 연구와 이 저장소의 위치](docs/RELATED.md) — 조사 결과로 **자기 주장을 정정한 기록** 포함
 - [설치 · 학습 · CLI · 실험 재현 · 파이썬 API](docs/USAGE.md)
